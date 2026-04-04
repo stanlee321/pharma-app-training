@@ -80,7 +80,7 @@
 - [x] Play/Pause: Animate time cursor advancing along X-axis
 - [x] Speed control: 1x, 2x, 4x, 8x playback speed
 - [x] Scrubbing: Drag time cursor to view historical/predicted values
-- [ ] Multiple targets: Support adding targets at different times ("+ Graph")
+- [x] Multiple targets: "+ Target" button, markers on chart, remove via minus button
 
 ## Phase 6: Screen 5 — Compartmental Animation
 - [x] CompartmentalView: Split-screen layout (animation top, mini chart bottom)
@@ -126,11 +126,19 @@
 - [x] Haptic on Done confirm
 
 ### P0 — Compartmental 3D
-- [ ] SceneKit SCNCylinder with glass material for V1/V2/V3
-- [ ] Fluid cylinder (inner, height-animated) per compartment
-- [ ] SCNParticleSystem along pipes
-- [ ] Lighting setup (ambient + directional)
-- [ ] Camera with optional user rotation
+- [x] SceneKit SCNCylinder with glass material for V1/V2/V3
+- [x] Fluid cylinder (inner, height-animated) per compartment
+- [x] SCNParticleSystem along pipes (syringe→V1, V1→V2, V1→V3, V1→Effect, V1→CL)
+- [x] Lighting setup (ambient + key directional + fill directional + shadows)
+- [x] Camera with turntable orbit control (user can rotate/zoom)
+- [x] Glass rim torus on cylinder top edges
+- [x] Effect site as SCNSphere with emission glow
+- [x] Syringe with barrel, plunger rod, needle (animated on infusion)
+- [x] Floor with subtle reflections
+- [x] Billboard-constrained text labels (always face camera)
+- [x] Sizes mode: scale compartments + show volume ml labels
+- [x] 2D/3D toggle in toolbar to switch between Canvas and SceneKit
+- [x] Smooth SCNTransaction animations (0.25s) on fluid/scale updates
 
 ### P1 — Chart Polish
 - [x] Infusion rate drawn as filled semi-transparent area (not thin line)
@@ -169,6 +177,6 @@
 - [ ] Performance profiling: Verify <16ms TCI, <50ms simulate, 60fps animations
 - [ ] Accessibility: VoiceOver labels for chart elements and steppers
 - [ ] Saved simulations: Persist to SwiftData (load/save from Screen 2)
-- [ ] Multiple targets: Support adding targets at different times ("+ Graph")
+- [x] Multiple targets: "+ Target" button, markers on chart, remove via minus button
 - [ ] Edge cases: Validation errors, zero target, very long simulations
 - [ ] App icon and launch screen

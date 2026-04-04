@@ -10,6 +10,7 @@ struct ChartCanvas: View {
     let cursorFraction: Double
     let compact: Bool
     var targetConcentration: Double? = nil  // horizontal dashed line
+    var targetMarkers: [TargetEvent] = []     // triangles on X-axis per target
 
     // Chart margins
     private var leftMargin: CGFloat { compact ? 30 : 45 }
@@ -39,6 +40,9 @@ struct ChartCanvas: View {
                 drawTargetLine(context: &context, rect: chartRect, concentration: tc)
             }
 
+            if !targetMarkers.isEmpty {
+                drawTargetMarkers(context: &context, rect: chartRect)
+            }
             drawCursor(context: &context, rect: chartRect)
         }
         .background(AppColors.darkBg)
@@ -245,6 +249,58 @@ struct ChartCanvas: View {
             .font(.system(size: 9, weight: .bold, design: .monospaced))
             .foregroundColor(AppColors.target)
         context.draw(labelText, at: CGPoint(x: rect.minX - 4, y: y), anchor: .trailing)
+    }
+
+    // MARK: - Target Markers
+
+    private func drawTargetMarkers(context: inout GraphicsContext, rect: CGRect) {
+        for (i, target) in targetMarkers.enumerated() {
+            let x = xForTime(target.time, in: rect)
+            guard x >= rect.minX && x <= rect.maxX else { continue }
+
+            // Vertical dashed line at target time
+            let dashLen: CGFloat = 3
+            let gap: CGFloat = 3
+            var dashPath = Path()
+            var dy = rect.minY
+            while dy < rect.maxY {
+                dashPath.move(to: CGPoint(x: x, y: dy))
+                dashPath.addLine(to: CGPoint(x: x, y: min(dy + dashLen, rect.maxY)))
+                dy += dashLen + gap
+            }
+            context.stroke(dashPath, with: .color(AppColors.target.opacity(0.2)), lineWidth: 0.5)
+
+            // Triangle marker on X-axis
+            let triSize: CGFloat = 6
+            let triY = rect.maxY
+            var tri = Path()
+            tri.move(to: CGPoint(x: x, y: triY + 2))
+            tri.addLine(to: CGPoint(x: x - triSize, y: triY + 2 + triSize * 1.2))
+            tri.addLine(to: CGPoint(x: x + triSize, y: triY + 2 + triSize * 1.2))
+            tri.closeSubpath()
+            context.fill(tri, with: .color(AppColors.target.opacity(0.7)))
+
+            // Horizontal dashed line at this target's concentration
+            let y = yForConcentration(target.concentration, in: rect)
+            if y >= rect.minY && y <= rect.maxY {
+                var hDash = Path()
+                var hx = rect.minX
+                while hx < rect.maxX {
+                    hDash.move(to: CGPoint(x: hx, y: y))
+                    hDash.addLine(to: CGPoint(x: min(hx + 4, rect.maxX), y: y))
+                    hx += 7
+                }
+                context.stroke(hDash, with: .color(AppColors.target.opacity(0.15)), lineWidth: 0.5)
+            }
+
+            // Small concentration label near the marker
+            if !compact {
+                let label = Text(formatAxisValue(target.concentration))
+                    .font(.system(size: 8, weight: .medium, design: .monospaced))
+                    .foregroundColor(AppColors.target.opacity(0.6))
+                context.draw(label, at: CGPoint(x: x, y: triY + 2 + triSize * 1.2 + 8), anchor: .center)
+            }
+        }
     }
 
     // MARK: - Cursor

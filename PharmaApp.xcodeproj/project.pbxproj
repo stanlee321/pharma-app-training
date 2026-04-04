@@ -29,6 +29,7 @@
 		B03DBD911B365B7C280C1B9C /* ChartCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B1307BCBF35B318BDCFDF98 /* ChartCanvas.swift */; };
 		BB99EEC2391FDCC9F3A40BE5 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B3977B32DA76FE97B18626F /* AppState.swift */; };
 		BBD0A7DD519A2437762FDC7A /* DrugSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B9C64E41A8A650D4AE21D75 /* DrugSelectionView.swift */; };
+		DB5C811EF20C7F8722CA37D1 /* CompartmentSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8D8B44BAC1C558A4235678 /* CompartmentSceneView.swift */; };
 		EE766BB319C7E83BC0A22A7F /* SimulationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3C4FB6AE83BF5012AA0150F /* SimulationViewModel.swift */; };
 		F5885619EDE17BF22C86CD5E /* PKEngineProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3F1F86FDBE1F23A4960DCD7 /* PKEngineProtocol.swift */; };
 		F6640080B6351A995CDF8E98 /* EngineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10033497F8668C8CD69F11F1 /* EngineProvider.swift */; };
@@ -56,6 +57,7 @@
 		BC0D22F44119107EBDB94C68 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		C3C4FB6AE83BF5012AA0150F /* SimulationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationViewModel.swift; sourceTree = "<group>"; };
 		C84938A2DC0520995C51F0B8 /* DrugModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrugModel.swift; sourceTree = "<group>"; };
+		CC8D8B44BAC1C558A4235678 /* CompartmentSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompartmentSceneView.swift; sourceTree = "<group>"; };
 		D115E2E4326BC8132B5F220D /* CompartmentCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompartmentCanvas.swift; sourceTree = "<group>"; };
 		E1A56E98B094DFEFF1852923 /* CompartmentalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompartmentalView.swift; sourceTree = "<group>"; };
 		E3E79E50C0719D732DC97ABA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -155,6 +157,7 @@
 			children = (
 				E1A56E98B094DFEFF1852923 /* CompartmentalView.swift */,
 				D115E2E4326BC8132B5F220D /* CompartmentCanvas.swift */,
+				CC8D8B44BAC1C558A4235678 /* CompartmentSceneView.swift */,
 			);
 			path = Compartmental;
 			sourceTree = "<group>";
@@ -285,6 +288,7 @@
 				BB99EEC2391FDCC9F3A40BE5 /* AppState.swift in Sources */,
 				B03DBD911B365B7C280C1B9C /* ChartCanvas.swift in Sources */,
 				1E3D0C36ED96348697A69865 /* CompartmentCanvas.swift in Sources */,
+				DB5C811EF20C7F8722CA37D1 /* CompartmentSceneView.swift in Sources */,
 				3ACE2F23E24363B2B2D4CD3E /* CompartmentalView.swift in Sources */,
 				74CABD003508BC566ECBC6A2 /* CompartmentalViewModel.swift in Sources */,
 				8B47A32E5C6A89120FB8594C /* DataTooltip.swift in Sources */,
@@ -318,15 +322,17 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 923BHPTBX7;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = TivaTrainer;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.pharma.tivatrainer;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -396,15 +402,17 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 923BHPTBX7;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = TivaTrainer;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.pharma.tivatrainer;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;

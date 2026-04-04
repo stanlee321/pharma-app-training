@@ -123,8 +123,23 @@ struct CompartmentalView: View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { _ in
             ZStack {
                 if vm.use3D {
-                    // 3D placeholder — will be SceneKit
-                    scene3DPlaceholder(vm: vm)
+                    CompartmentSceneView(
+                        fillV1: vm.fillV1,
+                        fillV2: vm.fillV2,
+                        fillV3: vm.fillV3,
+                        fillEffect: vm.fillEffect,
+                        scaleV1: vm.sizeScaleV1,
+                        scaleV2: vm.sizeScaleV2,
+                        scaleV3: vm.sizeScaleV3,
+                        infusionRate: vm.currentPoint?.infusionRate ?? 0,
+                        showLabels: vm.showLabels,
+                        showData: vm.showData,
+                        showSizes: vm.showSizes,
+                        volumeV1: vm.v1,
+                        volumeV2: vm.v2,
+                        volumeV3: vm.v3,
+                        time: vm.cursorTimeSeconds
+                    )
                 } else {
                     CompartmentCanvas(
                         fillV1: vm.fillV1,
@@ -151,57 +166,6 @@ struct CompartmentalView: View {
                     )
                 }
             }
-        }
-    }
-
-    /// Placeholder for future SceneKit 3D view
-    private func scene3DPlaceholder(vm: CompartmentalViewModel) -> some View {
-        ZStack {
-            Color.black
-
-            VStack(spacing: 16) {
-                Image(systemName: "cube.transparent")
-                    .font(.system(size: 48))
-                    .foregroundStyle(AppColors.target.opacity(0.3))
-
-                Text("3D View")
-                    .font(.title3.bold())
-                    .foregroundStyle(.white.opacity(0.5))
-
-                Text("SceneKit implementation coming soon")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.3))
-
-                // Preview data
-                if let p = vm.currentPoint {
-                    HStack(spacing: 20) {
-                        compartmentBadge("V1", fill: vm.fillV1, color: AppColors.v1Fluid, vol: vm.v1)
-                        compartmentBadge("V2", fill: vm.fillV2, color: AppColors.v2Fluid, vol: vm.v2)
-                        compartmentBadge("V3", fill: vm.fillV3, color: AppColors.v3Fluid, vol: vm.v3)
-                    }
-                    .padding(.top, 8)
-                }
-            }
-        }
-    }
-
-    private func compartmentBadge(_ label: String, fill: Double, color: Color, vol: Double) -> some View {
-        VStack(spacing: 4) {
-            ZStack(alignment: .bottom) {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.white.opacity(0.06))
-                    .frame(width: 44, height: 60)
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(color.opacity(0.6))
-                    .frame(width: 40, height: max(4, 56 * CGFloat(fill)))
-                    .padding(.bottom, 2)
-            }
-            Text(label)
-                .font(.caption2.bold())
-                .foregroundStyle(.white.opacity(0.7))
-            Text(String(format: "%.0f%%", fill * 100))
-                .font(.system(size: 9, design: .monospaced))
-                .foregroundStyle(color)
         }
     }
 

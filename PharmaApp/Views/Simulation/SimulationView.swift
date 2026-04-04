@@ -254,7 +254,8 @@ struct SimulationView: View {
                     concentrationUnit: vm.concentrationUnit,
                     cursorFraction: vm.cursorTimeFraction,
                     compact: false,
-                    targetConcentration: vm.isDraggingTarget ? vm.dragTargetConcentration : currentTargetConc(vm: vm)
+                    targetConcentration: vm.isDraggingTarget ? vm.dragTargetConcentration : vm.activeTargetAtCursor?.concentration,
+                    targetMarkers: vm.targets
                 )
 
                 // Target node
@@ -385,16 +386,49 @@ struct SimulationView: View {
                 .fontWeight(.bold)
                 .foregroundStyle(AppColors.target)
             } else {
-                Button("+ Target") { }
-                    .foregroundStyle(.white.opacity(0.5))
+                // + Target button
+                Button {
+                    Haptics.tap()
+                    vm.beginAddTarget()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                        Text("Target")
+                    }
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(AppColors.target)
+                }
+
                 Spacer()
-                Text(vm.formatTime(vm.cursorTimeSeconds))
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.white.opacity(0.6))
+
+                // Target count + time
+                VStack(spacing: 1) {
+                    Text(vm.formatTime(vm.cursorTimeSeconds))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.white.opacity(0.6))
+                    if !vm.targets.isEmpty {
+                        Text("\(vm.targets.count) target\(vm.targets.count == 1 ? "" : "s")")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.white.opacity(0.3))
+                    }
+                }
+
                 Spacer()
-                Button { } label: {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(.white.opacity(0.5))
+
+                // Remove target at cursor (if near one)
+                if vm.targets.count > 1, vm.activeTargetAtCursor != nil {
+                    Button {
+                        Haptics.tap()
+                        vm.removeTargetAtCursor()
+                    } label: {
+                        Image(systemName: "minus.circle")
+                            .foregroundStyle(.red.opacity(0.6))
+                    }
+                } else {
+                    Button { } label: {
+                        Image(systemName: "info.circle")
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
                 }
             }
         }
@@ -403,14 +437,6 @@ struct SimulationView: View {
     }
 
     // MARK: - Helpers
-
-    private func points(vm: SimulationViewModel) -> [CurvePoint] {
-        vm.output?.points ?? []
-    }
-
-    private func currentTargetConc(vm: SimulationViewModel) -> Double? {
-        appState.targets.last?.concentration
-    }
 
     private func nudgeAmount(vm: SimulationViewModel) -> Double {
         vm.maxConcentration * 0.02

@@ -7,12 +7,12 @@ final class SimulationViewModel {
     let appState: AppState
 
     // MARK: - Chart Configuration
-    var timeRangeMinutes: Double = 30  // visible X-axis range
-    var maxConcentration: Double = 10  // Y-axis left max (auto-scaled)
-    var maxInfusionRate: Double = 50   // Y-axis right max (auto-scaled)
+    var timeRangeMinutes: Double = 30
+    var maxConcentration: Double = 10
+    var maxInfusionRate: Double = 50
 
     // MARK: - Cursor & Scrubbing
-    var cursorTimeFraction: Double = 0  // 0...1 across X-axis
+    var cursorTimeFraction: Double = 0
     var cursorTimeSeconds: Double { cursorTimeFraction * timeRangeMinutes * 60 }
 
     // MARK: - Target Node Interaction
@@ -30,14 +30,20 @@ final class SimulationViewModel {
     var drug: DrugModel { appState.selectedDrug }
     var patient: PatientProfile { appState.patient }
     var output: SimulationOutput? { appState.simulationOutput }
+    var targets: [TargetEvent] { appState.targets }
 
     var concentrationUnit: String { drug.concentrationUnit.rawValue }
 
-    /// Values at the current cursor position (interpolated from nearest point).
+    /// The target that is active at the current cursor time.
+    var activeTargetAtCursor: TargetEvent? {
+        let sorted = targets.sorted { $0.time < $1.time }
+        return sorted.last(where: { $0.time <= cursorTimeSeconds })
+    }
+
+    /// Values at the current cursor position.
     var valuesAtCursor: CurvePoint? {
         guard let pts = output?.points, !pts.isEmpty else { return nil }
         let t = cursorTimeSeconds
-        // Binary search for nearest point
         let idx = pts.indices.min(by: { abs(pts[$0].time - t) < abs(pts[$1].time - t) }) ?? 0
         return pts[idx]
     }
@@ -58,7 +64,8 @@ final class SimulationViewModel {
         guard let pts = output?.points, !pts.isEmpty else { return }
         let maxCp = pts.map(\.plasmaConcentration).max() ?? 1
         let maxCe = pts.map(\.effectConcentration).max() ?? 1
-        let maxC = max(maxCp, maxCe, dragTargetConcentration)
+        let maxTargetC = targets.map(\.concentration).max() ?? 0
+        let maxC = max(maxCp, maxCe, dragTargetConcentration, maxTargetC)
         maxConcentration = ceilToNice(maxC * 1.3)
 
         let maxR = pts.map(\.infusionRate).max() ?? 1
@@ -68,13 +75,37 @@ final class SimulationViewModel {
         timeRangeMinutes = max(ceil(maxTime / 60.0), 10)
     }
 
+    // MARK: - Add Target (via "+ Target" button)
+
+    /// Start adding a new target at the current cursor position.
+    func beginAddTarget() {
+        // Default: use the active target concentration, or a sensible default
+        let defaultConc: Double
+        if let active = activeTargetAtCursor {
+            defaultConc = active.concentration
+        } else if let last = targets.last {
+            defaultConc = last.concentration
+        } else {
+            defaultConc = drug.concentrationUnit == .ngPerMl ? 0.5 : 3.0
+        }
+        dragTargetConcentration = defaultConc
+        isDraggingTarget = true
+
+        pendingTCIResult = appState.engine.computeTCI(
+            modelId: drug.rustModelId,
+            patient: patient,
+            currentState: currentState,
+            targetConcentration: dragTargetConcentration,
+            targetType: .plasma
+        )
+    }
+
     // MARK: - Target Drag
 
     func onTargetDragChanged(concentration: Double) {
         isDraggingTarget = true
         dragTargetConcentration = max(concentration, 0)
 
-        // Fast TCI query
         pendingTCIResult = appState.engine.computeTCI(
             modelId: drug.rustModelId,
             patient: patient,
@@ -91,11 +122,14 @@ final class SimulationViewModel {
             concentration: dragTargetConcentration,
             targetType: .plasma
         )
-        var targets = appState.targets
-        targets.append(newTarget)
+
+        // Replace any existing target at the same time (within 5s tolerance)
+        var updated = appState.targets.filter { abs($0.time - newTarget.time) > 5 }
+        updated.append(newTarget)
+        updated.sort { $0.time < $1.time }
 
         Task {
-            await appState.runSimulation(with: targets)
+            await appState.runSimulation(with: updated)
             autoScaleAxes()
         }
     }
@@ -111,15 +145,40 @@ final class SimulationViewModel {
         onTargetDragChanged(concentration: dragTargetConcentration)
     }
 
+    // MARK: - Remove Target
+
+    func removeTarget(at index: Int) {
+        var updated = appState.targets
+        guard updated.indices.contains(index) else { return }
+        updated.remove(at: index)
+
+        if updated.isEmpty {
+            appState.targets = []
+            appState.simulationOutput = nil
+        } else {
+            Task {
+                await appState.runSimulation(with: updated)
+                autoScaleAxes()
+            }
+        }
+    }
+
+    /// Remove the target closest to the cursor time.
+    func removeTargetAtCursor() {
+        let sorted = appState.targets.sorted { $0.time < $1.time }
+        guard let closest = sorted.enumerated().min(by: { abs($0.element.time - cursorTimeSeconds) < abs($1.element.time - cursorTimeSeconds) }) else { return }
+
+        // Find its index in the original array
+        if let origIdx = appState.targets.firstIndex(where: { $0.time == closest.element.time && $0.concentration == closest.element.concentration }) {
+            removeTarget(at: origIdx)
+        }
+    }
+
     // MARK: - Playback
 
     func togglePlayback() {
         isPlaying.toggle()
-        if isPlaying {
-            startPlayback()
-        } else {
-            stopPlayback()
-        }
+        if isPlaying { startPlayback() } else { stopPlayback() }
     }
 
     func cycleSpeed() {
@@ -135,12 +194,10 @@ final class SimulationViewModel {
         playbackTask?.cancel()
         playbackTask = Task {
             while !Task.isCancelled && isPlaying {
-                try? await Task.sleep(for: .milliseconds(16)) // ~60fps
+                try? await Task.sleep(for: .milliseconds(16))
                 let advance = (playbackSpeed / (timeRangeMinutes * 60)) * 0.016
                 cursorTimeFraction = min(cursorTimeFraction + advance, 1.0)
-                if cursorTimeFraction >= 1.0 {
-                    isPlaying = false
-                }
+                if cursorTimeFraction >= 1.0 { isPlaying = false }
             }
         }
     }
@@ -152,13 +209,15 @@ final class SimulationViewModel {
 
     // MARK: - Helpers
 
-    /// Format seconds as HH:MM:SS.
     func formatTime(_ seconds: Double) -> String {
         let s = Int(seconds)
-        let h = s / 3600
-        let m = (s % 3600) / 60
-        let sec = s % 60
-        return String(format: "%02d:%02d:%02d", h, m, sec)
+        return String(format: "%02d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60)
+    }
+
+    func formatTimeShort(_ seconds: Double) -> String {
+        let m = Int(seconds) / 60
+        let s = Int(seconds) % 60
+        return String(format: "%d:%02d", m, s)
     }
 
     private func ceilToNice(_ value: Double) -> Double {
