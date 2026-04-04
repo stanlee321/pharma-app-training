@@ -4,6 +4,12 @@ struct SimulationView: View {
     @Binding var navigationPath: NavigationPath
     @Environment(AppState.self) private var appState
     @State private var vm: SimulationViewModel?
+    @State private var activeTab: SimTab = .graph
+
+    enum SimTab: String, CaseIterable {
+        case graph = "Graph"
+        case compartments = "Compartments"
+    }
 
     var body: some View {
         Group {
@@ -14,18 +20,21 @@ struct SimulationView: View {
                     .overlay(ProgressView().tint(.white))
             }
         }
+        .preferredColorScheme(.dark)
         .onAppear {
             if vm == nil {
                 vm = SimulationViewModel(appState: appState)
             }
         }
         .task {
+            guard let vm else { return }
             if appState.simulationOutput == nil {
-                await appState.runInitialSimulation()
-                vm?.autoScaleAxes()
-            } else {
-                vm?.autoScaleAxes()
+                // Auto-set a default target so the chart isn't empty
+                let defaultConc: Double = appState.selectedDrug.concentrationUnit == .ngPerMl ? 0.5 : 3.0
+                let defaultTarget = TargetEvent(time: 0, concentration: defaultConc, targetType: .plasma)
+                await appState.runSimulation(with: [defaultTarget])
             }
+            vm.autoScaleAxes()
         }
     }
 
@@ -35,60 +44,38 @@ struct SimulationView: View {
             Color.black.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Top toolbar
-                topToolbar(vm: vm)
+                // Top bar with back + segmented control
+                topBar(vm: vm)
 
-                // Status dashboard
-                statusDashboard(vm: vm)
+                // Segmented control: Graph ↔ Compartments
+                segmentedControl
 
-                // TCI Readouts (visible during target drag)
-                if vm.isDraggingTarget {
-                    tciReadouts(vm: vm)
+                if activeTab == .graph {
+                    graphContent(vm: vm)
+                } else {
+                    CompartmentalView()
+                        .environment(appState)
                 }
-
-                // Chart area with gestures
-                chartArea(vm: vm)
-                    .frame(maxHeight: .infinity)
-
-                // Tooltip
-                if let point = vm.valuesAtCursor {
-                    DataTooltip(
-                        point: point,
-                        concentrationUnit: vm.concentrationUnit,
-                        timeString: vm.formatTime(vm.cursorTimeSeconds)
-                    )
-                    .padding(.horizontal, 12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                // Bottom toolbar
-                bottomToolbar(vm: vm)
             }
         }
         .navigationBarBackButtonHidden()
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    navigationPath.removeLast()
-                } label: {
-                    Text("< Patient")
-                        .foregroundStyle(.white)
-                }
-            }
-        }
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
-    // MARK: - Top Toolbar
+    // MARK: - Top Bar
 
-    private func topToolbar(vm: SimulationViewModel) -> some View {
+    private func topBar(vm: SimulationViewModel) -> some View {
         HStack {
-            Text("Manual")
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.5))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(.white.opacity(0.1), in: Capsule())
+            Button {
+                navigationPath.removeLast()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.left")
+                    Text("Back")
+                }
+                .font(.subheadline)
+                .foregroundStyle(.blue)
+            }
 
             Spacer()
 
@@ -100,26 +87,14 @@ struct SimulationView: View {
 
             // Playback controls
             HStack(spacing: 12) {
-                Button {
-                    vm.togglePlayback()
-                } label: {
+                Button { vm.togglePlayback() } label: {
                     Image(systemName: vm.isPlaying ? "pause.fill" : "play.fill")
                         .foregroundStyle(.white)
                 }
-
-                Button {
-                    vm.cycleSpeed()
-                } label: {
+                Button { vm.cycleSpeed() } label: {
                     Text("\(Int(vm.playbackSpeed))x")
                         .font(.caption.bold())
                         .foregroundStyle(.white.opacity(0.7))
-                }
-
-                Button {
-                    navigationPath.append(Route.compartmental)
-                } label: {
-                    Image(systemName: "cube.transparent")
-                        .foregroundStyle(.white)
                 }
             }
         }
@@ -127,17 +102,72 @@ struct SimulationView: View {
         .padding(.vertical, 8)
     }
 
+    // MARK: - Segmented Control
+
+    private var segmentedControl: some View {
+        HStack(spacing: 0) {
+            ForEach(SimTab.allCases, id: \.self) { tab in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { activeTab = tab }
+                } label: {
+                    Text(tab.rawValue)
+                        .font(.subheadline.weight(activeTab == tab ? .semibold : .regular))
+                        .foregroundStyle(activeTab == tab ? .white : .white.opacity(0.4))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            activeTab == tab ? AppColors.darkCard : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 8)
+                        )
+                }
+            }
+        }
+        .padding(3)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, 12)
+        .padding(.bottom, 4)
+    }
+
+    // MARK: - Graph Content
+
+    @ViewBuilder
+    private func graphContent(vm: SimulationViewModel) -> some View {
+        // Status dashboard
+        statusDashboard(vm: vm)
+
+        // TCI Readouts
+        if vm.isDraggingTarget {
+            tciReadouts(vm: vm)
+        }
+
+        // Chart + target + tooltip
+        chartSection(vm: vm)
+            .frame(maxHeight: .infinity)
+
+        // Bottom toolbar
+        bottomToolbar(vm: vm)
+    }
+
     // MARK: - Status Dashboard
 
     private func statusDashboard(vm: SimulationViewModel) -> some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(vm.drug.model)
-                    .font(.caption.bold())
-                    .foregroundStyle(.white.opacity(0.7))
-                Text("\(String(format: "%.4f", vm.patient.dilution)) \(vm.concentrationUnit)")
+            HStack(spacing: 4) {
+                Text("Manual")
                     .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(.white.opacity(0.4))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color.white.opacity(0.08), in: Capsule())
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(vm.drug.model)
+                        .font(.caption.bold())
+                        .foregroundStyle(.white.opacity(0.7))
+                    Text("\(formatDilution(vm.patient.dilution, unit: vm.concentrationUnit)) \(vm.concentrationUnit)")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.4))
+                }
             }
 
             Spacer()
@@ -145,18 +175,19 @@ struct SimulationView: View {
             if let point = vm.valuesAtCursor {
                 VStack(alignment: .trailing, spacing: 2) {
                     HStack(spacing: 4) {
-                        Circle().fill(.cyan).frame(width: 6, height: 6)
-                        Text(String(format: "%.3f", point.plasmaConcentration))
+                        Circle().fill(AppColors.plasma).frame(width: 7, height: 7)
+                        Text(formatConc(point.plasmaConcentration))
                             .monospacedDigit()
+                            .foregroundStyle(AppColors.plasma)
                     }
                     HStack(spacing: 4) {
-                        Circle().fill(.green).frame(width: 6, height: 6)
-                        Text(String(format: "%.3f", point.effectConcentration))
+                        Circle().fill(AppColors.effect).frame(width: 7, height: 7)
+                        Text(formatConc(point.effectConcentration))
                             .monospacedDigit()
+                            .foregroundStyle(AppColors.effect)
                     }
                 }
                 .font(.caption)
-                .foregroundStyle(.white)
             }
         }
         .padding(.horizontal, 12)
@@ -167,61 +198,53 @@ struct SimulationView: View {
 
     private func tciReadouts(vm: SimulationViewModel) -> some View {
         HStack(spacing: 0) {
-            // Bolus
             VStack(alignment: .leading, spacing: 1) {
-                Text("Bolus")
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.5))
+                Text("Bolus").font(.caption2).foregroundStyle(.white.opacity(0.4))
                 if let tci = vm.pendingTCIResult {
                     Text(String(format: "%.1f ML", tci.bolusMl))
-                        .font(.caption.bold().monospacedDigit())
-                        .foregroundStyle(.white)
+                        .font(.caption.bold().monospacedDigit()).foregroundStyle(.white)
                     Text(String(format: "%.1f mcg/kg", tci.bolusMcgPerKg))
-                        .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.white.opacity(0.6))
+                        .font(.caption2.monospacedDigit()).foregroundStyle(.white.opacity(0.5))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Target
             VStack(spacing: 1) {
-                Text("Target")
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.5))
-                Text(String(format: "%.2f", vm.dragTargetConcentration))
-                    .font(.callout.bold().monospacedDigit())
-                    .foregroundStyle(.blue)
+                Text("Target").font(.caption2).foregroundStyle(.white.opacity(0.4))
+                Text(formatConc(vm.dragTargetConcentration))
+                    .font(.callout.bold().monospacedDigit()).foregroundStyle(AppColors.target)
                 Text(vm.concentrationUnit)
-                    .font(.caption2)
-                    .foregroundStyle(.blue.opacity(0.7))
+                    .font(.caption2).foregroundStyle(AppColors.target.opacity(0.6))
             }
 
-            // Infusion
             VStack(alignment: .trailing, spacing: 1) {
-                Text("Infusion")
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.5))
+                Text("Infusion").font(.caption2).foregroundStyle(.white.opacity(0.4))
                 if let tci = vm.pendingTCIResult {
                     Text(String(format: "%.1f ML/hr", tci.infusionRateMlHr))
-                        .font(.caption.bold().monospacedDigit())
-                        .foregroundStyle(.white)
+                        .font(.caption.bold().monospacedDigit()).foregroundStyle(.white)
                     Text(String(format: "%.2f mcg/kg/hr", tci.infusionRateMcgKgHr))
-                        .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.white.opacity(0.6))
+                        .font(.caption2.monospacedDigit()).foregroundStyle(.white.opacity(0.5))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(Color.blue.opacity(0.15))
+        .background(AppColors.target.opacity(0.1))
     }
 
-    // MARK: - Chart Area
+    // MARK: - Chart Section (chart + target node + floating tooltip)
 
-    private func chartArea(vm: SimulationViewModel) -> some View {
+    private func chartSection(vm: SimulationViewModel) -> some View {
         GeometryReader { geo in
-            ZStack {
+            let chartLeft: CGFloat = 45
+            let chartRight: CGFloat = 45
+            let chartTop: CGFloat = 16
+            let chartBottom: CGFloat = 28
+            let chartWidth = geo.size.width - chartLeft - chartRight
+            let chartHeight = geo.size.height - chartTop - chartBottom
+
+            ZStack(alignment: .topLeading) {
                 // Chart canvas
                 ChartCanvas(
                     points: vm.output?.points ?? [],
@@ -230,72 +253,96 @@ struct SimulationView: View {
                     maxInfusionRate: vm.maxInfusionRate,
                     concentrationUnit: vm.concentrationUnit,
                     cursorFraction: vm.cursorTimeFraction,
-                    compact: false
+                    compact: false,
+                    targetConcentration: vm.isDraggingTarget ? vm.dragTargetConcentration : currentTargetConc(vm: vm)
                 )
 
-                // Target node (blue circle on cursor)
+                // Target node
                 if vm.isDraggingTarget {
-                    targetNode(vm: vm, size: geo.size)
+                    let x = chartLeft + CGFloat(vm.cursorTimeFraction) * chartWidth
+                    let yFrac = vm.dragTargetConcentration / vm.maxConcentration
+                    let y = chartTop + chartHeight * CGFloat(1 - yFrac)
+
+                    // Glow ring
+                    Circle()
+                        .fill(AppColors.target.opacity(0.2))
+                        .frame(width: 44, height: 44)
+                        .position(x: x, y: y)
+
+                    // Node
+                    Circle()
+                        .fill(AppColors.target)
+                        .frame(width: 18, height: 18)
+                        .shadow(color: AppColors.target.opacity(0.6), radius: 8)
+                        .position(x: x, y: y)
+
+                    // Value label pinned to node
+                    Text(formatConc(vm.dragTargetConcentration))
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(AppColors.target, in: Capsule())
+                        .position(x: x + 40, y: y)
+                }
+
+                // Onboarding hint (when no targets and no curves)
+                if !vm.isDraggingTarget && (vm.output?.points.isEmpty ?? true) {
+                    VStack(spacing: 8) {
+                        Image(systemName: "hand.tap")
+                            .font(.title)
+                            .foregroundStyle(.white.opacity(0.3))
+                        Text("Tap chart to set target")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.3))
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+
+                // Floating tooltip (follows cursor)
+                if !vm.isDraggingTarget, let point = vm.valuesAtCursor, !(vm.output?.points.isEmpty ?? true) {
+                    let cursorX = chartLeft + CGFloat(vm.cursorTimeFraction) * chartWidth
+                    let tooltipOnLeft = vm.cursorTimeFraction > 0.5
+
+                    DataTooltip(
+                        point: point,
+                        concentrationUnit: vm.concentrationUnit,
+                        timeString: vm.formatTime(vm.cursorTimeSeconds)
+                    )
+                    .position(
+                        x: tooltipOnLeft ? cursorX - 80 : cursorX + 80,
+                        y: chartTop + 50
+                    )
                 }
 
                 // Gesture overlay
                 Color.clear.contentShape(Rectangle())
-                    .gesture(chartDragGesture(vm: vm, size: geo.size))
+                    .gesture(chartGesture(vm: vm, chartLeft: chartLeft, chartWidth: chartWidth, chartTop: chartTop, chartHeight: chartHeight))
                     .onTapGesture { location in
-                        let chartLeft: CGFloat = 45
-                        let chartRight: CGFloat = 45
-                        let chartWidth = geo.size.width - chartLeft - chartRight
+                        Haptics.tap()
                         let fraction = (location.x - chartLeft) / chartWidth
                         vm.cursorTimeFraction = max(0, min(1, Double(fraction)))
 
-                        // Start target drag on tap
-                        let chartTop: CGFloat = 16
-                        let chartBottom: CGFloat = 28
-                        let chartHeight = geo.size.height - chartTop - chartBottom
-                        let yFraction = 1.0 - Double((location.y - chartTop) / chartHeight)
-                        let concentration = yFraction * vm.maxConcentration
-                        vm.onTargetDragChanged(concentration: max(concentration, 0))
+                        let yFrac = 1.0 - Double((location.y - chartTop) / chartHeight)
+                        let conc = yFrac * vm.maxConcentration
+                        vm.onTargetDragChanged(concentration: max(conc, 0))
                     }
             }
         }
     }
 
-    private func targetNode(vm: SimulationViewModel, size: CGSize) -> some View {
-        let chartLeft: CGFloat = 45
-        let chartRight: CGFloat = 45
-        let chartTop: CGFloat = 16
-        let chartBottom: CGFloat = 28
-        let chartWidth = size.width - chartLeft - chartRight
-        let chartHeight = size.height - chartTop - chartBottom
-
-        let x = chartLeft + CGFloat(vm.cursorTimeFraction) * chartWidth
-        let yFraction = vm.dragTargetConcentration / vm.maxConcentration
-        let y = chartTop + chartHeight * CGFloat(1 - yFraction)
-
-        return Circle()
-            .fill(.blue)
-            .frame(width: 20, height: 20)
-            .shadow(color: .blue.opacity(0.6), radius: 6)
-            .position(x: x, y: y)
-    }
-
-    private func chartDragGesture(vm: SimulationViewModel, size: CGSize) -> some Gesture {
+    private func chartGesture(vm: SimulationViewModel, chartLeft: CGFloat, chartWidth: CGFloat, chartTop: CGFloat, chartHeight: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 5)
             .onChanged { value in
-                let chartLeft: CGFloat = 45
-                let chartRight: CGFloat = 45
-                let chartTop: CGFloat = 16
-                let chartBottom: CGFloat = 28
-                let chartWidth = size.width - chartLeft - chartRight
-                let chartHeight = size.height - chartTop - chartBottom
-
                 if vm.isDraggingTarget {
-                    // Vertical drag → change target concentration
-                    let yFraction = 1.0 - Double((value.location.y - chartTop) / chartHeight)
-                    let concentration = yFraction * vm.maxConcentration
-                    vm.onTargetDragChanged(concentration: concentration)
+                    let yFrac = 1.0 - Double((value.location.y - chartTop) / chartHeight)
+                    let conc = yFrac * vm.maxConcentration
+                    // Snap haptic at round numbers
+                    let snapped = (conc * 10).rounded() / 10
+                    let prevSnapped = (vm.dragTargetConcentration * 10).rounded() / 10
+                    if snapped != prevSnapped { Haptics.targetSnap() }
+                    vm.onTargetDragChanged(concentration: max(conc, 0))
                 } else {
-                    // Horizontal drag → scrub timeline
                     let fraction = (value.location.x - chartLeft) / chartWidth
                     vm.cursorTimeFraction = max(0, min(1, Double(fraction)))
                 }
@@ -310,61 +357,74 @@ struct SimulationView: View {
                 Button("Cancel") {
                     vm.onTargetDragCancelled()
                 }
-                .foregroundStyle(.white)
+                .foregroundStyle(.white.opacity(0.7))
 
                 Spacer()
 
-                Button {
-                    vm.nudgeTarget(by: -nudgeAmount(vm: vm))
-                } label: {
-                    Image(systemName: "chevron.down")
-                        .foregroundStyle(.white)
-                        .frame(width: 44, height: 36)
-                        .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
-                }
-
-                Button {
-                    vm.nudgeTarget(by: nudgeAmount(vm: vm))
-                } label: {
-                    Image(systemName: "chevron.up")
-                        .foregroundStyle(.white)
-                        .frame(width: 44, height: 36)
-                        .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+                HStack(spacing: 12) {
+                    Button { vm.nudgeTarget(by: -nudgeAmount(vm: vm)); Haptics.tap() } label: {
+                        Image(systemName: "chevron.down")
+                            .frame(width: 44, height: 36)
+                            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                            .foregroundStyle(.white)
+                    }
+                    Button { vm.nudgeTarget(by: nudgeAmount(vm: vm)); Haptics.tap() } label: {
+                        Image(systemName: "chevron.up")
+                            .frame(width: 44, height: 36)
+                            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                            .foregroundStyle(.white)
+                    }
                 }
 
                 Spacer()
 
                 Button("Done") {
+                    Haptics.confirm()
                     vm.onTargetDragConfirmed()
                 }
                 .fontWeight(.bold)
-                .foregroundStyle(.blue)
+                .foregroundStyle(AppColors.target)
             } else {
-                Button("+ Graph") { }
-                    .foregroundStyle(.white.opacity(0.6))
-
+                Button("+ Target") { }
+                    .foregroundStyle(.white.opacity(0.5))
                 Spacer()
-
                 Text(vm.formatTime(vm.cursorTimeSeconds))
                     .font(.caption.monospacedDigit())
-                    .foregroundStyle(.white.opacity(0.7))
-
+                    .foregroundStyle(.white.opacity(0.6))
                 Spacer()
-
-                Button {
-                    // info
-                } label: {
+                Button { } label: {
                     Image(systemName: "info.circle")
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(.white.opacity(0.5))
                 }
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Color.black)
+    }
+
+    // MARK: - Helpers
+
+    private func points(vm: SimulationViewModel) -> [CurvePoint] {
+        vm.output?.points ?? []
+    }
+
+    private func currentTargetConc(vm: SimulationViewModel) -> Double? {
+        appState.targets.last?.concentration
     }
 
     private func nudgeAmount(vm: SimulationViewModel) -> Double {
         vm.maxConcentration * 0.02
+    }
+
+    private func formatConc(_ v: Double) -> String {
+        if v >= 10 { return String(format: "%.1f", v) }
+        if v >= 1 { return String(format: "%.2f", v) }
+        if v >= 0.1 { return String(format: "%.3f", v) }
+        return String(format: "%.4f", v)
+    }
+
+    private func formatDilution(_ v: Double, unit: String) -> String {
+        if v >= 1 { return String(format: "%.1f", v) }
+        return String(format: "%.4f", v)
     }
 }

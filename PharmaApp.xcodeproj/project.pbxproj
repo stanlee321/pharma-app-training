@@ -22,6 +22,7 @@
 		779543D35F2E8814D42D9138 /* MockPKEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A757B5C13DD6AE7A165A8CC /* MockPKEngine.swift */; };
 		783B40E14E8897FD91DE751B /* drug_models.json in Resources */ = {isa = PBXBuildFile; fileRef = 5C7B89369A495CC2525609A8 /* drug_models.json */; };
 		7EB7CF7D68FB54945F924809 /* DrugModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C84938A2DC0520995C51F0B8 /* DrugModel.swift */; };
+		88745119A85C14D249FE69F4 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0D22F44119107EBDB94C68 /* DesignSystem.swift */; };
 		8B47A32E5C6A89120FB8594C /* DataTooltip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 457343F129623BADA7D31ED0 /* DataTooltip.swift */; };
 		8FD31F561D2C02D13F09C3E9 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC5A78E43C45D985473E9E1E /* RootView.swift */; };
 		952D512F957D6735A80B2B67 /* StepperRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB94F2655B44F989727A7EA /* StepperRow.swift */; };
@@ -52,6 +53,7 @@
 		AA23CFDFCDC45A75456B636E /* RustPKEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RustPKEngine.swift; sourceTree = "<group>"; };
 		B3F1F86FDBE1F23A4960DCD7 /* PKEngineProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PKEngineProtocol.swift; sourceTree = "<group>"; };
 		B6D1C52DB287F6A66F4D0AE4 /* PatientInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientInputView.swift; sourceTree = "<group>"; };
+		BC0D22F44119107EBDB94C68 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		C3C4FB6AE83BF5012AA0150F /* SimulationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationViewModel.swift; sourceTree = "<group>"; };
 		C84938A2DC0520995C51F0B8 /* DrugModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrugModel.swift; sourceTree = "<group>"; };
 		D115E2E4326BC8132B5F220D /* CompartmentCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompartmentCanvas.swift; sourceTree = "<group>"; };
@@ -170,6 +172,7 @@
 		ABBC892C37A38E19F1A3B246 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				BC0D22F44119107EBDB94C68 /* DesignSystem.swift */,
 				3CB94F2655B44F989727A7EA /* StepperRow.swift */,
 			);
 			path = Utilities;
@@ -285,6 +288,7 @@
 				3ACE2F23E24363B2B2D4CD3E /* CompartmentalView.swift in Sources */,
 				74CABD003508BC566ECBC6A2 /* CompartmentalViewModel.swift in Sources */,
 				8B47A32E5C6A89120FB8594C /* DataTooltip.swift in Sources */,
+				88745119A85C14D249FE69F4 /* DesignSystem.swift in Sources */,
 				7EB7CF7D68FB54945F924809 /* DrugModel.swift in Sources */,
 				BBD0A7DD519A2437762FDC7A /* DrugSelectionView.swift in Sources */,
 				F6640080B6351A995CDF8E98 /* EngineProvider.swift in Sources */,

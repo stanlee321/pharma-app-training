@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Custom Canvas chart with dual Y-axes, colored curves, and grid.
+/// Custom Canvas chart with dual Y-axes, colored curves, grid, and infusion area fill.
 struct ChartCanvas: View {
     let points: [CurvePoint]
     let timeRangeMinutes: Double
@@ -9,6 +9,7 @@ struct ChartCanvas: View {
     let concentrationUnit: String
     let cursorFraction: Double
     let compact: Bool
+    var targetConcentration: Double? = nil  // horizontal dashed line
 
     // Chart margins
     private var leftMargin: CGFloat { compact ? 30 : 45 }
@@ -27,20 +28,30 @@ struct ChartCanvas: View {
 
             drawGrid(context: &context, rect: chartRect)
             drawAxes(context: &context, rect: chartRect, canvasSize: size)
-            drawCurves(context: &context, rect: chartRect)
+
+            if !points.isEmpty {
+                drawInfusionArea(context: &context, rect: chartRect)
+                drawCurves(context: &context, rect: chartRect)
+                drawInlineLabels(context: &context, rect: chartRect)
+            }
+
+            if let tc = targetConcentration, tc > 0 {
+                drawTargetLine(context: &context, rect: chartRect, concentration: tc)
+            }
+
             drawCursor(context: &context, rect: chartRect)
         }
-        .background(Color.black)
+        .background(AppColors.darkBg)
     }
 
     // MARK: - Coordinate Mapping
 
-    private func xForTime(_ t: Double, in rect: CGRect) -> CGFloat {
+    func xForTime(_ t: Double, in rect: CGRect) -> CGFloat {
         let fraction = t / (timeRangeMinutes * 60)
         return rect.minX + CGFloat(fraction) * rect.width
     }
 
-    private func yForConcentration(_ c: Double, in rect: CGRect) -> CGFloat {
+    func yForConcentration(_ c: Double, in rect: CGRect) -> CGFloat {
         let fraction = c / maxConcentration
         return rect.maxY - CGFloat(fraction) * rect.height
     }
@@ -50,11 +61,9 @@ struct ChartCanvas: View {
         return rect.maxY - CGFloat(fraction) * rect.height
     }
 
-    // MARK: - Grid
+    // MARK: - Grid (improved contrast)
 
     private func drawGrid(context: inout GraphicsContext, rect: CGRect) {
-        let gridColor = Color.white.opacity(0.1)
-
         // Horizontal grid (concentration ticks)
         let ySteps = niceSteps(max: maxConcentration, count: compact ? 3 : 5)
         for val in ySteps {
@@ -62,27 +71,42 @@ struct ChartCanvas: View {
             var path = Path()
             path.move(to: CGPoint(x: rect.minX, y: y))
             path.addLine(to: CGPoint(x: rect.maxX, y: y))
-            context.stroke(path, with: .color(gridColor), lineWidth: 0.5)
+            context.stroke(path, with: .color(AppColors.gridLineMajor), lineWidth: 0.5)
         }
 
-        // Vertical grid (time ticks)
+        // Vertical grid (time ticks — major)
         let xSteps = niceSteps(max: timeRangeMinutes, count: compact ? 4 : 6)
         for val in xSteps {
             let x = xForTime(val * 60, in: rect)
             var path = Path()
             path.move(to: CGPoint(x: x, y: rect.minY))
             path.addLine(to: CGPoint(x: x, y: rect.maxY))
-            context.stroke(path, with: .color(gridColor), lineWidth: 0.5)
+            context.stroke(path, with: .color(AppColors.gridLineMajor), lineWidth: 0.5)
+        }
+
+        // Vertical grid (minor — halfway between major)
+        if !compact, let step = xSteps.first {
+            let halfStep = step / 2
+            var v = halfStep
+            while v < timeRangeMinutes {
+                if !xSteps.contains(v) {
+                    let x = xForTime(v * 60, in: rect)
+                    var path = Path()
+                    path.move(to: CGPoint(x: x, y: rect.minY))
+                    path.addLine(to: CGPoint(x: x, y: rect.maxY))
+                    context.stroke(path, with: .color(AppColors.gridLine), lineWidth: 0.5)
+                }
+                v += halfStep
+            }
         }
     }
 
     // MARK: - Axes Labels
 
     private func drawAxes(context: inout GraphicsContext, rect: CGRect, canvasSize: CGSize) {
-        let labelFont: Font = compact ? .system(size: 8) : .system(size: 10)
-        let labelColor = Color.white.opacity(0.6)
+        let labelFont: Font = compact ? .system(size: 8) : .system(size: 10, design: .monospaced)
+        let labelColor = AppColors.axisText
 
-        // Left Y-axis labels (concentration)
         let ySteps = niceSteps(max: maxConcentration, count: compact ? 3 : 5)
         for val in ySteps {
             let y = yForConcentration(val, in: rect)
@@ -90,17 +114,18 @@ struct ChartCanvas: View {
             context.draw(text, at: CGPoint(x: leftMargin - 4, y: y), anchor: .trailing)
         }
 
-        // Right Y-axis labels (infusion rate)
+        // Right Y-axis (infusion rate) — increased contrast
         if !compact {
             let rSteps = niceSteps(max: maxInfusionRate, count: 4)
             for val in rSteps {
                 let y = yForInfusionRate(val, in: rect)
-                let text = Text(formatAxisValue(val)).font(labelFont).foregroundColor(.orange.opacity(0.6))
+                let text = Text(formatAxisValue(val))
+                    .font(labelFont)
+                    .foregroundColor(AppColors.infusion.opacity(0.8))
                 context.draw(text, at: CGPoint(x: canvasSize.width - rightMargin + 4, y: y), anchor: .leading)
             }
         }
 
-        // X-axis labels (time in minutes)
         let xSteps = niceSteps(max: timeRangeMinutes, count: compact ? 4 : 6)
         for val in xSteps {
             let x = xForTime(val * 60, in: rect)
@@ -109,36 +134,56 @@ struct ChartCanvas: View {
         }
     }
 
+    // MARK: - Infusion Rate Filled Area
+
+    private func drawInfusionArea(context: inout GraphicsContext, rect: CGRect) {
+        guard !compact, points.count > 1 else { return }
+
+        var areaPath = Path()
+        let values = points.map { ($0.time, $0.infusionRate * 60) }
+
+        areaPath.move(to: CGPoint(x: xForTime(values[0].0, in: rect), y: rect.maxY))
+        for point in values {
+            let x = xForTime(point.0, in: rect)
+            let y = max(rect.minY, min(rect.maxY, yForInfusionRate(point.1, in: rect)))
+            areaPath.addLine(to: CGPoint(x: x, y: y))
+        }
+        areaPath.addLine(to: CGPoint(x: xForTime(values.last!.0, in: rect), y: rect.maxY))
+        areaPath.closeSubpath()
+
+        context.fill(areaPath, with: .color(AppColors.infusion.opacity(0.1)))
+
+        // Stroke on top
+        var linePath = Path()
+        for (i, point) in values.enumerated() {
+            let x = xForTime(point.0, in: rect)
+            let y = max(rect.minY, min(rect.maxY, yForInfusionRate(point.1, in: rect)))
+            if i == 0 { linePath.move(to: CGPoint(x: x, y: y)) }
+            else { linePath.addLine(to: CGPoint(x: x, y: y)) }
+        }
+        context.stroke(linePath, with: .color(AppColors.infusion), lineWidth: 1.5)
+    }
+
     // MARK: - Curves
 
     private func drawCurves(context: inout GraphicsContext, rect: CGRect) {
         guard points.count > 1 else { return }
 
-        // Plasma concentration — cyan
+        // Plasma — cyan
         drawCurvePath(
             context: &context, rect: rect,
             values: points.map { ($0.time, $0.plasmaConcentration) },
             mapY: { yForConcentration($0, in: rect) },
-            color: .cyan, lineWidth: compact ? 1.5 : 2
+            color: AppColors.plasma, lineWidth: compact ? 1.5 : 2.5
         )
 
-        // Effect-site concentration — green
+        // Effect — green
         drawCurvePath(
             context: &context, rect: rect,
             values: points.map { ($0.time, $0.effectConcentration) },
             mapY: { yForConcentration($0, in: rect) },
-            color: .green, lineWidth: compact ? 1 : 1.5
+            color: AppColors.effect, lineWidth: compact ? 1 : 1.5
         )
-
-        // Infusion rate — orange (right Y-axis)
-        if !compact {
-            drawCurvePath(
-                context: &context, rect: rect,
-                values: points.map { ($0.time, $0.infusionRate * 60) },  // mg/min → mg/hr for display
-                mapY: { yForInfusionRate($0, in: rect) },
-                color: .orange, lineWidth: 1
-            )
-        }
     }
 
     private func drawCurvePath(
@@ -150,15 +195,56 @@ struct ChartCanvas: View {
         var path = Path()
         for (i, point) in values.enumerated() {
             let x = xForTime(point.0, in: rect)
-            let y = mapY(point.1)
-            let clampedY = max(rect.minY, min(rect.maxY, y))
-            if i == 0 {
-                path.move(to: CGPoint(x: x, y: clampedY))
-            } else {
-                path.addLine(to: CGPoint(x: x, y: clampedY))
-            }
+            let y = max(rect.minY, min(rect.maxY, mapY(point.1)))
+            if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+            else { path.addLine(to: CGPoint(x: x, y: y)) }
         }
         context.stroke(path, with: .color(color), lineWidth: lineWidth)
+    }
+
+    // MARK: - Inline Curve Labels
+
+    private func drawInlineLabels(context: inout GraphicsContext, rect: CGRect) {
+        guard !compact, let last = points.last else { return }
+        let xEnd = rect.maxX + 4
+
+        // Cp label
+        let yCp = yForConcentration(last.plasmaConcentration, in: rect)
+        let cpText = Text("Cp").font(.system(size: 9, weight: .bold)).foregroundColor(AppColors.plasma)
+        context.draw(cpText, at: CGPoint(x: xEnd, y: max(rect.minY, min(rect.maxY, yCp))), anchor: .leading)
+
+        // Ce label
+        let yCe = yForConcentration(last.effectConcentration, in: rect)
+        let ceText = Text("Ce").font(.system(size: 9, weight: .bold)).foregroundColor(AppColors.effect)
+        let ceY = max(rect.minY, min(rect.maxY, yCe))
+        // Offset if too close to Cp
+        let offset: CGFloat = abs(yCp - yCe) < 14 ? 14 : 0
+        context.draw(ceText, at: CGPoint(x: xEnd, y: ceY + offset), anchor: .leading)
+    }
+
+    // MARK: - Target Line
+
+    private func drawTargetLine(context: inout GraphicsContext, rect: CGRect, concentration: Double) {
+        let y = yForConcentration(concentration, in: rect)
+        guard y >= rect.minY && y <= rect.maxY else { return }
+
+        // Dashed horizontal line
+        var path = Path()
+        let dashLen: CGFloat = 6
+        let gapLen: CGFloat = 4
+        var x = rect.minX
+        while x < rect.maxX {
+            path.move(to: CGPoint(x: x, y: y))
+            path.addLine(to: CGPoint(x: min(x + dashLen, rect.maxX), y: y))
+            x += dashLen + gapLen
+        }
+        context.stroke(path, with: .color(AppColors.targetDashed), lineWidth: 1)
+
+        // Value label on left
+        let labelText = Text(formatAxisValue(concentration))
+            .font(.system(size: 9, weight: .bold, design: .monospaced))
+            .foregroundColor(AppColors.target)
+        context.draw(labelText, at: CGPoint(x: rect.minX - 4, y: y), anchor: .trailing)
     }
 
     // MARK: - Cursor
@@ -168,7 +254,7 @@ struct ChartCanvas: View {
         var path = Path()
         path.move(to: CGPoint(x: x, y: rect.minY))
         path.addLine(to: CGPoint(x: x, y: rect.maxY))
-        context.stroke(path, with: .color(.blue), lineWidth: 1.5)
+        context.stroke(path, with: .color(AppColors.target), lineWidth: 1.5)
     }
 
     // MARK: - Helpers
@@ -186,10 +272,7 @@ struct ChartCanvas: View {
         let step = nice * magnitude
         var result: [Double] = []
         var v = step
-        while v <= max {
-            result.append(v)
-            v += step
-        }
+        while v <= max { result.append(v); v += step }
         return result
     }
 

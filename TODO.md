@@ -114,12 +114,61 @@
 - [ ] "IV assist" button functionality
 - [ ] Bidirectional sync: Scrubbing mini chart updates 3D, and vice versa
 
-## Phase 7: Polish & Integration
+## Phase 7: UI/UX Improvements (docs/uiux/)
+
+### P0 — Target Interaction
+- [x] Default initial target so chart isn't empty on first load
+- [x] Onboarding hint when no targets ("Tap chart to set target")
+- [x] Larger touch target with 44pt glow ring around node
+- [x] Value label pinned to node during drag
+- [x] Horizontal dashed target line across chart
+- [x] Haptic feedback on round-number snap during drag
+- [x] Haptic on Done confirm
+
+### P0 — Compartmental 3D
+- [ ] SceneKit SCNCylinder with glass material for V1/V2/V3
+- [ ] Fluid cylinder (inner, height-animated) per compartment
+- [ ] SCNParticleSystem along pipes
+- [ ] Lighting setup (ambient + directional)
+- [ ] Camera with optional user rotation
+
+### P1 — Chart Polish
+- [x] Infusion rate drawn as filled semi-transparent area (not thin line)
+- [x] Infusion rate stroke on top of area (1.5pt orange)
+- [x] Inline curve labels ("Cp", "Ce") at right edge of curves
+- [x] Minor grid lines between major intervals
+- [x] Grid contrast improved (0.12 minor, 0.2 major)
+- [x] Right Y-axis labels contrast increased (0.8 opacity)
+- [x] Floating tooltip follows cursor (flips side at 50%)
+
+### P1 — Navigation & Discovery
+- [x] Segmented control [Graph] [Compartments] in simulation view
+- [x] Compartmental view embedded (no separate navigation push needed)
+- [x] System-style back button (chevron.left + "Back")
+- [x] .preferredColorScheme(.dark) for simulation screen
+
+### P1 — Drug Selection
+- [x] Structured metadata cards with section headers
+- [x] Rounded card background per section (Description, Publication, Comment)
+- [x] SELECT 1 button as blue capsule (more prominent)
+
+### P2 — Patient Input
+- [x] Stepper buttons with border and 48pt touch target
+- [x] Monospaced bold digits for values
+- [x] Numeric content transition animation
+- [x] Haptic feedback on stepper taps
+
+### P2 — Design System
+- [x] DesignSystem.swift: AppColors, Font extensions, Haptics, Spacing
+- [x] Consistent color palette across chart, compartmental, and UI
+
+## Phase 8: Future Work
 - [ ] Rust engine integration: Implement RustPKEngine C-FFI calls
 - [ ] Flip EngineProvider.useMock to false
+- [ ] SceneKit 3D compartmental upgrade (see docs/uiux/02_Compartmental_3D.md)
 - [ ] Performance profiling: Verify <16ms TCI, <50ms simulate, 60fps animations
-- [ ] Dark/light theme consistency across all screens
 - [ ] Accessibility: VoiceOver labels for chart elements and steppers
 - [ ] Saved simulations: Persist to SwiftData (load/save from Screen 2)
+- [ ] Multiple targets: Support adding targets at different times ("+ Graph")
 - [ ] Edge cases: Validation errors, zero target, very long simulations
 - [ ] App icon and launch screen

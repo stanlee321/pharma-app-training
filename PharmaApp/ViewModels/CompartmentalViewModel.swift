@@ -9,6 +9,7 @@ final class CompartmentalViewModel {
     var showData: Bool = false
     var showSizes: Bool = false
     var showLabels: Bool = true
+    var use3D: Bool = false
 
     // MARK: - Timeline (synced with simulation)
     var cursorFraction: Double = 0
