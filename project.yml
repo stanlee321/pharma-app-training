@@ -1,0 +1,32 @@
+name: PharmaApp
+options:
+  bundleIdPrefix: com.pharma
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+targets:
+  PharmaApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: PharmaApp
+        excludes:
+          - "Resources/MockData"
+    resources:
+      - path: PharmaApp/Resources
+        includes:
+          - "*.json"
+          - "*.xcassets"
+          - "MockData/*.json"
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_CFBundleDisplayName: TivaTrainer
+        SWIFT_STRICT_CONCURRENCY: complete
+        PRODUCT_BUNDLE_IDENTIFIER: com.pharma.tivatrainer
+        CODE_SIGN_STYLE: Automatic

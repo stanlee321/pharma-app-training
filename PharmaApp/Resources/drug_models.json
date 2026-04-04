@@ -1,0 +1,94 @@
+[
+  {
+    "id": "propofol_marsh",
+    "drug": "Propofol",
+    "model": "Marsh",
+    "description": "Implemented in Diprifusor https://eurosiva.eu",
+    "publication": {
+      "title": "Br. J Anaesthesia 1991;67:41-48",
+      "url": "https://eurosiva.eu"
+    },
+    "comments": null,
+    "concentration_unit": "mcg/ml",
+    "target_effects": ["Plasma", "Effect-site"],
+    "manual_dosing_rules": null,
+    "preparation_recipe": "Propofol 1% (10 mg/ml)",
+    "default_dilution_mg_ml": 10.0,
+    "validation_rules": {
+      "min_weight": 30, "max_weight": 150,
+      "min_height": 100, "max_height": 220,
+      "min_age": 1, "max_age": 99,
+      "requires_height": false, "requires_gender": false
+    },
+    "rust_model_id": "marsh"
+  },
+  {
+    "id": "propofol_schnider",
+    "drug": "Propofol",
+    "model": "Schnider",
+    "description": "Age, weight, height, and LBM-adjusted model",
+    "publication": {
+      "title": "Anesthesiology 1998;88:1170-82",
+      "url": null
+    },
+    "comments": "Effect-site targeting recommended",
+    "concentration_unit": "mcg/ml",
+    "target_effects": ["Effect-site", "Plasma"],
+    "manual_dosing_rules": null,
+    "preparation_recipe": "Propofol 1% (10 mg/ml)",
+    "default_dilution_mg_ml": 10.0,
+    "validation_rules": {
+      "min_weight": 44, "max_weight": 123,
+      "min_height": 155, "max_height": 196,
+      "min_age": 18, "max_age": 88,
+      "requires_height": true, "requires_gender": true
+    },
+    "rust_model_id": "schnider"
+  },
+  {
+    "id": "remifentanil_minto",
+    "drug": "Remifentanil",
+    "model": "Minto",
+    "description": "Opioid PK model with age and LBM covariates",
+    "publication": {
+      "title": "Anesthesiology 1997;86:24-33",
+      "url": null
+    },
+    "comments": "Ultra-short acting opioid. Context-sensitive half-time ~3-4 min.",
+    "concentration_unit": "ng/ml",
+    "target_effects": ["Effect-site", "Plasma"],
+    "manual_dosing_rules": null,
+    "preparation_recipe": "Remifentanil 1mg + 50ml NaCl 0.9% (20 mcg/ml)",
+    "default_dilution_mg_ml": 0.02,
+    "validation_rules": {
+      "min_weight": 30, "max_weight": 150,
+      "min_height": 150, "max_height": 200,
+      "min_age": 18, "max_age": 90,
+      "requires_height": true, "requires_gender": true
+    },
+    "rust_model_id": "minto"
+  },
+  {
+    "id": "dexmedetomidine_hannivoort",
+    "drug": "Dexmedetomidine",
+    "model": "Hannivoort",
+    "description": "British Journal of Anaesthesia, 115(2): 200-10 (2017)",
+    "publication": {
+      "title": "Hannivoort et al. 2015",
+      "url": null
+    },
+    "comments": "FULL PHARMACODYNAMICS IMPLEMENTED\nsedation 0.2 to 2.0 ng/ml blood concentration\n(supra) additive interaction with other sedatives and opioids exist\nTarget effect: Heart rate(bradycardia)",
+    "concentration_unit": "ng/ml",
+    "target_effects": ["Effect-site", "Plasma"],
+    "manual_dosing_rules": "loading dose 1 mcg/kg over 10 minutes\nelderly patient: 0.5 mcg/kg over 10 minutes",
+    "preparation_recipe": "2 ml Dexmedetomidine + 45 ml NaCl 0.9%",
+    "default_dilution_mg_ml": 0.004,
+    "validation_rules": {
+      "min_weight": 45, "max_weight": 120,
+      "min_height": 100, "max_height": 220,
+      "min_age": 18, "max_age": 80,
+      "requires_height": false, "requires_gender": false
+    },
+    "rust_model_id": "hannivoort"
+  }
+]
