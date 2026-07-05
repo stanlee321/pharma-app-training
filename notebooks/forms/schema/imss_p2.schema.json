@@ -1,0 +1,825 @@
+{
+  "form_id": "imss_registro_anestesia",
+  "source": "scanned-reconstruction",
+  "page": {
+    "width": 612.0,
+    "height": 792.0
+  },
+  "fields": [
+    {
+      "id": "cama",
+      "type": "text",
+      "label": "Cama",
+      "unit": null,
+      "section": "header",
+      "bbox": [
+        340,
+        108,
+        420,
+        122
+      ]
+    },
+    {
+      "id": "agentes",
+      "type": "textarea",
+      "label": "Agentes",
+      "unit": null,
+      "section": "grid",
+      "bbox": [
+        99,
+        177.0,
+        590.0,
+        258.0
+      ]
+    },
+    {
+      "id": "tiempo_1a6_a",
+      "type": "text",
+      "label": "Tiempo 1-6 A",
+      "unit": null,
+      "section": "grid",
+      "bbox": [
+        117.0,
+        440.0,
+        353,
+        463.0
+      ]
+    },
+    {
+      "id": "tiempo_1a6_b",
+      "type": "text",
+      "label": "Tiempo 1-6 B",
+      "unit": null,
+      "section": "grid",
+      "bbox": [
+        353,
+        440.0,
+        590.0,
+        463.0
+      ]
+    },
+    {
+      "id": "diag_preop",
+      "type": "text",
+      "label": "PREOPERATORIO",
+      "unit": null,
+      "section": "diagnostico",
+      "bbox": [
+        99,
+        463,
+        327.0,
+        477
+      ]
+    },
+    {
+      "id": "diag_oper",
+      "type": "text",
+      "label": "OPERATORIO",
+      "unit": null,
+      "section": "diagnostico",
+      "bbox": [
+        99,
+        477,
+        327.0,
+        490
+      ]
+    },
+    {
+      "id": "oper_prop",
+      "type": "text",
+      "label": "PROPUESTA",
+      "unit": null,
+      "section": "diagnostico",
+      "bbox": [
+        99,
+        490,
+        327.0,
+        505
+      ]
+    },
+    {
+      "id": "oper_real",
+      "type": "text",
+      "label": "REALIZADA",
+      "unit": null,
+      "section": "diagnostico",
+      "bbox": [
+        99,
+        505,
+        327.0,
+        520
+      ]
+    },
+    {
+      "id": "med_A_nombre",
+      "type": "text",
+      "label": "Medicamento A",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        35,
+        535.0,
+        99,
+        548.5
+      ]
+    },
+    {
+      "id": "med_A_dosis",
+      "type": "text",
+      "label": "Dosis/Vía A",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        99,
+        535.0,
+        155,
+        548.5
+      ]
+    },
+    {
+      "id": "med_B_nombre",
+      "type": "text",
+      "label": "Medicamento B",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        35,
+        548.5,
+        99,
+        561.9
+      ]
+    },
+    {
+      "id": "med_B_dosis",
+      "type": "text",
+      "label": "Dosis/Vía B",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        99,
+        548.5,
+        155,
+        561.9
+      ]
+    },
+    {
+      "id": "med_C_nombre",
+      "type": "text",
+      "label": "Medicamento C",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        35,
+        561.9,
+        99,
+        575.4
+      ]
+    },
+    {
+      "id": "med_C_dosis",
+      "type": "text",
+      "label": "Dosis/Vía C",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        99,
+        561.9,
+        155,
+        575.4
+      ]
+    },
+    {
+      "id": "med_D_nombre",
+      "type": "text",
+      "label": "Medicamento D",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        35,
+        575.4,
+        99,
+        588.8
+      ]
+    },
+    {
+      "id": "med_D_dosis",
+      "type": "text",
+      "label": "Dosis/Vía D",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        99,
+        575.4,
+        155,
+        588.8
+      ]
+    },
+    {
+      "id": "med_E_nombre",
+      "type": "text",
+      "label": "Medicamento E",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        35,
+        588.8,
+        99,
+        602.3
+      ]
+    },
+    {
+      "id": "med_E_dosis",
+      "type": "text",
+      "label": "Dosis/Vía E",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        99,
+        588.8,
+        155,
+        602.3
+      ]
+    },
+    {
+      "id": "med_F_nombre",
+      "type": "text",
+      "label": "Medicamento F",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        35,
+        602.3,
+        99,
+        615.8
+      ]
+    },
+    {
+      "id": "med_F_dosis",
+      "type": "text",
+      "label": "Dosis/Vía F",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        99,
+        602.3,
+        155,
+        615.8
+      ]
+    },
+    {
+      "id": "med_G_nombre",
+      "type": "text",
+      "label": "Medicamento G",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        35,
+        615.8,
+        99,
+        629.2
+      ]
+    },
+    {
+      "id": "med_G_dosis",
+      "type": "text",
+      "label": "Dosis/Vía G",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        99,
+        615.8,
+        155,
+        629.2
+      ]
+    },
+    {
+      "id": "med_H_nombre",
+      "type": "text",
+      "label": "Medicamento H",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        35,
+        629.2,
+        99,
+        642.7
+      ]
+    },
+    {
+      "id": "med_H_dosis",
+      "type": "text",
+      "label": "Dosis/Vía H",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        99,
+        629.2,
+        155,
+        642.7
+      ]
+    },
+    {
+      "id": "med_I_nombre",
+      "type": "text",
+      "label": "Medicamento I",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        35,
+        642.7,
+        99,
+        656.2
+      ]
+    },
+    {
+      "id": "med_I_dosis",
+      "type": "text",
+      "label": "Dosis/Vía I",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        99,
+        642.7,
+        155,
+        656.2
+      ]
+    },
+    {
+      "id": "med_J_nombre",
+      "type": "text",
+      "label": "Medicamento J",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        35,
+        656.2,
+        99,
+        669.6
+      ]
+    },
+    {
+      "id": "med_J_dosis",
+      "type": "text",
+      "label": "Dosis/Vía J",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        99,
+        656.2,
+        155,
+        669.6
+      ]
+    },
+    {
+      "id": "med_K_nombre",
+      "type": "text",
+      "label": "Medicamento K",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        35,
+        669.6,
+        99,
+        683.1
+      ]
+    },
+    {
+      "id": "med_K_dosis",
+      "type": "text",
+      "label": "Dosis/Vía K",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        99,
+        669.6,
+        155,
+        683.1
+      ]
+    },
+    {
+      "id": "med_L_nombre",
+      "type": "text",
+      "label": "Medicamento L",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        35,
+        683.1,
+        99,
+        696.5
+      ]
+    },
+    {
+      "id": "med_L_dosis",
+      "type": "text",
+      "label": "Dosis/Vía L",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        99,
+        683.1,
+        155,
+        696.5
+      ]
+    },
+    {
+      "id": "med_M_nombre",
+      "type": "text",
+      "label": "Medicamento M",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        35,
+        696.5,
+        99,
+        710.0
+      ]
+    },
+    {
+      "id": "med_M_dosis",
+      "type": "text",
+      "label": "Dosis/Vía M",
+      "unit": null,
+      "section": "medicamentos",
+      "bbox": [
+        99,
+        696.5,
+        155,
+        710.0
+      ]
+    },
+    {
+      "id": "induccion",
+      "type": "composite",
+      "label": "Inducción",
+      "unit": null,
+      "section": "metodo",
+      "bbox": [
+        155,
+        535,
+        327.0,
+        710
+      ]
+    },
+    {
+      "id": "mascarilla",
+      "type": "composite",
+      "label": "Mascarilla",
+      "unit": null,
+      "section": "metodo",
+      "bbox": [
+        155,
+        535,
+        327.0,
+        710
+      ]
+    },
+    {
+      "id": "canula",
+      "type": "composite",
+      "label": "Cánula faríngea",
+      "unit": null,
+      "section": "metodo",
+      "bbox": [
+        155,
+        535,
+        327.0,
+        710
+      ]
+    },
+    {
+      "id": "tubo_et",
+      "type": "composite",
+      "label": "Tubo endotraqueal",
+      "unit": null,
+      "section": "metodo",
+      "bbox": [
+        155,
+        535,
+        327.0,
+        710
+      ]
+    },
+    {
+      "id": "globo",
+      "type": "composite",
+      "label": "Globo inflable",
+      "unit": null,
+      "section": "metodo",
+      "bbox": [
+        155,
+        535,
+        327.0,
+        710
+      ]
+    },
+    {
+      "id": "complic_metodo",
+      "type": "composite",
+      "label": "Complicaciones",
+      "unit": null,
+      "section": "metodo",
+      "bbox": [
+        155,
+        535,
+        327.0,
+        710
+      ]
+    },
+    {
+      "id": "sangre_soluciones",
+      "type": "composite",
+      "label": "Sangre y soluciones",
+      "unit": null,
+      "section": "metodo",
+      "bbox": [
+        155,
+        535,
+        327.0,
+        710
+      ]
+    },
+    {
+      "id": "duracion_anestesia",
+      "type": "text",
+      "label": "Duración de la anestesia",
+      "unit": null,
+      "section": "registro",
+      "bbox": [
+        327.0,
+        463,
+        590.0,
+        490
+      ]
+    },
+    {
+      "id": "observaciones",
+      "type": "textarea",
+      "label": "Observaciones",
+      "unit": null,
+      "section": "registro",
+      "bbox": [
+        327.0,
+        490,
+        590.0,
+        596
+      ]
+    },
+    {
+      "id": "rn_sexo",
+      "type": "text",
+      "label": "RN Sexo",
+      "unit": null,
+      "section": "obstetricos",
+      "bbox": [
+        430,
+        638,
+        590.0,
+        652
+      ]
+    },
+    {
+      "id": "rn_peso",
+      "type": "text",
+      "label": "RN Peso",
+      "unit": null,
+      "section": "obstetricos",
+      "bbox": [
+        430,
+        652,
+        590.0,
+        667
+      ]
+    },
+    {
+      "id": "rn_talla",
+      "type": "text",
+      "label": "RN Talla",
+      "unit": null,
+      "section": "obstetricos",
+      "bbox": [
+        430,
+        667,
+        590.0,
+        681
+      ]
+    },
+    {
+      "id": "anestesiologo",
+      "type": "text",
+      "label": "Anestesiólogo",
+      "unit": null,
+      "section": "firmas",
+      "bbox": [
+        20.0,
+        710,
+        200,
+        725
+      ]
+    },
+    {
+      "id": "clave",
+      "type": "text",
+      "label": "Clave",
+      "unit": null,
+      "section": "firmas",
+      "bbox": [
+        200,
+        710,
+        327.0,
+        725
+      ]
+    },
+    {
+      "id": "cirujano",
+      "type": "text",
+      "label": "Cirujano",
+      "unit": null,
+      "section": "firmas",
+      "bbox": [
+        327.0,
+        710,
+        590.0,
+        725
+      ]
+    },
+    {
+      "id": "foot_0",
+      "type": "text",
+      "label": "RIESGO ANESTESICO QUIRURGICO (R.A.Q.)",
+      "unit": null,
+      "section": "clasificacion",
+      "bbox": [
+        20,
+        725,
+        105,
+        776
+      ]
+    },
+    {
+      "id": "foot_1",
+      "type": "text",
+      "label": "MEDICACION PREANESTESICA",
+      "unit": null,
+      "section": "clasificacion",
+      "bbox": [
+        105,
+        725,
+        210,
+        776
+      ]
+    },
+    {
+      "id": "foot_2",
+      "type": "text",
+      "label": "ANESTESICOS",
+      "unit": null,
+      "section": "clasificacion",
+      "bbox": [
+        210,
+        725,
+        327,
+        776
+      ]
+    },
+    {
+      "id": "foot_3",
+      "type": "text",
+      "label": "TERAPIA",
+      "unit": null,
+      "section": "clasificacion",
+      "bbox": [
+        327,
+        725,
+        385,
+        776
+      ]
+    },
+    {
+      "id": "foot_4",
+      "type": "text",
+      "label": "COMPLICACIONES",
+      "unit": null,
+      "section": "clasificacion",
+      "bbox": [
+        385,
+        725,
+        470,
+        776
+      ]
+    },
+    {
+      "id": "foot_5",
+      "type": "text",
+      "label": "POSICION",
+      "unit": null,
+      "section": "clasificacion",
+      "bbox": [
+        470,
+        725,
+        520,
+        776
+      ]
+    },
+    {
+      "id": "foot_6",
+      "type": "text",
+      "label": "EDAD",
+      "unit": null,
+      "section": "clasificacion",
+      "bbox": [
+        520,
+        725,
+        555,
+        776
+      ]
+    },
+    {
+      "id": "foot_7",
+      "type": "text",
+      "label": "SEXO",
+      "unit": null,
+      "section": "clasificacion",
+      "bbox": [
+        555,
+        725,
+        590,
+        776
+      ]
+    },
+    {
+      "id": "vitals_grid",
+      "type": "timeseries_chart",
+      "bbox": [
+        117.0,
+        258.0,
+        590.0,
+        440.0
+      ],
+      "chart": {
+        "id": "vitals_grid",
+        "type": "timeseries_chart",
+        "bbox": [
+          117.0,
+          258.0,
+          590.0,
+          440.0
+        ],
+        "y_axis": {
+          "min": 20,
+          "max": 240,
+          "ticks": [
+            240,
+            220,
+            200,
+            180,
+            160,
+            140,
+            120,
+            100,
+            80,
+            60,
+            40,
+            20
+          ]
+        },
+        "x_axis": {
+          "blocks": [
+            117,
+            211.6,
+            306.2,
+            400.8,
+            495.4,
+            590
+          ],
+          "subcols": [
+            "15",
+            "30",
+            "45"
+          ]
+        },
+        "series": [
+          "TEMP.",
+          "T. A.",
+          "PULSO",
+          "R."
+        ],
+        "events": [
+          "LLEG. QUIR",
+          "1. ANEST.",
+          "1. OPER.",
+          "T. OPER.",
+          "T. ANEST.",
+          "P. REC.",
+          "F.C.F."
+        ],
+        "agentes_bbox": [
+          99,
+          177.0,
+          590.0,
+          258.0
+        ]
+      }
+    }
+  ]
+}

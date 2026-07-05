@@ -1,0 +1,1128 @@
+{
+  "form_id": "imss_valoracion_preanestesica",
+  "source": "scanned-reconstruction",
+  "page": {
+    "width": 612.0,
+    "height": 792.0
+  },
+  "fields": [
+    {
+      "id": "pre_edad",
+      "type": "text",
+      "label": "EDAD",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        20,
+        40,
+        47,
+        61
+      ]
+    },
+    {
+      "id": "pre_sexo",
+      "type": "text",
+      "label": "SEXO",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        47,
+        40,
+        76,
+        61
+      ]
+    },
+    {
+      "id": "pre_estatura",
+      "type": "text",
+      "label": "ESTATURA",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        76,
+        40,
+        132,
+        61
+      ]
+    },
+    {
+      "id": "pre_peso",
+      "type": "text",
+      "label": "PESO",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        132,
+        40,
+        162,
+        61
+      ]
+    },
+    {
+      "id": "pre_ta",
+      "type": "text",
+      "label": "TA",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        162,
+        40,
+        195,
+        61
+      ]
+    },
+    {
+      "id": "pre_p",
+      "type": "text",
+      "label": "P",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        195,
+        40,
+        227,
+        61
+      ]
+    },
+    {
+      "id": "pre_r",
+      "type": "text",
+      "label": "R",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        227,
+        40,
+        260,
+        61
+      ]
+    },
+    {
+      "id": "pre_t",
+      "type": "text",
+      "label": "T",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        260,
+        40,
+        293,
+        61
+      ]
+    },
+    {
+      "id": "pre_tegumentos",
+      "type": "text",
+      "label": "TEGUMENTOS",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        293,
+        40,
+        387,
+        61
+      ]
+    },
+    {
+      "id": "pre_hb",
+      "type": "text",
+      "label": "Hb",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        387,
+        40,
+        420,
+        61
+      ]
+    },
+    {
+      "id": "pre_hto",
+      "type": "text",
+      "label": "Hto",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        420,
+        40,
+        452,
+        61
+      ]
+    },
+    {
+      "id": "pre_rh",
+      "type": "text",
+      "label": "Rh",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        452,
+        40,
+        485,
+        61
+      ]
+    },
+    {
+      "id": "pre_grupo_sanguineo",
+      "type": "text",
+      "label": "GRUPO SANGUINEO",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        485,
+        40,
+        556,
+        61
+      ]
+    },
+    {
+      "id": "pre_t_prot",
+      "type": "text",
+      "label": "T. PROT.",
+      "unit": null,
+      "section": "datos",
+      "bbox": [
+        556,
+        40,
+        594,
+        61
+      ]
+    },
+    {
+      "id": "ant_antecedentes",
+      "type": "text",
+      "label": "ANTECEDENTES ANESTESICOS",
+      "unit": null,
+      "section": "antecedentes",
+      "bbox": [
+        20,
+        72,
+        162,
+        93
+      ]
+    },
+    {
+      "id": "ant_alergia",
+      "type": "text",
+      "label": "ALERGIA",
+      "unit": null,
+      "section": "antecedentes",
+      "bbox": [
+        162,
+        72,
+        227,
+        93
+      ]
+    },
+    {
+      "id": "ant_dentadura",
+      "type": "text",
+      "label": "DENTADURA",
+      "unit": null,
+      "section": "antecedentes",
+      "bbox": [
+        227,
+        72,
+        301,
+        93
+      ]
+    },
+    {
+      "id": "ant_cuello",
+      "type": "text",
+      "label": "CUELLO",
+      "unit": null,
+      "section": "antecedentes",
+      "bbox": [
+        301,
+        72,
+        361,
+        93
+      ]
+    },
+    {
+      "id": "ant_estado",
+      "type": "text",
+      "label": "ESTADO PSIQUICO",
+      "unit": null,
+      "section": "antecedentes",
+      "bbox": [
+        361,
+        72,
+        432,
+        93
+      ]
+    },
+    {
+      "id": "ant_otros",
+      "type": "text",
+      "label": "OTROS",
+      "unit": null,
+      "section": "antecedentes",
+      "bbox": [
+        432,
+        72,
+        594,
+        93
+      ]
+    },
+    {
+      "id": "aparato_respiratorio",
+      "type": "text",
+      "label": "APARATO RESPIRATORIO",
+      "unit": null,
+      "section": "exploracion",
+      "bbox": [
+        76,
+        93,
+        594.0,
+        113
+      ]
+    },
+    {
+      "id": "aparato_cardiovascular",
+      "type": "text",
+      "label": "APARATO CARDIO- VASCULAR",
+      "unit": null,
+      "section": "exploracion",
+      "bbox": [
+        76,
+        113,
+        594.0,
+        133
+      ]
+    },
+    {
+      "id": "orina_densidad",
+      "type": "text",
+      "label": "densidad",
+      "unit": null,
+      "section": "orina",
+      "bbox": [
+        76.0,
+        133,
+        150.0,
+        154
+      ]
+    },
+    {
+      "id": "orina_albumina",
+      "type": "text",
+      "label": "albumina",
+      "unit": null,
+      "section": "orina",
+      "bbox": [
+        150.0,
+        133,
+        224.0,
+        154
+      ]
+    },
+    {
+      "id": "orina_cilindros",
+      "type": "text",
+      "label": "cilindros",
+      "unit": null,
+      "section": "orina",
+      "bbox": [
+        224.0,
+        133,
+        298.0,
+        154
+      ]
+    },
+    {
+      "id": "orina_hematuria",
+      "type": "text",
+      "label": "hematuria",
+      "unit": null,
+      "section": "orina",
+      "bbox": [
+        298.0,
+        133,
+        372.0,
+        154
+      ]
+    },
+    {
+      "id": "orina_bilirrubina",
+      "type": "text",
+      "label": "bilirrubina",
+      "unit": null,
+      "section": "orina",
+      "bbox": [
+        372.0,
+        133,
+        446.0,
+        154
+      ]
+    },
+    {
+      "id": "orina_glucosa",
+      "type": "text",
+      "label": "glucosa",
+      "unit": null,
+      "section": "orina",
+      "bbox": [
+        446.0,
+        133,
+        520.0,
+        154
+      ]
+    },
+    {
+      "id": "orina_acetona",
+      "type": "text",
+      "label": "acetona",
+      "unit": null,
+      "section": "orina",
+      "bbox": [
+        520.0,
+        133,
+        594.0,
+        154
+      ]
+    },
+    {
+      "id": "quim_urea",
+      "type": "text",
+      "label": "UREA",
+      "unit": null,
+      "section": "quimica",
+      "bbox": [
+        76.0,
+        154,
+        119.2,
+        174
+      ]
+    },
+    {
+      "id": "quim_creatinina",
+      "type": "text",
+      "label": "CREATININA",
+      "unit": null,
+      "section": "quimica",
+      "bbox": [
+        119.2,
+        154,
+        162.3,
+        174
+      ]
+    },
+    {
+      "id": "quim_glucosa",
+      "type": "text",
+      "label": "GLUCOSA",
+      "unit": null,
+      "section": "quimica",
+      "bbox": [
+        162.3,
+        154,
+        205.5,
+        174
+      ]
+    },
+    {
+      "id": "quim_albumina",
+      "type": "text",
+      "label": "ALBUMINA",
+      "unit": null,
+      "section": "quimica",
+      "bbox": [
+        205.5,
+        154,
+        248.7,
+        174
+      ]
+    },
+    {
+      "id": "quim_globulina",
+      "type": "text",
+      "label": "GLOBULINA",
+      "unit": null,
+      "section": "quimica",
+      "bbox": [
+        248.7,
+        154,
+        291.8,
+        174
+      ]
+    },
+    {
+      "id": "quim_po2",
+      "type": "text",
+      "label": "PO2",
+      "unit": null,
+      "section": "quimica",
+      "bbox": [
+        291.8,
+        154,
+        335.0,
+        174
+      ]
+    },
+    {
+      "id": "quim_pco2",
+      "type": "text",
+      "label": "PCO2",
+      "unit": null,
+      "section": "quimica",
+      "bbox": [
+        335.0,
+        154,
+        378.2,
+        174
+      ]
+    },
+    {
+      "id": "quim_satpcthb",
+      "type": "text",
+      "label": "SAT % Hb",
+      "unit": null,
+      "section": "quimica",
+      "bbox": [
+        378.2,
+        154,
+        421.3,
+        174
+      ]
+    },
+    {
+      "id": "quim_ph",
+      "type": "text",
+      "label": "pH",
+      "unit": null,
+      "section": "quimica",
+      "bbox": [
+        421.3,
+        154,
+        464.5,
+        174
+      ]
+    },
+    {
+      "id": "quim_k",
+      "type": "text",
+      "label": "K",
+      "unit": null,
+      "section": "quimica",
+      "bbox": [
+        464.5,
+        154,
+        507.7,
+        174
+      ]
+    },
+    {
+      "id": "quim_cl",
+      "type": "text",
+      "label": "CL",
+      "unit": null,
+      "section": "quimica",
+      "bbox": [
+        507.7,
+        154,
+        550.8,
+        174
+      ]
+    },
+    {
+      "id": "quim_na",
+      "type": "text",
+      "label": "Na",
+      "unit": null,
+      "section": "quimica",
+      "bbox": [
+        550.8,
+        154,
+        594.0,
+        174
+      ]
+    },
+    {
+      "id": "medicamentos_previos",
+      "type": "text",
+      "label": "MEDICAMENTOS PREVIOS",
+      "unit": null,
+      "section": "antecedentes",
+      "bbox": [
+        76,
+        174,
+        594.0,
+        195
+      ]
+    },
+    {
+      "id": "analgesica_obstetrica",
+      "type": "text",
+      "label": "ANALGESICA OBSTETRICA",
+      "unit": null,
+      "section": "antecedentes",
+      "bbox": [
+        76,
+        195,
+        594.0,
+        215
+      ]
+    },
+    {
+      "id": "raq_1",
+      "type": "text",
+      "label": "r.a.q. 1",
+      "unit": null,
+      "section": "raq",
+      "bbox": [
+        76,
+        215,
+        180,
+        236
+      ]
+    },
+    {
+      "id": "raq_2",
+      "type": "text",
+      "label": "r.a.q. 2",
+      "unit": null,
+      "section": "raq",
+      "bbox": [
+        180,
+        215,
+        283,
+        236
+      ]
+    },
+    {
+      "id": "raq_3",
+      "type": "text",
+      "label": "r.a.q. 3",
+      "unit": null,
+      "section": "raq",
+      "bbox": [
+        283,
+        215,
+        387,
+        236
+      ]
+    },
+    {
+      "id": "raq_4",
+      "type": "text",
+      "label": "r.a.q. 4",
+      "unit": null,
+      "section": "raq",
+      "bbox": [
+        387,
+        215,
+        491,
+        236
+      ]
+    },
+    {
+      "id": "raq_5",
+      "type": "text",
+      "label": "r.a.q. 5",
+      "unit": null,
+      "section": "raq",
+      "bbox": [
+        491,
+        215,
+        594,
+        236
+      ]
+    },
+    {
+      "id": "complic_transanestesica",
+      "type": "textarea",
+      "label": "Complicaciones transanestésica",
+      "unit": null,
+      "section": "complicaciones",
+      "bbox": [
+        20.0,
+        250,
+        594.0,
+        339
+      ]
+    },
+    {
+      "id": "complic_postanestesicas",
+      "type": "textarea",
+      "label": "Complicaciones postanestésicas",
+      "unit": null,
+      "section": "complicaciones",
+      "bbox": [
+        20.0,
+        353,
+        594.0,
+        442
+      ]
+    },
+    {
+      "id": "aldrete_actividadm_c0",
+      "type": "score",
+      "label": "ACTIVIDAD MUSCULAR @ AL SALIR",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        277,
+        476,
+        336,
+        528
+      ]
+    },
+    {
+      "id": "aldrete_actividadm_c1",
+      "type": "score",
+      "label": "ACTIVIDAD MUSCULAR @ 0 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        336,
+        476,
+        387,
+        528
+      ]
+    },
+    {
+      "id": "aldrete_actividadm_c2",
+      "type": "score",
+      "label": "ACTIVIDAD MUSCULAR @ 20 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        387,
+        476,
+        438,
+        528
+      ]
+    },
+    {
+      "id": "aldrete_actividadm_c3",
+      "type": "score",
+      "label": "ACTIVIDAD MUSCULAR @ 60 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        438,
+        476,
+        489,
+        528
+      ]
+    },
+    {
+      "id": "aldrete_actividadm_c4",
+      "type": "score",
+      "label": "ACTIVIDAD MUSCULAR @ 90 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        489,
+        476,
+        540,
+        528
+      ]
+    },
+    {
+      "id": "aldrete_actividadm_c5",
+      "type": "score",
+      "label": "ACTIVIDAD MUSCULAR @ 120 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        540,
+        476,
+        591,
+        528
+      ]
+    },
+    {
+      "id": "aldrete_respiracio_c0",
+      "type": "score",
+      "label": "RESPIRA- CION @ AL SALIR",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        277,
+        528,
+        336,
+        582
+      ]
+    },
+    {
+      "id": "aldrete_respiracio_c1",
+      "type": "score",
+      "label": "RESPIRA- CION @ 0 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        336,
+        528,
+        387,
+        582
+      ]
+    },
+    {
+      "id": "aldrete_respiracio_c2",
+      "type": "score",
+      "label": "RESPIRA- CION @ 20 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        387,
+        528,
+        438,
+        582
+      ]
+    },
+    {
+      "id": "aldrete_respiracio_c3",
+      "type": "score",
+      "label": "RESPIRA- CION @ 60 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        438,
+        528,
+        489,
+        582
+      ]
+    },
+    {
+      "id": "aldrete_respiracio_c4",
+      "type": "score",
+      "label": "RESPIRA- CION @ 90 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        489,
+        528,
+        540,
+        582
+      ]
+    },
+    {
+      "id": "aldrete_respiracio_c5",
+      "type": "score",
+      "label": "RESPIRA- CION @ 120 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        540,
+        528,
+        591,
+        582
+      ]
+    },
+    {
+      "id": "aldrete_circulacio_c0",
+      "type": "score",
+      "label": "CIRCULA- CION @ AL SALIR",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        277,
+        582,
+        336,
+        636
+      ]
+    },
+    {
+      "id": "aldrete_circulacio_c1",
+      "type": "score",
+      "label": "CIRCULA- CION @ 0 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        336,
+        582,
+        387,
+        636
+      ]
+    },
+    {
+      "id": "aldrete_circulacio_c2",
+      "type": "score",
+      "label": "CIRCULA- CION @ 20 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        387,
+        582,
+        438,
+        636
+      ]
+    },
+    {
+      "id": "aldrete_circulacio_c3",
+      "type": "score",
+      "label": "CIRCULA- CION @ 60 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        438,
+        582,
+        489,
+        636
+      ]
+    },
+    {
+      "id": "aldrete_circulacio_c4",
+      "type": "score",
+      "label": "CIRCULA- CION @ 90 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        489,
+        582,
+        540,
+        636
+      ]
+    },
+    {
+      "id": "aldrete_circulacio_c5",
+      "type": "score",
+      "label": "CIRCULA- CION @ 120 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        540,
+        582,
+        591,
+        636
+      ]
+    },
+    {
+      "id": "aldrete_estadodeco_c0",
+      "type": "score",
+      "label": "ESTADO DE CONCIENCIA @ AL SALIR",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        277,
+        636,
+        336,
+        691
+      ]
+    },
+    {
+      "id": "aldrete_estadodeco_c1",
+      "type": "score",
+      "label": "ESTADO DE CONCIENCIA @ 0 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        336,
+        636,
+        387,
+        691
+      ]
+    },
+    {
+      "id": "aldrete_estadodeco_c2",
+      "type": "score",
+      "label": "ESTADO DE CONCIENCIA @ 20 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        387,
+        636,
+        438,
+        691
+      ]
+    },
+    {
+      "id": "aldrete_estadodeco_c3",
+      "type": "score",
+      "label": "ESTADO DE CONCIENCIA @ 60 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        438,
+        636,
+        489,
+        691
+      ]
+    },
+    {
+      "id": "aldrete_estadodeco_c4",
+      "type": "score",
+      "label": "ESTADO DE CONCIENCIA @ 90 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        489,
+        636,
+        540,
+        691
+      ]
+    },
+    {
+      "id": "aldrete_estadodeco_c5",
+      "type": "score",
+      "label": "ESTADO DE CONCIENCIA @ 120 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        540,
+        636,
+        591,
+        691
+      ]
+    },
+    {
+      "id": "aldrete_coloracion_c0",
+      "type": "score",
+      "label": "COLORA- CION @ AL SALIR",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        277,
+        691,
+        336,
+        745
+      ]
+    },
+    {
+      "id": "aldrete_coloracion_c1",
+      "type": "score",
+      "label": "COLORA- CION @ 0 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        336,
+        691,
+        387,
+        745
+      ]
+    },
+    {
+      "id": "aldrete_coloracion_c2",
+      "type": "score",
+      "label": "COLORA- CION @ 20 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        387,
+        691,
+        438,
+        745
+      ]
+    },
+    {
+      "id": "aldrete_coloracion_c3",
+      "type": "score",
+      "label": "COLORA- CION @ 60 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        438,
+        691,
+        489,
+        745
+      ]
+    },
+    {
+      "id": "aldrete_coloracion_c4",
+      "type": "score",
+      "label": "COLORA- CION @ 90 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        489,
+        691,
+        540,
+        745
+      ]
+    },
+    {
+      "id": "aldrete_coloracion_c5",
+      "type": "score",
+      "label": "COLORA- CION @ 120 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        540,
+        691,
+        591,
+        745
+      ]
+    },
+    {
+      "id": "aldrete_total_c0",
+      "type": "score",
+      "label": "TOTAL @ AL SALIR",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        277,
+        745,
+        336,
+        781
+      ]
+    },
+    {
+      "id": "aldrete_total_c1",
+      "type": "score",
+      "label": "TOTAL @ 0 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        336,
+        745,
+        387,
+        781
+      ]
+    },
+    {
+      "id": "aldrete_total_c2",
+      "type": "score",
+      "label": "TOTAL @ 20 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        387,
+        745,
+        438,
+        781
+      ]
+    },
+    {
+      "id": "aldrete_total_c3",
+      "type": "score",
+      "label": "TOTAL @ 60 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        438,
+        745,
+        489,
+        781
+      ]
+    },
+    {
+      "id": "aldrete_total_c4",
+      "type": "score",
+      "label": "TOTAL @ 90 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        489,
+        745,
+        540,
+        781
+      ]
+    },
+    {
+      "id": "aldrete_total_c5",
+      "type": "score",
+      "label": "TOTAL @ 120 min.",
+      "unit": null,
+      "section": "aldrete",
+      "bbox": [
+        540,
+        745,
+        591,
+        781
+      ]
+    }
+  ]
+}
