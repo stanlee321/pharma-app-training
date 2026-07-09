@@ -105,10 +105,5 @@ the overall layering: [[architecture]].
   `rotated_labels`, `extract_table`, `extract_chart`, `extract`), and `imss_gen.py`
   (`Page`, `build_page1/2`, `_build_aldrete`, `render_pdf`, `emit_schema`) all match the
   pages that describe them.
-- **Drift inside the sub-wiki:** its `cold-resume.md` and `strategy.md` Step 1 still call
-  the IMSS form "⏸ deferred (OCR track)", but `index.md`, the source page, and the
-  shipped `imss_gen.py` show it is **done** via vision-reconstruction. Trust the latter;
-  the resume line is stale. (Federation hub only — fix belongs in the sub-wiki, not
-  here.)
 - The app-side cross-link targets (`[[models]]`, `[[pk-engine-math]]`,
   `[[simulation-screen]]`, `[[architecture]]`) all resolve to pages in this wiki.

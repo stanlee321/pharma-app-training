@@ -40,6 +40,9 @@ Both simulate calls pass fixed run parameters: `timeRangeSeconds: 3600` (60 min)
 
 ## Navigation
 
+> For the full 5-screen inventory (routes, view-models, push/overlay/embedded
+> presentation, per-screen status, and an add-a-screen checklist) see [[screens]].
+
 `Route` in `PharmaApp/App/Route.swift` is a `Hashable enum` with four cases: `.drugSelection`, `.patientInput`, `.simulation`, `.compartmental`. `Hashable` is the requirement for pushing values onto a `NavigationPath`.
 
 `RootView` in `PharmaApp/App/RootView.swift` owns the stack:
