@@ -39,7 +39,7 @@ $PY forms/schema_extract.py "data/<file>.pdf" "<form_id>" "forms/schema/<slug>.s
 |---|---|---|---|
 | [[nota-postanestesica]] (2.pdf) | 96.7% (3.34/255) | 254 fields | ✅ done |
 | [[registro-transanestesico]] (2-1.pdf) | 99.0% (1.42/255) | 70 fields + 2 tables + 1 chart | ✅ done |
-| [[imss-registro-anestesia]] (Tula) | — | — | ⏸ deferred (scanned, OCR track) |
+| [[imss-registro-anestesia]] (Tula) | 2pp vector recreation | 144 fields (86 + 58) | ✅ done (scanned → vision-reconstructed) |
 
 ## The 3 things that will bite you
 

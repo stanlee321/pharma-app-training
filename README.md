@@ -40,7 +40,7 @@ SwiftUI (iOS 17+)  ──►  PKEngineProtocol  ──►  MockPKEngine (RK4 ODE
 - **MVVM** with `@Observable` and SwiftUI environment
 - **Protocol-based engine** — swap `MockPKEngine` ↔ `RustPKEngine` via single toggle
 - **Mock engine** implements a real RK4 solver with all 4 pharmacokinetic models
-- **Rust engine** spec ready for parallel development (see `docs/rust-engine-spec/`)
+- **Rust engine** spec ready for parallel development (see `docs/reference/rust-engine-spec/`)
 
 ## Project Structure
 
@@ -62,10 +62,14 @@ pharma-app/
 │       ├── drug_models.json    # Drug database
 │       └── MockData/           # Pre-computed simulation JSON snapshots
 ├── docs/
-│   ├── 00-07_*.md              # Functional requirements
-│   ├── technical/              # Architecture, screen guide, FFI integration
-│   ├── rust-engine-spec/       # Full spec for Rust backend (models, TCI, FFI contract)
-│   └── uiux/                   # UI/UX improvement plans
+│   ├── llmwiki.md              # LLM-wiki pattern — project guidelines
+│   ├── wiki/                   # LLM-owned project wiki (grounded in source code)
+│   └── reference/              # Raw design specs
+│       ├── functional/         # 00-07 functional requirements per screen
+│       ├── technical/          # Architecture, screen guide, FFI integration
+│       ├── rust-engine-spec/   # Full spec for Rust backend (models, TCI, FFI contract)
+│       └── uiux/               # UI/UX improvement plans
+├── notebooks/                  # Forms parsing & PDF regeneration (Python) + parsing-wiki
 ├── project.yml                 # XcodeGen project definition
 ├── generate_mock_data.swift    # Standalone script to regenerate mock JSON data
 └── TODO.md                     # Build progress tracker
@@ -110,7 +114,7 @@ xcodegen generate
 
 ## Rust Engine Integration (Future)
 
-The math engine is designed to be replaced by a Rust static library for production accuracy and performance. The full spec is in `docs/rust-engine-spec/`:
+The math engine is designed to be replaced by a Rust static library for production accuracy and performance. The full spec is in `docs/reference/rust-engine-spec/`:
 
 | Document | Contents |
 |----------|----------|

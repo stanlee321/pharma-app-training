@@ -40,7 +40,7 @@ len(p["chars"]), len(p["drawings"])   # ~0 chars ⇒ scanned
 | Type | Signal | Approach |
 |---|---|---|
 | **Vector** | extractable chars + drawings | **This pipeline.** 1:1 is achievable & mostly mechanical. |
-| **Scanned** | 1 image/page, 0 chars | OCR/vision reconstruction — separate track, deferred. See [[imss-registro-anestesia]]. |
+| **Scanned** | 1 image/page, 0 chars | Vision reconstruction (measured skeleton + declarative spec) — see [[vision-reconstruction]]. Done for [[imss-registro-anestesia]]. |
 
 Rule: **never rasterize a vector form to re-parse it.** We already hold the ground
 truth. Rasterize only what was *born* raster.

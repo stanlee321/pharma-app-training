@@ -24,7 +24,7 @@ xcodebuild -project PharmaApp.xcodeproj -scheme PharmaApp \
   -destination 'platform=iOS Simulator,name=iPhone 15' build
 ```
 
-There is **no test target and no lint config** in this repo — the "Validation Reference" (`docs/rust-engine-spec/04_Validation_Reference.md`) holds hand-calculated expected values but they are not wired into an XCTest suite. Do not claim tests pass; there are none to run.
+There is **no test target and no lint config** in this repo — the "Validation Reference" (`docs/reference/rust-engine-spec/04_Validation_Reference.md`) holds hand-calculated expected values but they are not wired into an XCTest suite. Do not claim tests pass; there are none to run.
 
 ### Regenerating mock simulation data
 
@@ -52,7 +52,7 @@ PKEngineProtocol
  └── RustPKEngine   (Engine/RustPKEngine.swift)  — production stub; every method is fatalError()
 ```
 
-`EngineProvider.useMock` (`Engine/EngineProvider.swift`) chooses between them. It is `true` and must stay true until the Rust C-FFI library exists — flipping it to `false` today crashes the app. The Rust replacement is fully specified in `docs/rust-engine-spec/` and `docs/technical/02_FFI_Integration_Guide.md`; `SimulationTypes.swift` deliberately mirrors the `#[repr(C)]` FFI contract so the Swift call sites don't change when the engine is swapped.
+`EngineProvider.useMock` (`Engine/EngineProvider.swift`) chooses between them. It is `true` and must stay true until the Rust C-FFI library exists — flipping it to `false` today crashes the app. The Rust replacement is fully specified in `docs/reference/rust-engine-spec/` and `docs/reference/technical/02_FFI_Integration_Guide.md`; `SimulationTypes.swift` deliberately mirrors the `#[repr(C)]` FFI contract so the Swift call sites don't change when the engine is swapped.
 
 `MockPKEngine` is **not fake data** — it integrates the 4-state ODE with RK4 and runs the BET (Bolus-Elimination-Transfer) TCI algorithm. Per-model patient parameters (V1/V2/V3, clearances, ke0) are computed from covariates in the `*Params(patient:)` methods.
 
@@ -84,8 +84,14 @@ Rate constants (k10, k12, …, ke0) are **per minute**, but time in the simulati
 
 ## Where things are documented
 
-- `docs/00–07_*.md` — original functional requirements per screen (Spanish/English mix).
-- `docs/technical/` — architecture, screen implementation guide, FFI integration guide, video UI analysis.
-- `docs/rust-engine-spec/` — complete spec for the future Rust engine: ODE system + all 4 models' parameter equations, TCI algorithm, the C-FFI contract, and validation reference values.
-- `docs/uiux/` — UI/UX improvement plans (mostly implemented; see `TODO.md` for status).
+The project follows the **LLM-Wiki pattern** (`docs/llmwiki.md`). Start with the
+LLM-owned, source-grounded **project wiki** at `docs/wiki/` (`index.md` → subsystem
+pages; `SCHEMA.md` is its config). Raw human-authored specs live under `docs/reference/`:
+
+- `docs/wiki/` — **project wiki** (grounded in source code): architecture + per-subsystem app pages + a `parsing.md` federation hub. This is the up-to-date map of what the code actually does.
+- `docs/reference/functional/` (`00–07_*.md`) — original functional requirements per screen (Spanish/English mix).
+- `docs/reference/technical/` — architecture, screen implementation guide, FFI integration guide, video UI analysis.
+- `docs/reference/rust-engine-spec/` — complete spec for the future Rust engine: ODE system + all 4 models' parameter equations, TCI algorithm, the C-FFI contract, and validation reference values.
+- `docs/reference/uiux/` — UI/UX improvement plans (mostly implemented; see `TODO.md` for status).
+- `notebooks/docs/parsing-wiki/` — the forms-parsing sub-wiki (PDF extraction + regeneration), federated from `docs/wiki/parsing.md`.
 - `TODO.md` — phase-by-phase build tracker; the unchecked items are the real remaining work (Rust integration, SwiftData persistence, VoiceOver accessibility, app icon).
