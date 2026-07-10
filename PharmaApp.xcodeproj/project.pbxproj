@@ -7,9 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0165FA915C3D0C745005F2D4 /* TechniqueScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEC0421757310ADF2753C0FF /* TechniqueScreen.swift */; };
+		0214375D36360FB08DCDB603 /* NewbornScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A8AC5E2FE2DF9517D58B4CA /* NewbornScreen.swift */; };
 		044B4530E6E19185029630FB /* MockDataGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B5C1E36FAFF00A71D1931AA /* MockDataGenerator.swift */; };
 		075B010AB70D7F0AE239ADB1 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B71EF26B1C77DAC4FD5E3356 /* SharedComponents.swift */; };
+		0A4C0B958F45F53C5CE3A94F /* ReviewExportScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A5F61FDC88CBF2BA894B647 /* ReviewExportScreen.swift */; };
 		0D9C3AB49FB1CC96D5A63A79 /* PatientInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6D1C52DB287F6A66F4D0AE4 /* PatientInputView.swift */; };
+		0E7EA399D1F89C952BD0DC37 /* RecoveryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8386B92D173252001EBA9214 /* RecoveryScreen.swift */; };
 		1C7870BDEB3BEAAB1B2969DF /* AcceleratingRepeatButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8755DE814124244477945895 /* AcceleratingRepeatButton.swift */; };
 		1E3D0C36ED96348697A69865 /* CompartmentCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = D115E2E4326BC8132B5F220D /* CompartmentCanvas.swift */; };
 		1F5E4CB53D95A2D86922EC36 /* RustPKEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23CFDFCDC45A75456B636E /* RustPKEngine.swift */; };
@@ -21,6 +25,8 @@
 		458074FE87422CA1FEA6A9C4 /* PharmaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0DB4D359AB5419BF4F03B4 /* PharmaApp.swift */; };
 		4673A3D6BB79E23FB2A36277 /* SimulationTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A59815D077527737E64A367B /* SimulationTypes.swift */; };
 		478FB984840D7B50563BE5EC /* PatientProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FEDD7730320B6F1F6B01019 /* PatientProfile.swift */; };
+		4B269CDED55CC443A338BB68 /* DrugLedgerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B4B009DBEDE0329BF6CD50 /* DrugLedgerScreen.swift */; };
+		4C8E1FA97A8C064107B95F9A /* MonitoringScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E80DB0AF096905D98982B30C /* MonitoringScreen.swift */; };
 		5B67081A279B0551817FDC61 /* ClinicalRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = D471C5B6B7EDD4FCE47CB9CA /* ClinicalRecord.swift */; };
 		62ECF85ECA1EC37ECF8FC4C6 /* Route.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF5F03BFF14FADEAA1D14CFB /* Route.swift */; };
 		6BA6D07BBCC748463D57C726 /* TechniqueZone.swift in Sources */ = {isa = PBXBuildFile; fileRef = D474465250D0FCE1747AF20C /* TechniqueZone.swift */; };
@@ -33,14 +39,15 @@
 		8B47A32E5C6A89120FB8594C /* DataTooltip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 457343F129623BADA7D31ED0 /* DataTooltip.swift */; };
 		8FD31F561D2C02D13F09C3E9 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC5A78E43C45D985473E9E1E /* RootView.swift */; };
 		952D512F957D6735A80B2B67 /* StepperRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB94F2655B44F989727A7EA /* StepperRow.swift */; };
-		A9EDA30F2121CA9ED2938365 /* ScreenStubs.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC33407B15D7084E9EC6B693 /* ScreenStubs.swift */; };
 		B03DBD911B365B7C280C1B9C /* ChartCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B1307BCBF35B318BDCFDF98 /* ChartCanvas.swift */; };
 		BB99EEC2391FDCC9F3A40BE5 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B3977B32DA76FE97B18626F /* AppState.swift */; };
 		BBD0A7DD519A2437762FDC7A /* DrugSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B9C64E41A8A650D4AE21D75 /* DrugSelectionView.swift */; };
+		CABA9AFB289754EB2FD8F42C /* PatientDataScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFE3F61F4932BBC870A68D92 /* PatientDataScreen.swift */; };
 		D57E00040117E7314ECF2EC7 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40CDD73A056235403BE47DF9 /* LoginView.swift */; };
 		DA72F91D8B311CC68D1DE2C4 /* EncounterListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352DADC99E05C219A32FA4EA /* EncounterListView.swift */; };
 		DB5C811EF20C7F8722CA37D1 /* CompartmentSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8D8B44BAC1C558A4235678 /* CompartmentSceneView.swift */; };
 		E3587EB595B88767C64F1DC4 /* PreanestheticView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09926A4C7CA1D75EB975FFFA /* PreanestheticView.swift */; };
+		E92D2E6EABC2293307E270FD /* FluidBalanceScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C2390714A886EC0ECA8F77 /* FluidBalanceScreen.swift */; };
 		EE766BB319C7E83BC0A22A7F /* SimulationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3C4FB6AE83BF5012AA0150F /* SimulationViewModel.swift */; };
 		F5885619EDE17BF22C86CD5E /* PKEngineProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3F1F86FDBE1F23A4960DCD7 /* PKEngineProtocol.swift */; };
 		F6640080B6351A995CDF8E98 /* EngineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10033497F8668C8CD69F11F1 /* EngineProvider.swift */; };
@@ -60,13 +67,18 @@
 		457343F129623BADA7D31ED0 /* DataTooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataTooltip.swift; sourceTree = "<group>"; };
 		4A3934F7D358E1304791579C /* Author.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Author.swift; sourceTree = "<group>"; };
 		4B5C1E36FAFF00A71D1931AA /* MockDataGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDataGenerator.swift; sourceTree = "<group>"; };
+		5A8AC5E2FE2DF9517D58B4CA /* NewbornScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewbornScreen.swift; sourceTree = "<group>"; };
 		5C7B89369A495CC2525609A8 /* drug_models.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = drug_models.json; sourceTree = "<group>"; };
+		6A5F61FDC88CBF2BA894B647 /* ReviewExportScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewExportScreen.swift; sourceTree = "<group>"; };
 		6A757B5C13DD6AE7A165A8CC /* MockPKEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockPKEngine.swift; sourceTree = "<group>"; };
 		7B25B9740DC26D5E19C56BFB /* CaseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaseStore.swift; sourceTree = "<group>"; };
 		7B3977B32DA76FE97B18626F /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		8386B92D173252001EBA9214 /* RecoveryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryScreen.swift; sourceTree = "<group>"; };
 		8755DE814124244477945895 /* AcceleratingRepeatButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceleratingRepeatButton.swift; sourceTree = "<group>"; };
 		8B9C64E41A8A650D4AE21D75 /* DrugSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrugSelectionView.swift; sourceTree = "<group>"; };
 		9FEDD7730320B6F1F6B01019 /* PatientProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientProfile.swift; sourceTree = "<group>"; };
+		A3C2390714A886EC0ECA8F77 /* FluidBalanceScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluidBalanceScreen.swift; sourceTree = "<group>"; };
+		A4B4B009DBEDE0329BF6CD50 /* DrugLedgerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrugLedgerScreen.swift; sourceTree = "<group>"; };
 		A59815D077527737E64A367B /* SimulationTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationTypes.swift; sourceTree = "<group>"; };
 		AA23CFDFCDC45A75456B636E /* RustPKEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RustPKEngine.swift; sourceTree = "<group>"; };
 		B3F1F86FDBE1F23A4960DCD7 /* PKEngineProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PKEngineProtocol.swift; sourceTree = "<group>"; };
@@ -76,16 +88,18 @@
 		C3C4FB6AE83BF5012AA0150F /* SimulationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationViewModel.swift; sourceTree = "<group>"; };
 		C84938A2DC0520995C51F0B8 /* DrugModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrugModel.swift; sourceTree = "<group>"; };
 		CC8D8B44BAC1C558A4235678 /* CompartmentSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompartmentSceneView.swift; sourceTree = "<group>"; };
+		CFE3F61F4932BBC870A68D92 /* PatientDataScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientDataScreen.swift; sourceTree = "<group>"; };
 		D115E2E4326BC8132B5F220D /* CompartmentCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompartmentCanvas.swift; sourceTree = "<group>"; };
 		D471C5B6B7EDD4FCE47CB9CA /* ClinicalRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClinicalRecord.swift; sourceTree = "<group>"; };
 		D474465250D0FCE1747AF20C /* TechniqueZone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechniqueZone.swift; sourceTree = "<group>"; };
 		E1A56E98B094DFEFF1852923 /* CompartmentalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompartmentalView.swift; sourceTree = "<group>"; };
 		E3E79E50C0719D732DC97ABA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E715774B134B2ED7CF12603E /* CompartmentalViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompartmentalViewModel.swift; sourceTree = "<group>"; };
+		E80DB0AF096905D98982B30C /* MonitoringScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitoringScreen.swift; sourceTree = "<group>"; };
 		EC5A78E43C45D985473E9E1E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		FA6576884E35A71DE65637FE /* EncounterHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncounterHubView.swift; sourceTree = "<group>"; };
 		FC0DB4D359AB5419BF4F03B4 /* PharmaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PharmaApp.swift; sourceTree = "<group>"; };
-		FC33407B15D7084E9EC6B693 /* ScreenStubs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenStubs.swift; sourceTree = "<group>"; };
+		FEC0421757310ADF2753C0FF /* TechniqueScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechniqueScreen.swift; sourceTree = "<group>"; };
 		FF5F03BFF14FADEAA1D14CFB /* Route.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Route.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -123,14 +137,21 @@
 			children = (
 				952476A73251E48831D9AE97 /* Compartmental */,
 				56393B83F6ED4B8FB999DDF9 /* Components */,
+				EA3241C37DA15A736F87A64C /* DrugLedger */,
 				EDC843455AA6DA220A535C04 /* DrugSelection */,
 				049F1E0DEC4CEFE03B21EE44 /* Encounter */,
+				A5B46EB60E7E3F9BB34FE32C /* Fluid */,
 				B13433F8BB24430D042F27DD /* LaunchModal */,
 				BAC642FA5A474C48BC128B00 /* Login */,
+				69996C55FD5C52C1E99E5DC5 /* Monitoring */,
+				7FD2C946E210DE7EA4D44F05 /* Newborn */,
+				215757A09F225ABCF0C31104 /* PatientData */,
 				1D419D98C756295BA7A97405 /* PatientInput */,
-				E271DB649E7DB59590FB9B03 /* Placeholders */,
 				82F51F39B6CA139C9EBBCA26 /* Preanesthetic */,
+				854FA6FA501C9E418956B960 /* Recovery */,
+				87F8BE693ED13B7CA7FC0326 /* Review */,
 				1A7518586AAAE8DEDFC75A20 /* Simulation */,
+				37EC69F75843EC3732FE6177 /* Technique */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -153,6 +174,14 @@
 			path = PatientInput;
 			sourceTree = "<group>";
 		};
+		215757A09F225ABCF0C31104 /* PatientData */ = {
+			isa = PBXGroup;
+			children = (
+				CFE3F61F4932BBC870A68D92 /* PatientDataScreen.swift */,
+			);
+			path = PatientData;
+			sourceTree = "<group>";
+		};
 		2B2E1CF7AEE0C28CE4C13907 /* PharmaApp */ = {
 			isa = PBXGroup;
 			children = (
@@ -166,6 +195,14 @@
 				1138F9F3DAF55E07F99AFD82 /* Views */,
 			);
 			path = PharmaApp;
+			sourceTree = "<group>";
+		};
+		37EC69F75843EC3732FE6177 /* Technique */ = {
+			isa = PBXGroup;
+			children = (
+				FEC0421757310ADF2753C0FF /* TechniqueScreen.swift */,
+			);
+			path = Technique;
 			sourceTree = "<group>";
 		};
 		56393B83F6ED4B8FB999DDF9 /* Components */ = {
@@ -194,12 +231,44 @@
 			path = Services;
 			sourceTree = "<group>";
 		};
+		69996C55FD5C52C1E99E5DC5 /* Monitoring */ = {
+			isa = PBXGroup;
+			children = (
+				E80DB0AF096905D98982B30C /* MonitoringScreen.swift */,
+			);
+			path = Monitoring;
+			sourceTree = "<group>";
+		};
+		7FD2C946E210DE7EA4D44F05 /* Newborn */ = {
+			isa = PBXGroup;
+			children = (
+				5A8AC5E2FE2DF9517D58B4CA /* NewbornScreen.swift */,
+			);
+			path = Newborn;
+			sourceTree = "<group>";
+		};
 		82F51F39B6CA139C9EBBCA26 /* Preanesthetic */ = {
 			isa = PBXGroup;
 			children = (
 				09926A4C7CA1D75EB975FFFA /* PreanestheticView.swift */,
 			);
 			path = Preanesthetic;
+			sourceTree = "<group>";
+		};
+		854FA6FA501C9E418956B960 /* Recovery */ = {
+			isa = PBXGroup;
+			children = (
+				8386B92D173252001EBA9214 /* RecoveryScreen.swift */,
+			);
+			path = Recovery;
+			sourceTree = "<group>";
+		};
+		87F8BE693ED13B7CA7FC0326 /* Review */ = {
+			isa = PBXGroup;
+			children = (
+				6A5F61FDC88CBF2BA894B647 /* ReviewExportScreen.swift */,
+			);
+			path = Review;
 			sourceTree = "<group>";
 		};
 		88CE6A89E1C3E4880E63F869 /* Engine */ = {
@@ -235,6 +304,14 @@
 				D474465250D0FCE1747AF20C /* TechniqueZone.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		A5B46EB60E7E3F9BB34FE32C /* Fluid */ = {
+			isa = PBXGroup;
+			children = (
+				A3C2390714A886EC0ECA8F77 /* FluidBalanceScreen.swift */,
+			);
+			path = Fluid;
 			sourceTree = "<group>";
 		};
 		ABBC892C37A38E19F1A3B246 /* Utilities */ = {
@@ -279,12 +356,12 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
-		E271DB649E7DB59590FB9B03 /* Placeholders */ = {
+		EA3241C37DA15A736F87A64C /* DrugLedger */ = {
 			isa = PBXGroup;
 			children = (
-				FC33407B15D7084E9EC6B693 /* ScreenStubs.swift */,
+				A4B4B009DBEDE0329BF6CD50 /* DrugLedgerScreen.swift */,
 			);
-			path = Placeholders;
+			path = DrugLedger;
 			sourceTree = "<group>";
 		};
 		EDC843455AA6DA220A535C04 /* DrugSelection */ = {
@@ -378,29 +455,36 @@
 				74CABD003508BC566ECBC6A2 /* CompartmentalViewModel.swift in Sources */,
 				8B47A32E5C6A89120FB8594C /* DataTooltip.swift in Sources */,
 				88745119A85C14D249FE69F4 /* DesignSystem.swift in Sources */,
+				4B269CDED55CC443A338BB68 /* DrugLedgerScreen.swift in Sources */,
 				7EB7CF7D68FB54945F924809 /* DrugModel.swift in Sources */,
 				BBD0A7DD519A2437762FDC7A /* DrugSelectionView.swift in Sources */,
 				3C4D3D7F6C80806D5EE35FE3 /* EncounterHubView.swift in Sources */,
 				DA72F91D8B311CC68D1DE2C4 /* EncounterListView.swift in Sources */,
 				F6640080B6351A995CDF8E98 /* EngineProvider.swift in Sources */,
+				E92D2E6EABC2293307E270FD /* FluidBalanceScreen.swift in Sources */,
 				F9A2266375DE223F7776A830 /* LaunchModalView.swift in Sources */,
 				D57E00040117E7314ECF2EC7 /* LoginView.swift in Sources */,
 				044B4530E6E19185029630FB /* MockDataGenerator.swift in Sources */,
 				779543D35F2E8814D42D9138 /* MockPKEngine.swift in Sources */,
+				4C8E1FA97A8C064107B95F9A /* MonitoringScreen.swift in Sources */,
+				0214375D36360FB08DCDB603 /* NewbornScreen.swift in Sources */,
 				F5885619EDE17BF22C86CD5E /* PKEngineProtocol.swift in Sources */,
+				CABA9AFB289754EB2FD8F42C /* PatientDataScreen.swift in Sources */,
 				0D9C3AB49FB1CC96D5A63A79 /* PatientInputView.swift in Sources */,
 				478FB984840D7B50563BE5EC /* PatientProfile.swift in Sources */,
 				458074FE87422CA1FEA6A9C4 /* PharmaApp.swift in Sources */,
 				E3587EB595B88767C64F1DC4 /* PreanestheticView.swift in Sources */,
+				0E7EA399D1F89C952BD0DC37 /* RecoveryScreen.swift in Sources */,
+				0A4C0B958F45F53C5CE3A94F /* ReviewExportScreen.swift in Sources */,
 				8FD31F561D2C02D13F09C3E9 /* RootView.swift in Sources */,
 				62ECF85ECA1EC37ECF8FC4C6 /* Route.swift in Sources */,
 				1F5E4CB53D95A2D86922EC36 /* RustPKEngine.swift in Sources */,
-				A9EDA30F2121CA9ED2938365 /* ScreenStubs.swift in Sources */,
 				075B010AB70D7F0AE239ADB1 /* SharedComponents.swift in Sources */,
 				4673A3D6BB79E23FB2A36277 /* SimulationTypes.swift in Sources */,
 				3ADA32398CBFF6CF71216FC1 /* SimulationView.swift in Sources */,
 				EE766BB319C7E83BC0A22A7F /* SimulationViewModel.swift in Sources */,
 				952D512F957D6735A80B2B67 /* StepperRow.swift in Sources */,
+				0165FA915C3D0C745005F2D4 /* TechniqueScreen.swift in Sources */,
 				6BA6D07BBCC748463D57C726 /* TechniqueZone.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
