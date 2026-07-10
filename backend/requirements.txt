@@ -1,0 +1,26 @@
+# TivaTrainer backend — FastAPI service behind the app's CaseStore port.
+# Install into the `tiva_backend` conda env (Python 3.11):
+#   conda activate tiva_backend && pip install -r backend/requirements.txt
+
+# --- web / API ---
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+
+# --- validation / settings (payload DTOs) ---
+pydantic>=2.7
+pydantic-settings>=2.3
+
+# --- persistence (SQLAlchemy 2.0 + Alembic; Postgres in prod, SQLite for local dev) ---
+SQLAlchemy>=2.0
+alembic>=1.13
+psycopg[binary]>=3.2
+
+# --- filled-PDF export adapter (wraps notebooks/forms renderers) ---
+reportlab>=4.0
+PyMuPDF>=1.24
+
+# --- dev / test ---
+httpx>=0.27
+pytest>=8.0
+pytest-asyncio>=0.23
