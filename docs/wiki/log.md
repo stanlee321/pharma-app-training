@@ -10,6 +10,21 @@ Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
 
+## [2026-07-10] query | readiness review → build decisions locked
+
+A "are we ready to build?" review of the plan surfaced gaps; closed them so development
+starts contradiction-free:
+- Added [[decisions]] (ADR-1..6): resolved the app-architecture fork (**native screens**,
+  not a schema-driven renderer), online-first persistence behind a `CaseStore` port,
+  `owner`-column auth (full auth later), synchronous export, and **client-side TCI** (the
+  app's engine, not the backend).
+- Added [[field-crosswalk]]: specified the field-id ↔ entity Rosetta stone the export +
+  validation need (the one integration artifact still to build; gates fill-pdf, not Phase 0).
+- Fixed the contradiction in [[rest-contract]] §0/§4 (was "app renders forms dynamically")
+  and marked its open questions resolved; updated [[forms-to-app]] risks.
+Verdict: **Phase 0 + the backend skeleton are ready now**; the crosswalk builds alongside
+the export layer.
+
 ## [2026-07-09] ingest | UX/UI design
 
 Synthesized the UX/UI design layer for the clinical-record app into a 2-page Plans set (both

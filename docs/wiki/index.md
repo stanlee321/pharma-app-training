@@ -53,6 +53,8 @@ Forward-looking proposals (not code) for the forms → app end-to-end build. Rea
 | [[rest-contract]] | FastAPI + Postgres backend: clean-architecture rings, `Case` aggregate + nested sub-resources, per-entity DTOs, and a server-side `fill-pdf` export endpoint. |
 | [[ux-ui]] | **Master UX/UI**: eight fast-safe entry principles, the accessibility strategy (closing the zero-a11y gap), the design-system + theming direction, and per-screen interaction flows + ASCII wireframes for the seven heavyweight screens. |
 | [[ux-components]] | The **shared data-entry component library**: interaction specs (states, gestures, bindings, a11y) for the seven widgets, and how each composes from `DesignSystem` tokens. |
+| [[decisions]] | **Build decisions (ADRs)** closing the readiness gaps: native screens (not a dynamic renderer), online-first persistence, auth, sync export, client-side TCI, and the crosswalk mandate. |
+| [[field-crosswalk]] | The **field-id ↔ entity crosswalk** spec — the Rosetta stone binding the ~471 schema ids to entity attributes/bboxes that the export + validation need. Specified, not yet built. |
 
 ## Reports
 

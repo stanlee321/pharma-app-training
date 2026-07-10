@@ -9,9 +9,14 @@ tags: [plan, backend, rest, fastapi]
 **Status: proposal.** This is a design, not an implementation. It promotes the Python
 forms pipeline in `notebooks/forms/**` from notebook scripts into a **FastAPI service**
 the SwiftUI app consumes over REST. The frontend owns only *payloads + REST calls*: it
-renders forms dynamically from server-served field metadata, binds entity DTOs to
-`Codable` structs, and asks the server to render filled PDFs. All PDF geometry, schema
-knowledge, and derivation math stay server-side.
+binds entity DTOs to `Codable` structs and asks the server to render filled PDFs. All PDF
+geometry, schema knowledge, and derivation math stay server-side.
+
+> **Note ([[decisions]] ADR-1):** the app uses **native hand-built screens**
+> ([[proposed-screens]]/[[ux-ui]]) — it does **not** render forms dynamically. The served
+> schema metadata below is a *server-side* concern (export + validation); a screen may fetch
+> a section's field *list* to avoid hand-coding hundreds of toggles, but the app is not a
+> generic form engine.
 
 Grounded in the parsed schema contract
 ([../../../notebooks/docs/parsing-wiki/schema-spec.md](../../../notebooks/docs/parsing-wiki/schema-spec.md)),
@@ -277,8 +282,12 @@ under its key (`patient`, `anesthetic_technique`, `drugs: []`, `newborns: []`, �
 
 ## 4. Schema JSON → served field-definition metadata
 
-`GET /forms/{form_id}/schema` is how the app renders forms **dynamically** and validates
-input without hard-coding any of the ~471 fields. `FileSchemaProvider` reads the emitted
+`GET /forms/{form_id}/schema` serves the field-definition metadata used **server-side** for
+validation and the export mapping, and optionally consumed by the app as a **field
+catalogue** for its dense repetitive sections (so it need not hard-code hundreds of toggles
+— [[decisions]] ADR-1). It is **not** a dynamic form-rendering feed; the app's screens are
+native ([[proposed-screens]]). The field id → entity binding this depends on is the
+[[field-crosswalk]]. `FileSchemaProvider` reads the emitted
 contract (`../../../notebooks/forms/schema/{nota2,nota21,imss_p1,imss_p2}.schema.json`),
 returns it largely verbatim per
 [../../../notebooks/docs/parsing-wiki/schema-spec.md](../../../notebooks/docs/parsing-wiki/schema-spec.md),
@@ -383,12 +392,16 @@ The app displays/prints the returned PDF; it never touched a bbox or the schema 
 5. `derive_service` (Aldrete totals, fluid balances, IMC/peso ideal/VSC, optional TCI
    recommended dose via the app's engine contract — [[engine]]).
 
-## Open questions
+## Open questions — resolved in [[decisions]]
 
-- Auth/tenancy (clinic, author) — out of scope here; add a `cases.owner` column early.
-- Async vs sync export (§2.4) — decide once render latency is measured.
-- Whether `recommended` TCI dosing is computed in-service or delegated to the Swift/Rust
-  engine over its own boundary ([[engine]], [[pk-engine-math]]).
+- Auth/tenancy → **ADR-3**: `cases.owner` from the first migration; full auth a later phase.
+- Async vs sync export (§2.4) → **ADR-4**: synchronous by default; async only if measured
+  latency warrants.
+- Where `recommended` TCI dosing is computed → **ADR-5**: client-side (the app's PK engine
+  [[pk-engine-math]]), not the backend; store only the given dose.
+
+The field id → entity binding this contract depends on is specified in [[field-crosswalk]]
+(build alongside the export layer, not a skeleton blocker).
 
 Related: [[architecture]] (whole system), [[parsing]] (the pipeline hub), [[screens]] /
 [[input-screens]] (the app surfaces that will consume these payloads),

@@ -23,6 +23,22 @@ Two things in one repo:
    shares a clinical domain model with the app (the parsed record is the same kind of
    data the app generates).
 
+## Where we are (2026-07-10)
+
+Planning for the **forms → app** build is complete and the architecture decisions are
+locked — [[forms-to-app|master plan]] + [[decisions]] (ADRs). Goal (data-first): a clinician
+enters the anaesthesia record **natively** in the app → persisted in a FastAPI/Postgres
+backend ([[rest-contract]]) → a filled PDF is a **subproduct** we render (no OCR). ~11 new
+[[proposed-screens]] with the [[ux-ui]] / [[ux-components]] design; full field map in
+[[field-inventory]].
+
+- **Next action → Phase 0:** fix the safety-critical Schnider V3 10× bug
+  (`MockPKEngine.swift:69`, `v3 = 23800 → 238000`) + stand up a PK regression test suite
+  ([[frontend-audit-2026-07-09]]). It's the roadmap's prerequisite (the engine is reused).
+- **Awaiting Stanley's OK:** [[decisions]] ADR-1 (native screens) and ADR-2 (online-first
+  persistence). The one integration artifact still to build is the [[field-crosswalk]]
+  (gates the fill-pdf export, not Phase 0).
+
 ## Where things live
 
 | What | Path |

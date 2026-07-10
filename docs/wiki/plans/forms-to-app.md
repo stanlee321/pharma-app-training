@@ -191,8 +191,11 @@ Phase 5 is the round-trip payoff and depends on everything upstream being persis
   designed (bboxes exist, DTOs specified) but unwritten; they dominate the effort.
 - **Engine correctness gates the drug ledger** — do not surface TCI recommendations in N6
   until Phase 0 lands the Schnider V3 fix + tests ([[frontend-audit-2026-07-09]] finding 1).
-- **Async vs sync export**, **auth/tenancy**, and **where TCI dosing is computed**
-  (in-service vs the Swift/Rust engine) are open in [[rest-contract]] §6.
+- **Architectural decisions now locked** in [[decisions]] (ADR-1..6): native screens (not a
+  dynamic renderer), online-first persistence behind a `CaseStore` port, `owner`-column
+  auth, synchronous export, and client-side TCI. No fork remains open.
+- **One integration artifact still to build**: the field-id ↔ entity [[field-crosswalk]] —
+  it gates the fill-pdf export (Phase 5), not Phase 0 or the backend skeleton.
 - **Reclassify-in-UI, not in schema** — the ~6 date/time, ~4 signature, and IMSS numeric
   lab fields are typed `text`; override in the `ui_control` layer only, keeping the schema
   as the fidelity source of truth ([[field-inventory]] §1–§2).
