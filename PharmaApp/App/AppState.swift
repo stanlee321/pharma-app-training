@@ -36,6 +36,24 @@ final class AppState {
     var isPlaying: Bool = false
     var playbackSpeed: Double = 1.0
 
+    // MARK: - Navigation & Auth (clinical spine)
+
+    /// Main navigation path — moved here from RootView so login → list → hub can reset it.
+    var navigationPath = NavigationPath()
+
+    /// Signed-in author (mock; ADR-3). `nil` ⇒ show login.
+    var author: Author?
+    var isAuthenticated: Bool { author != nil }
+
+    func signIn(name: String, role: String) {
+        author = Author(name: name, role: role)
+    }
+
+    func signOut() {
+        author = nil
+        navigationPath = NavigationPath()
+    }
+
     // MARK: - Engine
 
     let engine: any PKEngineProtocol = EngineProvider.shared

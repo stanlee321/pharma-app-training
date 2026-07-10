@@ -58,3 +58,30 @@ enum Spacing {
     static let item: CGFloat = 12
     static let tight: CGFloat = 4
 }
+
+// MARK: - Semantic data-entry tokens (added for the clinical screens)
+
+extension AppColors {
+    /// Selected-state tint for chips/segments (reuses the existing target blue).
+    static let selectionTint = target
+    /// Invalid / out-of-range state (reuses the existing red).
+    static let invalidTint = v1Fluid
+    /// Neutral input/cell fill; adapts to light/dark.
+    static let fieldFill = Color(.secondarySystemBackground)
+    /// Hairline control chrome.
+    static let controlStroke = Color.white.opacity(0.12)
+    /// Background for derived / read-only rows (grids).
+    static let surfaceDerived = Color.white.opacity(0.06)
+}
+
+extension Font {
+    /// Monospaced value font for grid/table cells.
+    static let cellValue = Font.system(.callout, design: .monospaced)
+}
+
+extension Spacing {
+    /// HIG minimum hit target.
+    static let tapTarget: CGFloat = 44
+    /// Grid cell inset.
+    static let cell: CGFloat = 8
+}

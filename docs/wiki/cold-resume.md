@@ -37,9 +37,16 @@ order). These are now the **canonical, mandatory** screens (+ a [[login|mock log
 ADR-3); the original 5 screens are recyclable building blocks. **2 near-ready ([[login]], N3),
 12 blocked on the `CaseStore` persistence port (ADR-2)**.
 
-- **Next action → Phase 0:** fix the safety-critical Schnider V3 10× bug
-  (`MockPKEngine.swift:69`, `v3 = 23800 → 238000`) + stand up a PK regression test suite
-  ([[frontend-audit-2026-07-09]]). It's the roadmap's prerequisite (the engine is reused).
+- **Next action → Phase B:** fill the 8 stub clinical screens (Patient, Technique ×3 zones,
+  Monitoring, Drug Ledger, Fluid, Aldrete, Newborn, Review/Export) via the workflow+audit loop. The
+  **Phase A foundation is built and compiles + links** — models, `MockCaseStore` (in-memory, no
+  backend), full `Route`, shared components, and the Login → List → Hub → N3 pilot
+  ([[foundation-grounding-2026-07-10]]). Build gate: `xcodebuild` against an iPhone sim; the only
+  remaining failure is an `actool`/sim-runtime environment gap (SDK 26.6 vs installed runtime 26.2),
+  not code.
+- **Phase 0 (still pending):** fix the safety-critical Schnider V3 10× bug (`MockPKEngine.swift:69`,
+  `v3 = 23800 → 238000`) + a PK regression suite ([[frontend-audit-2026-07-09]]) — required before
+  the TCI recommendation chips (Drug Ledger / Technique) surface a correct number.
 - **Awaiting Stanley's OK:** [[decisions]] ADR-1 (native screens) and ADR-2 (online-first
   persistence). The one integration artifact still to build is the [[field-crosswalk]]
   (gates the fill-pdf export, not Phase 0).

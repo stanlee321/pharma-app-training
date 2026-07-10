@@ -10,6 +10,30 @@ Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
 
+## [2026-07-10] build | Phase A foundation (compiles + links)
+
+Authored the Phase A foundation directly (one tightly-coupled compile-critical unit — not fanned
+out), grounded in [[foundation-grounding-2026-07-10]]. 17 files new/edited:
+- **Models** — `Author`, `TechniqueZone`, `ClinicalRecord` (9 entity DTOs + `AnesthesiaCase` root,
+  `FieldValue`/`Quantity`/`RecommendedDose`): camelCase, Codable/Sendable, embed `PatientProfile`.
+- **Services** — `CaseStore` port + `MockCaseStore` (in-memory, seeded) → the app runs with **no
+  backend** (ADR-2).
+- **Nav** — full `Route` enum (all 14 cases, `TechniqueZone` associated) + `RootView` re-rooted
+  (mock-login gate → `EncounterListView`; `navigationPath` moved into `AppState`); Phase-B stub views
+  so every route compiles.
+- **DesignSystem** — added the missing semantic tokens (`selectionTint`/`invalidTint`/`fieldFill`/
+  `controlStroke`/`surfaceDerived`, `Font.cellValue`, `Spacing.tapTarget`/`cell`).
+- **Components** — `AcceleratingRepeatButton` (extracted from `StepperRow`; now haptic on every accel
+  tick, ≥44pt), `SectionHeader`, `CardStyle`, `LabeledTextRow`, `CheckboxGroupRow`.
+- **Screens** — `LoginView`, `EncounterListView` (N1), `EncounterHubView` (N2), `PreanestheticView`
+  (N3 pilot, real + wired to MockCaseStore); the other 8 are stubs for Phase B.
+
+**Gate: `xcodebuild` → 0 Swift errors; Swift compiled + `Ld` linked** (every symbol resolved across
+all files). The only failure is `actool`: this machine's newest simulator runtime is 26.2 but the
+Xcode 26.6 SDK (23F81a) demands a 26.6 runtime — a pure environment gap (install the matching sim
+runtime for a runnable `.app`), not a code issue. Phase 0 (Schnider V3 10× @ `MockPKEngine.swift:69`)
+still pending before the TCI chips surface a correct number.
+
 ## [2026-07-10] build | foundation grounding (code-truth pass)
 
 Ran a 6-agent **read-only** workflow to verify the plan-derived screen specs against the real
