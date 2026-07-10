@@ -12,6 +12,11 @@ endpoints it calls. It complements [[proposed-screens]] (the screen set), [[rest
 component list, endpoint check, CaseStore surface, prerequisite layers and build order,
 see the rollup: [[screen-build-rollup]].
 
+**Status (2026-07-10): all 14 screens are BUILT (Phase A + B) and the frontend compiles + links**
+against the in-memory `MockCaseStore` (commits `9945a93`, `6ef5b11`). The readiness column below
+reflects the *original* plan-derived analysis; the CaseStore blocker is now resolved (mock), so
+remaining work is backend / Phase-0 / fill-pdf, not the screens themselves.
+
 Rows are ordered by the **build sequence** from [[screen-build-rollup]] §5 (dependency-safe).
 
 | # | Screen | Entities | # endpoints | Readiness |

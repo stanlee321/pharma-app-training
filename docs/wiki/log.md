@@ -10,6 +10,23 @@ Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
 
+## [2026-07-10] build | Phase B — all 8 clinical screens (frontend compiles e2e)
+
+An 8-agent workflow filled the stub screens with real SwiftUI wired to `MockCaseStore`, then an audit
+pass (remove stubs → `xcodegen` → `xcodebuild`) confirmed the **whole frontend compiles + links**
+(BUILD SUCCEEDED, 0 errors, `Ld`; the asset catalog was set aside to bypass the sim-runtime/`actool`
+env gap, then restored). Screens built: [[patient-data]], [[technique-general|Technique ×3 zones]],
+[[transanesthetic-monitoring]], [[drug-ledger]], [[fluid-balance]], [[recovery-aldrete]],
+[[newborn-record]], [[review-export]] — plus the Phase A [[login]] / N1 / N2 / N3.
+
+All 14 screens are navigable Login → Encounter List → Hub → each section, editing the in-memory case.
+Known follow-ups (all previously planned; none block the build): the schema field-catalogue bridge
+(Technique/Recovery/Fluid use hand-chosen keys, not canonical schema ids — [[field-crosswalk]]);
+server `derive_service` (balances / Aldrete totals are client-side display-only); the real fill-pdf
+export (Review ships an MVP summary PDF via `UIGraphicsPDFRenderer`, not the form fill — needs the
+crosswalk); and Phase 0 (Schnider V3 10×) before the Drug/Technique TCI chips show a correct
+maintenance number. Commits `9945a93` (A), `6ef5b11` (B).
+
 ## [2026-07-10] build | Phase A foundation (compiles + links)
 
 Authored the Phase A foundation directly (one tightly-coupled compile-critical unit — not fanned

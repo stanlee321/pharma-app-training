@@ -37,13 +37,14 @@ order). These are now the **canonical, mandatory** screens (+ a [[login|mock log
 ADR-3); the original 5 screens are recyclable building blocks. **2 near-ready ([[login]], N3),
 12 blocked on the `CaseStore` persistence port (ADR-2)**.
 
-- **Next action → Phase B:** fill the 8 stub clinical screens (Patient, Technique ×3 zones,
-  Monitoring, Drug Ledger, Fluid, Aldrete, Newborn, Review/Export) via the workflow+audit loop. The
-  **Phase A foundation is built and compiles + links** — models, `MockCaseStore` (in-memory, no
-  backend), full `Route`, shared components, and the Login → List → Hub → N3 pilot
-  ([[foundation-grounding-2026-07-10]]). Build gate: `xcodebuild` against an iPhone sim; the only
-  remaining failure is an `actool`/sim-runtime environment gap (SDK 26.6 vs installed runtime 26.2),
-  not code.
+- **Frontend is built end-to-end (Phase A + B):** all 14 screens compile + link against the
+  in-memory `MockCaseStore` — Login → Encounter List → Hub → every clinical section, editing a case.
+  Build gate: `xcodebuild` **BUILD SUCCEEDED** (asset catalog set aside to bypass the `actool`/
+  sim-runtime env gap — SDK 26.6 vs installed 26.2; install the matching sim runtime for a runnable
+  `.app`). Commits `9945a93` (foundation), `6ef5b11` (screens).
+- **Next actions:** (1) the FastAPI/Postgres backend behind the `CaseStore` port ([[rest-contract]]);
+  (2) the schema field-catalogue bridge + [[field-crosswalk]] (screens use hand-chosen field keys
+  today); (3) the real fill-pdf export (Review ships an MVP summary PDF only).
 - **Phase 0 (still pending):** fix the safety-critical Schnider V3 10× bug (`MockPKEngine.swift:69`,
   `v3 = 23800 → 238000`) + a PK regression suite ([[frontend-audit-2026-07-09]]) — required before
   the TCI recommendation chips (Drug Ledger / Technique) surface a correct number.
