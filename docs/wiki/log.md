@@ -1,6 +1,6 @@
 ---
 type: log
-updated: 2026-07-09
+updated: 2026-07-10
 tags: [log]
 ---
 
@@ -9,6 +9,57 @@ tags: [log]
 Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
+
+## [2026-07-10] build | foundation grounding (code-truth pass)
+
+Ran a 6-agent **read-only** workflow to verify the plan-derived screen specs against the real
+Swift source before Phase A. Report: [[foundation-grounding-2026-07-10]]. **1 blocker** (no
+case/encounter/author/`CaseStore` domain exists — build from scratch) + **14 corrections**, the
+load-bearing ones: re-rooting is replacing a hardcoded `DrugSelectionView` view literal at
+`RootView.swift:12` (the `.drugSelection` case is dead), not inserting a Route; `navigationPath`
+lives as `@State` in `RootView`, not `AppState`; `PatientProfile` has `gender` (enum), not `sex`;
+the TCI chip calls the public `computeTCI` in **display units** — `computeBET` is private and
+off-protocol (drop it); zero spec semantic tokens exist (all must-add); reuse mismatches
+(`DrugSelectionView` has no `List`, `ChartCanvas` is hardcoded to 3 PK series, `+ Target` is a
+drag-place not a table add-row); `forms/schema/*.json` sit outside the app tree and aren't bundled.
+Build gate confirmed runnable (xcodegen + xcodebuild, iPhone 16 sim). Re-confirmed the two live
+engine bugs (Schnider V3 10× @ `MockPKEngine.swift:69`, V2 age term @ :68) as Phase 0.
+
+## [2026-07-10] build | screens promoted to canonical + mock login
+
+Decision: the [[proposed-screens]] set is now the **canonical, mandatory** app spine (was a
+proposal); the original 5-screen pharmacology app ([[screens]]) becomes **recyclable building
+blocks** (steppers, `ChartCanvas`, `DrugModel`/TCI) that serve the new designs, not the spine.
+Added a **mock login gate** ([[login]], ADR-3) as the launch root — no real auth (deferred), sets
+a session author for `cases.owner`. Login is **near-ready** (no `CaseStore` dep), joining N3
+([[preanesthetic-assessment]]) as the two pilot-ready screens. Updated [[screens-index]] (14
+screens) + the [[proposed-screens]] status banner + [[screen-build-rollup]] tally.
+
+## [2026-07-10] build | per-screen frontend build specs
+
+Ran a 14-agent workflow (13 screen cards + a synthesis pass, **plan-derived**) to bind the
+planning corpus **per screen** — the connective tissue that was missing (the plans each covered
+one axis: screens / fields / endpoints / widgets, but nothing tied them together per screen). New
+folder `plans/screens/`:
+
+- 13 per-screen **build contracts** (indexed at [[screens-index]]) — each card ties a screen to
+  its entities, field load, components (reuse vs build-new), the exact REST endpoints + a concrete
+  JSON payload, the **gap list** (Route / View / VM / component / `CaseStore` items with proposed
+  file paths), dependencies, and a readiness verdict. Heavyweights grounded: [[technique-general]]
+  carries the `values_blob` binding + client-side TCI chip (ADR-5); [[review-export]] the
+  fill-pdf / [[field-crosswalk]] gate.
+- [[screen-build-rollup]] — the aggregate that answers "what's missing to build": component
+  build-list ranked by reach (`CheckboxGroupRow` serves 10 screens), the endpoint-coverage check
+  (**0 endpoints missing** from [[rest-contract]]; 3 contract endpoints have no caller), the
+  `CaseStore` protocol surface (5 lifecycle + 6 singleton get/put + 2 collection CRUD + export),
+  the prerequisite layers, and a dependency-ordered build sequence.
+
+Verdict: **1 near-ready ([[preanesthetic-assessment]]), 12 blocked** — the dominant blocker is the
+persistence/`CaseStore` port (ADR-2), which alone gates 12 of 13. Two consolidations the synthesis
+caught: the "labeled text row" was proposed under 5 names → unify to one variant widget; `CaseStore`
+was proposed in 4 folders → canonical `PharmaApp/Services/CaseStore.swift`. Grounding is
+plan-derived (not re-verified vs Swift source) per the run's scope. Mechanical link-lint clean
+(15 new pages, all wikilinks resolve).
 
 ## [2026-07-10] query | readiness review → build decisions locked
 

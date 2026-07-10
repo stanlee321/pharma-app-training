@@ -1,6 +1,6 @@
 ---
 type: index
-updated: 2026-07-09
+updated: 2026-07-10
 tags: [index, catalog]
 ---
 
@@ -56,6 +56,16 @@ Forward-looking proposals (not code) for the forms → app end-to-end build. Rea
 | [[decisions]] | **Build decisions (ADRs)** closing the readiness gaps: native screens (not a dynamic renderer), online-first persistence, auth, sync export, client-side TCI, and the crosswalk mandate. |
 | [[field-crosswalk]] | The **field-id ↔ entity crosswalk** spec — the Rosetta stone binding the ~471 schema ids to entity attributes/bboxes that the export + validation need. Specified, not yet built. |
 
+### Screen build specs — `plans/screens/`
+
+Per-screen **frontend build contracts** (plan-derived): for each of the 13 [[proposed-screens]],
+what to reuse vs build, the entities/DTOs it captures, the REST endpoints it calls, and its
+readiness. Start at [[screens-index]]; the cross-screen component build-list, endpoint-coverage
+check, `CaseStore` protocol surface, prerequisite layers, and dependency-ordered build order are
+in [[screen-build-rollup]]. Headline: **1 near-ready ([[preanesthetic-assessment]]), 12 blocked on
+the persistence/`CaseStore` port (ADR-2)** — build that + [[encounter-list]]/[[encounter-hub]]
+first and the rest become buildable.
+
 ## Reports
 
 Point-in-time analyses filed back into the wiki (per [[SCHEMA]] — good answers compound).
@@ -63,3 +73,4 @@ Point-in-time analyses filed back into the wiki (per [[SCHEMA]] — good answers
 | Page | What it covers |
 |---|---|
 | [[frontend-audit-2026-07-09]] | State audit (2026-07-09): overall "usable-with-gaps"; the Schnider V3 10× safety bug; feature matrix; ranked findings; recommended priorities. |
+| [[foundation-grounding-2026-07-10]] | Code-truth pass (2026-07-10): verifies the plan-derived screen specs vs the real Swift — **1 blocker** (no case/`CaseStore`/author domain exists) + **14 corrections** (re-root is a view-literal swap not a Route insert; `navigationPath` in `RootView` not `AppState`; `PatientProfile.gender` not `sex`; `computeBET` is private/off-protocol; semantic tokens all missing; reuse mismatches). Carries the **Phase A shopping list** + the `xcodebuild` gate. |

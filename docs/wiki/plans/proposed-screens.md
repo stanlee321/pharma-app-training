@@ -10,8 +10,11 @@ tags: [plan, screens, ui-ux]
 clinical-record app where a clinician **enters the anaesthesia data natively** — the ~471
 form fields become a **persisted, case-scoped record** (the system of record). A **filled
 PDF is a subproduct**, rendered from that record on demand ([[forms-to-app]]); the app is a
-data-entry system, not a form viewer, and does no OCR. This is a **proposal** — no code
-here. Every screen below is grounded in the [nine-entity
+data-entry system, not a form viewer, and does no OCR. **Status (2026-07-10):** these are now the **canonical, mandatory app screens** (plus a
+[[login|mock login]] gate, ADR-3). The original 5-screen pharmacology app ([[screens]]) was a
+first approach — its screens are **recyclable building blocks** (steppers, `ChartCanvas`, TCI
+tools) that now serve these designs, not the app's spine. Per-screen build contracts:
+[[screens-index]]. Every screen below is grounded in the [nine-entity
 model](../../../notebooks/docs/parsing-wiki/entities/model.md), **not a form's layout**.
 
 The app today owns the *pharmacology spine* only — `PatientProfile`, `ChartCanvas`,

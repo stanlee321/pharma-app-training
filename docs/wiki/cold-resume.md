@@ -30,7 +30,12 @@ locked — [[forms-to-app|master plan]] + [[decisions]] (ADRs). Goal (data-first
 enters the anaesthesia record **natively** in the app → persisted in a FastAPI/Postgres
 backend ([[rest-contract]]) → a filled PDF is a **subproduct** we render (no OCR). ~11 new
 [[proposed-screens]] with the [[ux-ui]] / [[ux-components]] design; full field map in
-[[field-inventory]].
+[[field-inventory]]. Each screen now has a **per-screen build contract** in `plans/screens/`
+([[screens-index]]) with the entity/endpoint/component/gap binding, plus a cross-screen
+[[screen-build-rollup]] (component build-list, `CaseStore` surface, dependency-ordered build
+order). These are now the **canonical, mandatory** screens (+ a [[login|mock login]] gate,
+ADR-3); the original 5 screens are recyclable building blocks. **2 near-ready ([[login]], N3),
+12 blocked on the `CaseStore` persistence port (ADR-2)**.
 
 - **Next action → Phase 0:** fix the safety-critical Schnider V3 10× bug
   (`MockPKEngine.swift:69`, `v3 = 23800 → 238000`) + stand up a PK regression test suite
