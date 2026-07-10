@@ -10,6 +10,17 @@ Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
 
+## [2026-07-10] ingest | register the built clinical app into the source-grounded wiki
+
+Registered the Phase A+B build into the **app** wiki so the source-grounded pages reflect the code,
+not just the plans. New: [[clinical-record]] — the authoritative subsystem page for the case-scoped
+spine (`CaseStore`/`MockCaseStore`, the 9 DTOs + `AnesthesiaCase`, the login gate + 14-case `Route`,
+the built screens + shared components, and the mock/pending list). Updated the now-stale grounded
+pages with banners + corrections pointing to it: [[screens]] (the 5 are now recyclable tools under a
+clinical spine), [[state-navigation]] (`Route` 14 cases, `navigationPath` in `AppState`, login gate,
+new AppState props), [[architecture]] (added the clinical-spine section). Added [[clinical-record]]
+to [[index]]'s App section. Link-lint clean.
+
 ## [2026-07-10] build | Phase B — all 8 clinical screens (frontend compiles e2e)
 
 An 8-agent workflow filled the stub screens with real SwiftUI wired to `MockCaseStore`, then an audit

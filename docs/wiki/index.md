@@ -23,7 +23,8 @@ workflows: [[SCHEMA]]. Whole-system view: [[architecture]].
 
 | Page | What it covers |
 |---|---|
-| [[screens]] | The **5-screen map**: `Route` cases, view/VM per screen, push vs overlay vs embedded presentation, per-screen status, and a checklist for adding/evolving a screen. |
+| [[clinical-record]] | The **case-scoped clinical spine** (BUILT, Phase A+B): `CaseStore`/`MockCaseStore`, the 9 entity DTOs + `AnesthesiaCase`, the login gate + 14-case `Route`, the built clinical screens + shared components. The data-first [[forms-to-app]] vision in code. |
+| [[screens]] | The **original 5-screen map** (now recyclable tools): `Route` cases, view/VM per screen, push vs overlay vs embedded presentation, per-screen status, and a checklist for adding/evolving a screen. |
 | [[state-navigation]] | `@main` app, the one `@Observable` `AppState`, its drug/patient/sim/playback state and actions, `RootView` `NavigationStack` + `Route`, and the launch-modal gate. |
 | [[engine]] | The `PKEngineProtocol` seam: four members, `EngineProvider.useMock==true` picking Mock vs Rust, `RustPKEngine` as a `fatalError` stub, and the snake_case JSON round-trip. |
 | [[pk-engine-math]] | `MockPKEngine` — the real math: 4-state ODE, hand-rolled RK4, the four model parameter equations, BET/TCI dosing, and the unit conventions (the top gotcha). |

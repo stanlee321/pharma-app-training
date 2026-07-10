@@ -65,6 +65,18 @@ first `simulate`/`computeTCI` call. Watch the unit conventions (internal mg / mg
 `displayFactor` ×1000 vs ×1e6, rate constants per-**minute** while the loop counts
 seconds) — see [[pk-engine-math]].
 
+## The clinical-record spine (built 2026-07-10)
+
+The app is now **rooted at a mock login → Encounter List → Encounter Hub → clinical section
+screens**, editing an `AnesthesiaCase` held in an in-memory **`CaseStore`** port
+([[clinical-record]], [[decisions]] ADR-2). This realizes the data-first [[forms-to-app]] vision
+in code: the nine-entity record is captured natively; the filled PDF is a later projection. The
+pharmacology screens above become recyclable tools. `AppState` gained `navigationPath` / `author`;
+`Route` grew to 14 cases; `Models/ClinicalRecord.swift` holds the DTOs; `Services/CaseStore.swift`
+the store (in-memory `MockCaseStore` — the app runs with **no backend**). Built Phase A+B, compiles
++ links ([[foundation-grounding-2026-07-10]]). The FastAPI/Postgres backend behind the port is
+[[rest-contract]].
+
 ## The forms-parsing pipeline
 
 ```

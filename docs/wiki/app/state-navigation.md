@@ -23,6 +23,7 @@ Stored state, grouped by the screen that drives it:
 - **Simulation state** — `simulationOutput: SimulationOutput?` (nil until a run completes), `targets: [TargetEvent]`, and `isSimulating: Bool` as the in-flight flag.
 - **Playback** — `currentTime: Double` (seconds; the scrubber/time cursor), `isPlaying: Bool`, `playbackSpeed: Double = 1.0`. `AppState` only *holds* these; the play/pause loop lives in the simulation UI (see [[simulation-screen]]).
 - **Engine handle** — `let engine: any PKEngineProtocol = EngineProvider.shared`. A single existential, resolved once at init. See [[engine]].
+- **Navigation & auth (added 2026-07-10)** — `navigationPath` (a `NavigationPath`, **moved here from `RootView`**), `author: Author?` + computed `isAuthenticated`, and the mock `signIn(name:role:)` / `signOut()` actions. These drive the clinical-record spine's login gate and programmatic resets — see [[clinical-record]].
 
 ### Drift vs docs — the engine is a mock
 
@@ -42,6 +43,13 @@ Both simulate calls pass fixed run parameters: `timeRangeSeconds: 3600` (60 min)
 
 > For the full 5-screen inventory (routes, view-models, push/overlay/embedded
 > presentation, per-screen status, and an add-a-screen checklist) see [[screens]].
+
+> **Updated 2026-07-10:** the app was re-rooted at a **mock login → Encounter List** spine.
+> `Route` now has **14 cases** (the 4 below + 10 clinical), `navigationPath` **moved into
+> `AppState`**, `RootView` became a login gate (`isAuthenticated ? NavigationStack(EncounterListView) :
+> LoginView`), and a single `.navigationDestination(for: Route.self)` maps every case. The
+> description below documents the **original** pharmacology navigation (still present as recyclable
+> tools); the new spine is [[clinical-record]].
 
 `Route` in `PharmaApp/App/Route.swift` is a `Hashable enum` with four cases: `.drugSelection`, `.patientInput`, `.simulation`, `.compartmental`. `Hashable` is the requirement for pushing values onto a `NavigationPath`.
 

@@ -6,8 +6,14 @@ tags: [app, screens, navigation]
 
 # Screens
 
-The app has **5 screens**. Navigation is a single `NavigationStack` in `RootView`
-driven by the `Route` enum (`PharmaApp/App/Route.swift`), plus one modal overlay. This
+> **Updated 2026-07-10 — the app now has a clinical-record spine.** It is re-rooted at a mock
+> login → **Encounter List → Encounter Hub → clinical section screens** (built Phase A+B; see
+> [[clinical-record]] and [[screens-index]]). The **5 screens below are the original pharmacology
+> app**, now **recyclable tools** rather than the app's spine. This page still maps them; the new
+> spine is documented in [[clinical-record]].
+
+The original pharmacology app has **5 screens**. Navigation is a single `NavigationStack` in
+`RootView` driven by the `Route` enum (`PharmaApp/App/Route.swift`), plus one modal overlay. This
 page is the map; the deep detail lives in the per-area pages and [[state-navigation]].
 
 ## Inventory
