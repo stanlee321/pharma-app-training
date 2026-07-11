@@ -28,12 +28,19 @@ docker compose up -d                                   # Postgres → localhost:
 export TIVA_DATABASE_URL="postgresql+psycopg://tiva:tiva@localhost:5433/tiva"
 conda activate tiva_backend                            # Python 3.11 env with the deps
 alembic upgrade head                                   # create the schema
-uvicorn app.main:app --host 127.0.0.1 --port 8000      # serve
+uvicorn app.main:app --host 0.0.0.0 --port 8000        # serve (0.0.0.0 = reachable from a device on the LAN)
 python scripts/e2e.py                                  # drive the full lifecycle + export PDFs
 ```
 
 Omit `TIVA_DATABASE_URL` to use the zero-setup **SQLite** dev DB (`./tiva.db`). Stop Postgres with
 `docker compose down` (keep data) or `down -v` (wipe). Tests: `python -m pytest`.
+
+**Reaching it from a physical device.** Bind `--host 0.0.0.0` (above), put the phone + Mac on the same
+Wi-Fi, and point the app at the Mac's **LAN IP** — the app reads it from `UserDefaults` key
+`backend_base_url` (default `CaseStoreProvider.defaultBaseURL`), editable at runtime in the Login
+**"Server"** field (no rebuild). The Simulator can use `127.0.0.1` or the LAN IP. Note: `0.0.0.0`
+exposes the (unauthenticated, mock-tenant) service on the LAN — **dev only, no real patient data**; and
+macOS may prompt to allow incoming connections on `:8000`.
 
 ## Conventions
 

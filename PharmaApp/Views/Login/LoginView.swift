@@ -8,6 +8,9 @@ struct LoginView: View {
 
     private let roles = ["Anestesiólogo", "Residente", "Cirujano"]
 
+    /// Backend base URL — editable here so a physical device can point at the Mac without a rebuild.
+    @AppStorage("backend_base_url") private var serverURL = CaseStoreProvider.defaultBaseURL
+
     var body: some View {
         VStack(spacing: Spacing.section) {
             Spacer()
@@ -28,6 +31,18 @@ struct LoginView: View {
                     ForEach(roles, id: \.self) { Text($0) }
                 }
                 .pickerStyle(.segmented)
+
+                HStack {
+                    Text("Server").foregroundStyle(.secondary)
+                    Spacer()
+                    TextField("http://192.168.0.29:8000/api/v1", text: $serverURL)
+                        .multilineTextAlignment(.trailing)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                        .font(.caption)
+                }
+                .frame(minHeight: Spacing.tapTarget)
             }
             .padding(Spacing.section)
             .cardStyle()

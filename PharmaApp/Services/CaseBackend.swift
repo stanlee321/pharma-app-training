@@ -103,12 +103,13 @@ actor InMemoryBackend: CaseBackend {
 /// rides on the models' explicit `CodingKeys` (and this file's `Summary` keys), not on
 /// `.convertFromSnakeCase`. Value type, so it is `Sendable` for free.
 struct RestBackend: CaseBackend {
-    let baseURL: URL
+    /// Explicit base (used by the standalone test); when nil, read the on-device "backend_base_url".
+    private let baseURLOverride: URL?
     private let coder: JSONEncoder
     private let decoder: JSONDecoder
 
-    init(baseURL: URL) {
-        self.baseURL = baseURL
+    init(baseURL: URL? = nil) {
+        self.baseURLOverride = baseURL
 
         let coder = JSONEncoder()
         coder.dateEncodingStrategy = .iso8601
@@ -117,6 +118,15 @@ struct RestBackend: CaseBackend {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         self.decoder = decoder
+    }
+
+    /// Effective API base: the override, else the persisted setting, else the LAN default.
+    /// Read at request time so the Login "Server" field takes effect without a relaunch.
+    private var baseURL: URL {
+        if let baseURLOverride { return baseURLOverride }
+        let stored = UserDefaults.standard.string(forKey: "backend_base_url")
+        let s = (stored?.isEmpty == false) ? stored! : CaseStoreProvider.defaultBaseURL
+        return URL(string: s) ?? URL(string: CaseStoreProvider.defaultBaseURL)!
     }
 
     // MARK: CaseBackend
