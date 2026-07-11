@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./tiva.db"
     schema_dir: str = str(SCHEMA_DIR)
     default_owner: str = "demo"
+    mock_user_id: str = "00000000-0000-0000-0000-000000000001"
 
 
 settings = Settings()

@@ -72,6 +72,12 @@ author for now.
 **Consequences.** No schema migration pain when auth lands; the ownership column exists
 early. Not production-secure until the auth phase — acceptable for the build MVP.
 
+**Update 2026-07-10 — implemented as mock.** `cases` gained a `user_id` (UUID) column (`owner` kept as
+a display name); requests are scoped by the **`X-User-Id`** header (the API gateway injects it; a fixed
+mock tenant when absent), with cross-tenant access 404'd (the check lives in `CaseService._model`). The
+app persists a per-device login UUID and sends it as `X-User-Id`. Verified via a 2-tenant isolation
+test ([[log]], [[backend-api]]). Real token auth still deferred.
+
 ---
 
 ## ADR-4 — Export is synchronous by default

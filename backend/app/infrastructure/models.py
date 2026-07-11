@@ -19,5 +19,6 @@ class CaseModel(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     owner: Mapped[str] = mapped_column(String(255), default="", index=True)
+    user_id: Mapped[str] = mapped_column(String(36), default="", index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     data: Mapped[dict] = mapped_column(JSON, default=dict)

@@ -158,6 +158,13 @@ struct RestBackend: CaseBackend {
 
     /// Run a request, enforce a 2xx status, and return the body bytes.
     private func perform(_ request: URLRequest) async throws -> Data {
+        // Mocked API-gateway tenant header: attach the persisted login UUID as X-User-Id.
+        // Absent ⇒ the backend falls back to its mock-default tenant. `request` is a `let`
+        // parameter on this `struct`, so copy it to set the header.
+        var request = request
+        if let uid = UserDefaults.standard.string(forKey: "mock_user_id_v1") {
+            request.setValue(uid, forHTTPHeaderField: "X-User-Id")
+        }
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else {
             throw BackendError.invalidResponse

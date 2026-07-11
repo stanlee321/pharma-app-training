@@ -13,7 +13,11 @@ Contract deltas the parsing outputs forced: [[contract-reconciliation-2026-07-10
 
 - **Base URL:** `http://127.0.0.1:8000/api/v1` · **Health:** `GET /health` → `{"status":"ok"}`
 - **Interactive docs (live):** `http://127.0.0.1:8000/docs` (Swagger) · `/openapi.json`
-- **Auth:** none yet (mock — [[decisions]] ADR-3); `owner` is passed on case create.
+- **Tenancy:** every request is scoped by the **`X-User-Id`** header (a UUID — the API gateway
+  injects it; absent → a fixed mock tenant `settings.mock_user_id`). Cases isolate per `user_id`:
+  `GET /cases` lists only yours, and cross-tenant read/write/delete → **404**. `owner` is a separate
+  human display name. Real token auth is later — [[decisions]] ADR-3. The app sends its persisted
+  mock login UUID as `X-User-Id`.
 - **Wire format:** JSON, **snake_case** (the Swift app decodes with `.convertFromSnakeCase`).
 
 ## Run it (procedure)

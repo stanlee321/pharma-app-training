@@ -10,6 +10,24 @@ Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
 
+## [2026-07-10] build | per-tenant scoping (X-User-Id) — mock gateway tenant
+
+Added multi-tenant isolation ahead of the API gateway (which will inject **X-User-Id**). Backend: a
+`user_id String(36)` column on `cases` (+ Alembic `0002`, backfilling existing rows to the mock
+tenant), a `get_user_id` dependency reading the `X-User-Id` header (fallback to a fixed
+`settings.mock_user_id`), and tenant isolation threaded through `CaseService` — the ownership check in
+`_model` auto-scopes every read/write (404 across tenants), `list()` filters by `user_id`,
+create/upsert stamp it. `owner` stays a human display name. App: `signIn` persists a stable
+per-device UUID (`@AppStorage mock_user_id_v1`, set as `Author.id`); `RestBackend` sends it as
+`X-User-Id` on every request.
+
+**Audited four ways:** (1) `alembic upgrade` applied `0002` to Postgres (column + index + backfill);
+(2) a live **2-tenant isolation test** — A and B each see only their own cases, A→B GET/PUT/DELETE all
+**404**, the no-header mock tenant sees only the backfilled rows → **ISOLATION OK**; (3) app compiles +
+links; (4) a standalone round-trip proved `RestBackend` attaches `X-User-Id` from the persisted login
+(a fresh tenant's list is exactly its own case). Mock now; the gateway just overwrites the header
+later. pytest 2 passed. [[backend-api]], [[decisions]] ADR-3.
+
 ## [2026-07-10] build | app↔backend wiring (RestBackend) — verified round-trip
 
 Wired the app to the backend behind the `CaseStore` port (delegated to a 3-agent workflow, then

@@ -12,8 +12,12 @@ class SqlCaseRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def list(self) -> list[CaseModel]:
-        return list(self.db.scalars(select(CaseModel).order_by(CaseModel.created_at.desc())))
+    def list(self, user_id: str) -> list[CaseModel]:
+        return list(self.db.scalars(
+            select(CaseModel)
+            .where(CaseModel.user_id == user_id)
+            .order_by(CaseModel.created_at.desc())
+        ))
 
     def get(self, case_id: str) -> CaseModel | None:
         return self.db.get(CaseModel, case_id)

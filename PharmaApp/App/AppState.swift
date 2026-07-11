@@ -46,7 +46,18 @@ final class AppState {
     var isAuthenticated: Bool { author != nil }
 
     func signIn(name: String, role: String) {
-        author = Author(name: name, role: role)
+        // Resolve a STABLE per-device tenant UUID (mocked API-gateway tenant, sent as X-User-Id).
+        // Reuse the persisted id if present+valid, else mint one and persist it under "mock_user_id_v1".
+        let key = "mock_user_id_v1"
+        let uuid: UUID
+        if let stored = UserDefaults.standard.string(forKey: key),
+           let parsed = UUID(uuidString: stored) {
+            uuid = parsed
+        } else {
+            uuid = UUID()
+            UserDefaults.standard.set(uuid.uuidString, forKey: key)
+        }
+        author = Author(id: uuid, name: name, role: role)
     }
 
     func signOut() {

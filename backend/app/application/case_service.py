@@ -35,13 +35,14 @@ def _derive(case: dto.AnesthesiaCaseDTO) -> dto.AnesthesiaCaseDTO:
 
 
 class CaseService:
-    def __init__(self, repo: SqlCaseRepository):
+    def __init__(self, repo: SqlCaseRepository, user_id: str):
         self.repo = repo
+        self.user_id = user_id
 
     # --- helpers ---
     def _model(self, case_id: str) -> CaseModel:
         m = self.repo.get(case_id)
-        if not m:
+        if not m or m.user_id != self.user_id:
             raise HTTPException(status_code=404, detail="Case not found")
         return m
 
@@ -58,14 +59,14 @@ class CaseService:
     # --- root CRUD ---
     def create(self, owner: str) -> dto.AnesthesiaCaseDTO:
         case = dto.AnesthesiaCaseDTO(owner=owner)
-        m = CaseModel(id=str(case.id), owner=owner, created_at=case.created_at,
-                      data=case.model_dump(mode="json"))
+        m = CaseModel(id=str(case.id), owner=owner, user_id=self.user_id,
+                      created_at=case.created_at, data=case.model_dump(mode="json"))
         self.repo.add(m)
         return _derive(self._load(m))
 
     def list(self) -> list[dto.CaseSummaryDTO]:
         out: list[dto.CaseSummaryDTO] = []
-        for m in self.repo.list():
+        for m in self.repo.list(self.user_id):
             c = self._load(m)
             out.append(dto.CaseSummaryDTO(id=c.id, owner=c.owner, nombre=c.patient.nombre,
                                           diagnostico_preop=c.diagnostico_preop, created_at=c.created_at))
@@ -94,10 +95,13 @@ class CaseService:
         case = dto.AnesthesiaCaseDTO.model_validate(data)
         m = self.repo.get(case_id)
         if m is None:
-            m = CaseModel(id=case_id, owner=case.owner, created_at=case.created_at,
-                          data=case.model_dump(mode="json"))
+            m = CaseModel(id=case_id, owner=case.owner, user_id=self.user_id,
+                          created_at=case.created_at, data=case.model_dump(mode="json"))
             self.repo.add(m)
             return _derive(self._load(m))
+        # Existing row: enforce tenant ownership (404 if it belongs to another tenant)
+        # and keep its user_id — _persist never overwrites it.
+        m = self._model(case_id)
         return self._persist(m, case)
 
     # --- singleton children ---
