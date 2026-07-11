@@ -1,0 +1,26 @@
+# Local Postgres for the TivaTrainer backend.
+#   docker compose up -d      # start
+#   docker compose down       # stop (keep data)
+#   docker compose down -v    # stop + wipe data
+# Backend connects with:
+#   TIVA_DATABASE_URL=postgresql+psycopg://tiva:tiva@localhost:5433/tiva
+services:
+  db:
+    image: postgres:16
+    container_name: tiva_pg
+    environment:
+      POSTGRES_USER: tiva
+      POSTGRES_PASSWORD: tiva
+      POSTGRES_DB: tiva
+    ports:
+      - "5433:5432"   # host 5433 to avoid clashing with a local pg on 5432
+    volumes:
+      - tiva_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tiva -d tiva"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  tiva_pg_data:

@@ -10,6 +10,28 @@ Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
 
+## [2026-07-10] build | backend on Postgres + e2e + real fill-pdf export
+
+Ran the backend live: **Postgres via Docker** (`backend/docker-compose.yml`, host port 5433) +
+Alembic `upgrade head` + uvicorn against it. An **e2e script** (`backend/scripts/e2e.py`) drives the
+full case lifecycle over HTTP (envelope → patient → preanesthetic → technique → monitoring → drugs →
+fluids → recovery → export) and confirmed persistence + server derivations end-to-end (`imc 27.8`,
+fluid `balance_parcial 1hr = 450` from the real misspelled rows, aldrete totals 10, 3 drugs persisted).
+
+Built the **real fill-pdf renderer** (`backend/app/infrastructure/render/renderer.py` +
+`crosswalk.py` — delegated, then audited): `POST …/export/{form_id}` now stamps the case data into
+the notebook's **1:1 clone** via `fitz` at each schema field's bbox (text / checkbox / checkbox_value
++ the `farmaco` and `control_fluidos` tables), with the summary-PDF as fallback. **Visual audit
+confirmed** `registro_transanestesico` fills 35 fields — header, Urgencia ✓, monitoring ✓,
+dx/procedimiento, somatometry, the drug table (Propofol/Fentanilo/Rocuronio), the fluid grid — all in
+the right boxes (206 KB filled vs 1.9 KB summary). This closes the paper→digital→PDF loop the app
+exists for. A **first-cut [[field-crosswalk]]** now lives in `render/crosswalk.py`.
+
+Follow-ups (documented): the fluid **derived** rows (Balance parcial/total, Gasto urinario, Tasa
+Fentanilo) and the vitals **chart** aren't drawn yet; imss_p2 value bboxes overlap their printed
+labels (scanned-reconstruction — needs nudging in `imss_gen.py`); the nota2 generic-drug double-stamp
+needs section-aware routing.
+
 ## [2026-07-10] build | backend MVP + contract reconciliation
 
 Stood up the FastAPI service behind the app's `CaseStore` port (ADR-2) in a dedicated conda env

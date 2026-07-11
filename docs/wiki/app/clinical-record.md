@@ -89,7 +89,10 @@ checkbox-value rows) are `private` to their screen files. New `DesignSystem` sem
   schema-id binding is the [[field-crosswalk]] + a schema field-catalogue bridge.
 - **Derived values are client-side display-only** (IMC, fluid balance, Aldrete totals); the
   authoritative `derive_service` is server-side.
-- **Export is an MVP summary PDF**, not the real form-fill (needs the crosswalk).
+- **Export renders the real filled form** — the backend now stamps case data into the notebook's
+  1:1 clone via `fitz` at each schema bbox (`backend/app/infrastructure/render/`), with a first-cut
+  crosswalk and a summary-PDF fallback ([[log]] 2026-07-10). Still partial (derived fluid rows +
+  vitals chart not drawn yet).
 - **Phase 0** — the Schnider V3 10× bug ([[pk-engine-math]], `MockPKEngine.swift:69`) must land
   before the Drug / Technique TCI chips show a correct maintenance number.
 

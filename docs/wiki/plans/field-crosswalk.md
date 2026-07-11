@@ -16,8 +16,11 @@ The integration artifact that binds the two vocabularies of the system:
 
 Nothing yet maps one to the other. **This crosswalk is that map**, and both directions of
 the round-trip need it: `PUT entity → validate` and `entity → fill-pdf export`. Mandated by
-[[decisions]] ADR-6. **Status: specified here, not yet built** — the concrete next artifact
-after the backend skeleton.
+[[decisions]] ADR-6. **Status (2026-07-10): a first-cut is implemented** in
+`backend/app/infrastructure/render/crosswalk.py` — per-form `id`→case-value resolvers for a
+demonstrable subset, driving the **real fill-pdf export** (see [[log]]). The full versioned artifact +
+the canonical key vocabulary specified below (the `checkbox_value` value shape, `control_fluidos`
+row/hour slugs, Aldrete time-point keys) remain to build.
 
 ## Why it's unavoidable
 

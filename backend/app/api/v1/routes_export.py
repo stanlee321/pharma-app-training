@@ -1,14 +1,16 @@
-"""Case export router — MVP summary PDF.
+"""Case export router — real fill-PDF, with a summary-PDF fallback.
 
-This is an **MVP summary PDF only**: it draws a handful of case-level lines onto a
-single letter page so the export pipe is wired end-to-end. It does NOT yet fill the
-real IMSS/nota forms — that later phase will wrap the ``notebooks/forms`` renderers,
-keyed by the field-crosswalk (the schemas served from ``routes_forms``), to stamp
-values into each form's bounding boxes. The ``form_id`` path segment is accepted now
-so the URL contract is stable across that upgrade; here it only labels the output file.
+The primary path renders the **real anaesthesia form** (the notebook's 1:1 clone) with
+the case's data stamped into each schema field's bounding box, via
+``infrastructure.render.FormRenderer`` (keyed by the field-crosswalk). If the form_id is
+unknown to the renderer, a clone/schema asset is missing, or anything else goes wrong, it
+falls back to the **MVP summary PDF** below (a handful of case lines on a letter page) so
+the export endpoint always returns a valid PDF. The ``form_id`` path segment selects the
+form and labels the output file.
 """
 from __future__ import annotations
 
+import logging
 from io import BytesIO
 
 from fastapi import APIRouter, Depends, Response
@@ -17,8 +19,11 @@ from reportlab.pdfgen import canvas
 
 from ..deps import get_case_service
 from ...application.case_service import CaseService
+from ...infrastructure.render import FormRenderer
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
+_renderer = FormRenderer()
 
 
 def _fmt(value: object) -> str:
@@ -81,9 +86,18 @@ def export_case(
     form_id: str,
     svc: CaseService = Depends(get_case_service),
 ) -> Response:
-    """Render an MVP summary PDF for the case (404 if the case is missing)."""
+    """Render the real filled form for the case, falling back to a summary PDF.
+
+    404 if the case is missing. Any renderer failure (unknown form_id, missing asset,
+    draw error) degrades to the MVP summary PDF rather than erroring the request.
+    """
     case = svc.get(case_id)  # raises HTTPException(404) when absent
-    pdf_bytes = _render_summary_pdf(case, form_id)
+    try:
+        pdf_bytes = _renderer.render(case, form_id)
+    except Exception:  # noqa: BLE001 - never fail the export; fall back to the summary
+        logger.warning("fill-pdf render failed for form_id=%s; using summary", form_id,
+                       exc_info=True)
+        pdf_bytes = _render_summary_pdf(case, form_id)
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
