@@ -10,6 +10,18 @@ Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
 
+## [2026-07-10] build | wire N10 export to the backend + section-completion coloring
+
+App fixes from device testing. (1) **Review & Export (N10)** now calls the backend's real fill-pdf:
+`CaseBackend.exportForm` / `RestBackend` POST `/cases/{id}/export/{form_id}` → `MockCaseStore.exportForm`
+(save-then-export) → N10 gets the **filled 1:1 form** (202 KB, verified via a standalone round-trip),
+with a form picker + the offline summary kept as a secondary option; the stale "not built yet" caption
+removed. **`CaseStoreProvider.useREST` → `true`** so the app persists + exports through the live
+service. (2) **Encounter Hub section-completion coloring** — rows are **blue when empty, green + ✓ when
+they hold data** (`Models/CaseCompletion.swift` `hasData` per entity). (3) iOS **ATS** exception
+(`NSAllowsLocalNetworking`) via an explicit `PharmaApp/Info.plist` so the app can reach
+`http://127.0.0.1:8000`. App compiles + links; [[backend-api]].
+
 ## [2026-07-10] build | align tenancy to the API-gateway header contract
 
 Aligned the backend to the Lookia `ms-api-gateway` header contract (external ref

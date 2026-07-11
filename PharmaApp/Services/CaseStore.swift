@@ -58,4 +58,10 @@ final class MockCaseStore {
         guard let saved = try? await backend.save(cases[i]) else { return }
         if let j = index(of: caseID) { cases[j] = saved }
     }
+
+    /// Persist the case, then render the filled form PDF server-side (throws if offline).
+    func exportForm(caseID: UUID, formID: String) async throws -> Data {
+        await save(caseID: caseID)
+        return try await backend.exportForm(caseID: caseID, formID: formID)
+    }
 }

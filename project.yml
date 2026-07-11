@@ -21,12 +21,20 @@ targets:
           - "*.json"
           - "*.xcassets"
           - "MockData/*.json"
+    info:
+      path: PharmaApp/Info.plist
+      properties:
+        CFBundleDisplayName: TivaTrainer
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Allow cleartext HTTP to localhost/LAN for the dev backend (http://127.0.0.1:8000).
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
     settings:
       base:
-        GENERATE_INFOPLIST_FILE: true
-        INFOPLIST_KEY_UILaunchScreen_Generation: true
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
-        INFOPLIST_KEY_CFBundleDisplayName: TivaTrainer
         SWIFT_STRICT_CONCURRENCY: complete
         PRODUCT_BUNDLE_IDENTIFIER: com.pharma.tivatrainer
         CODE_SIGN_STYLE: Automatic

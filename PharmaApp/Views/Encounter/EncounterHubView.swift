@@ -20,20 +20,28 @@ struct EncounterHubView: View {
                 }
 
                 Section {
-                    hubRow("Patient Data", "person.text.rectangle", .patientData(caseID))
-                    hubRow("Preanesthetic Assessment", "list.clipboard", .preAssessment(caseID))
-                    hubRow("Anesthetic Technique", "waveform.path.ecg", .technique(caseID, .general))
-                    hubRow("Transanesthetic Monitoring", "chart.xyaxis.line", .monitoring(caseID))
-                    hubRow("Drug Ledger", "pills", .drugLedger(caseID))
-                    hubRow("Fluid Balance", "drop", .fluidBalance(caseID))
-                    hubRow("Recovery (Aldrete)", "bed.double", .recoveryScore(caseID))
-                    hubRow("Newborn Record", "figure.2.and.child.holdinghands", .newbornRecord(caseID))
+                    hubRow("Patient Data", "person.text.rectangle", .patientData(caseID),
+                           filled: store.cases[idx].patient.hasData)
+                    hubRow("Preanesthetic Assessment", "list.clipboard", .preAssessment(caseID),
+                           filled: store.cases[idx].preAssessment.hasData)
+                    hubRow("Anesthetic Technique", "waveform.path.ecg", .technique(caseID, .general),
+                           filled: store.cases[idx].technique.hasData)
+                    hubRow("Transanesthetic Monitoring", "chart.xyaxis.line", .monitoring(caseID),
+                           filled: store.cases[idx].transRecord.hasData)
+                    hubRow("Drug Ledger", "pills", .drugLedger(caseID),
+                           filled: !store.cases[idx].drugs.isEmpty)
+                    hubRow("Fluid Balance", "drop", .fluidBalance(caseID),
+                           filled: store.cases[idx].fluidBalance.hasData)
+                    hubRow("Recovery (Aldrete)", "bed.double", .recoveryScore(caseID),
+                           filled: store.cases[idx].recovery.hasData)
+                    hubRow("Newborn Record", "figure.2.and.child.holdinghands", .newbornRecord(caseID),
+                           filled: !store.cases[idx].newborns.isEmpty)
                 } header: {
                     Text("Sections")
                 }
 
                 Section {
-                    hubRow("Review & Export", "doc.richtext", .reviewExport(caseID))
+                    hubRow("Review & Export", "doc.richtext", .reviewExport(caseID), filled: false)
                 }
             }
             .navigationTitle(store.cases[idx].title)
@@ -49,11 +57,21 @@ struct EncounterHubView: View {
         }
     }
 
-    private func hubRow(_ title: String, _ icon: String, _ route: Route) -> some View {
+    private func hubRow(_ title: String, _ icon: String, _ route: Route,
+                        filled: Bool) -> some View {
         Button {
             appState.navigationPath.append(route)
         } label: {
-            Label(title, systemImage: icon)
+            HStack {
+                Label(title, systemImage: icon)
+                    .foregroundStyle(filled ? AppColors.effect : AppColors.selectionTint)
+                Spacer()
+                if filled {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(AppColors.effect)
+                        .font(.footnote)
+                }
+            }
         }
     }
 }

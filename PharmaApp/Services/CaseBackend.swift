@@ -22,6 +22,8 @@ protocol CaseBackend: Sendable {
     func save(_ c: AnesthesiaCase) async throws -> AnesthesiaCase
     /// Remove a case.
     func delete(_ id: UUID) async throws
+    /// Render a filled form PDF (application/pdf bytes) for a case, server-side.
+    func exportForm(caseID: UUID, formID: String) async throws -> Data
 }
 
 /// Errors surfaced by a `CaseBackend`.
@@ -29,6 +31,7 @@ enum BackendError: Error, LocalizedError {
     case notFound(UUID)
     case http(status: Int, body: String)
     case invalidResponse
+    case unsupported(String)
 
     var errorDescription: String? {
         switch self {
@@ -38,6 +41,8 @@ enum BackendError: Error, LocalizedError {
             return "Backend returned HTTP \(status): \(body)"
         case .invalidResponse:
             return "Malformed response from backend."
+        case .unsupported(let msg):
+            return msg
         }
     }
 }
@@ -82,6 +87,11 @@ actor InMemoryBackend: CaseBackend {
 
     func delete(_ id: UUID) async throws {
         cases[id] = nil
+    }
+
+    func exportForm(caseID: UUID, formID: String) async throws -> Data {
+        throw BackendError.unsupported(
+            "Filled-form export needs the REST backend — enable CaseStoreProvider.useREST.")
     }
 }
 
@@ -145,6 +155,15 @@ struct RestBackend: CaseBackend {
         var request = URLRequest(url: casesURL(id))
         request.httpMethod = "DELETE"
         _ = try await perform(request)
+    }
+
+    func exportForm(caseID: UUID, formID: String) async throws -> Data {
+        let url = casesURL(caseID)
+            .appendingPathComponent("export")
+            .appendingPathComponent(formID)
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        return try await perform(request)   // raw application/pdf bytes
     }
 
     // MARK: Transport helpers

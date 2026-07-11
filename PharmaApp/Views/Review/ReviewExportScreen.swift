@@ -16,6 +16,12 @@ struct ReviewExportScreen: View {
     /// URL of the last-generated summary PDF (temp file). Non-nil ⇒ show the ShareLink.
     @State private var exportURL: URL?
 
+    // Server-rendered filled form
+    @State private var selectedForm: FormOption = .nota21
+    @State private var filledURL: URL?
+    @State private var isExporting = false
+    @State private var exportError: String?
+
     init(caseID: UUID) {
         self.caseID = caseID
     }
@@ -70,28 +76,55 @@ struct ReviewExportScreen: View {
             aldreteSection(c.recovery)
 
             Section {
+                Picker("Formulario", selection: $selectedForm) {
+                    ForEach(FormOption.allCases) { Text($0.title).tag($0) }
+                }
+                Button {
+                    exportFilled()
+                } label: {
+                    HStack {
+                        Label("Export filled form", systemImage: "doc.richtext")
+                        Spacer()
+                        if isExporting { ProgressView() }
+                    }
+                    .frame(maxWidth: .infinity, minHeight: Spacing.tapTarget)
+                }
+                .disabled(isExporting)
+
+                if let url = filledURL {
+                    ShareLink(item: url) {
+                        Label("Share filled PDF", systemImage: "square.and.arrow.up")
+                            .frame(maxWidth: .infinity, minHeight: Spacing.tapTarget)
+                    }
+                    .tint(AppColors.effect)
+                }
+                if let err = exportError {
+                    Text(err).font(.caption).foregroundStyle(AppColors.invalidTint)
+                }
+            } header: {
+                SectionHeader(title: "Export · filled form", systemImage: "doc.richtext")
+            } footer: {
+                Text("Renders the real 1:1 anaesthesia form with your data drawn into each field, "
+                     + "server-side. Needs the backend running + CaseStoreProvider.useREST.")
+                    .font(.caption)
+            }
+
+            Section {
                 Button {
                     Haptics.confirm()
                     exportURL = buildPDF(for: c)
                 } label: {
-                    Label("Export PDF", systemImage: "doc.richtext")
+                    Label("Build summary (offline)", systemImage: "doc.plaintext")
                         .frame(maxWidth: .infinity, minHeight: Spacing.tapTarget)
                 }
-
                 if let url = exportURL {
                     ShareLink(item: url) {
                         Label("Share summary PDF", systemImage: "square.and.arrow.up")
                             .frame(maxWidth: .infinity, minHeight: Spacing.tapTarget)
                     }
-                    .tint(AppColors.selectionTint)
                 }
             } header: {
-                SectionHeader(title: "Export", systemImage: "square.and.arrow.up.on.square")
-            } footer: {
-                Text("MVP summary export only. The true form-fill PDF (1:1 print-faithful, "
-                     + "every field drawn into its bbox) is produced server-side and needs the "
-                     + "field-crosswalk + fill-pdf value pass — not built yet.")
-                    .font(.caption)
+                SectionHeader(title: "Offline summary", systemImage: "doc.plaintext")
             }
         }
     }
@@ -131,6 +164,29 @@ struct ReviewExportScreen: View {
 
     private func romanASA(_ n: Int) -> String {
         ["I", "II", "III", "IV", "V"][max(0, min(4, n - 1))]
+    }
+
+    // MARK: - Server-rendered filled form
+
+    /// Save the case, then ask the backend to render the real filled form PDF.
+    private func exportFilled() {
+        Task {
+            isExporting = true
+            exportError = nil
+            filledURL = nil
+            Haptics.tap()
+            do {
+                let data = try await store.exportForm(caseID: caseID, formID: selectedForm.rawValue)
+                let url = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("\(selectedForm.rawValue).pdf")
+                try data.write(to: url, options: .atomic)
+                filledURL = url
+                Haptics.confirm()
+            } catch {
+                exportError = "Export failed: \(error.localizedDescription)"
+            }
+            isExporting = false
+        }
     }
 
     // MARK: - PDF (client-side MVP summary)
@@ -235,5 +291,23 @@ private struct RE_SummaryRow: View {
         }
         .frame(minHeight: Spacing.tapTarget)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// The four exportable forms (backend `form_id`s).
+private enum FormOption: String, CaseIterable, Identifiable {
+    case nota21 = "registro_transanestesico"
+    case nota2 = "nota_postanestesica"
+    case imssP1 = "imss_valoracion_preanestesica"
+    case imssP2 = "imss_registro_anestesia"
+
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .nota21: return "Registro transanestésico"
+        case .nota2:  return "Nota postanestésica"
+        case .imssP1: return "IMSS · Valoración"
+        case .imssP2: return "IMSS · Registro"
+        }
     }
 }

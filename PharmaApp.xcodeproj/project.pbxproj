@@ -36,6 +36,7 @@
 		779543D35F2E8814D42D9138 /* MockPKEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A757B5C13DD6AE7A165A8CC /* MockPKEngine.swift */; };
 		783B40E14E8897FD91DE751B /* drug_models.json in Resources */ = {isa = PBXBuildFile; fileRef = 5C7B89369A495CC2525609A8 /* drug_models.json */; };
 		7EB7CF7D68FB54945F924809 /* DrugModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C84938A2DC0520995C51F0B8 /* DrugModel.swift */; };
+		8648D9F509FF0E1B45AEABF8 /* CaseCompletion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52DE8BEA9A938EC0500EDF55 /* CaseCompletion.swift */; };
 		88745119A85C14D249FE69F4 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0D22F44119107EBDB94C68 /* DesignSystem.swift */; };
 		8B47A32E5C6A89120FB8594C /* DataTooltip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 457343F129623BADA7D31ED0 /* DataTooltip.swift */; };
 		8FD31F561D2C02D13F09C3E9 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC5A78E43C45D985473E9E1E /* RootView.swift */; };
@@ -70,8 +71,10 @@
 		457343F129623BADA7D31ED0 /* DataTooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataTooltip.swift; sourceTree = "<group>"; };
 		4A3934F7D358E1304791579C /* Author.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Author.swift; sourceTree = "<group>"; };
 		4B5C1E36FAFF00A71D1931AA /* MockDataGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDataGenerator.swift; sourceTree = "<group>"; };
+		52DE8BEA9A938EC0500EDF55 /* CaseCompletion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaseCompletion.swift; sourceTree = "<group>"; };
 		5A8AC5E2FE2DF9517D58B4CA /* NewbornScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewbornScreen.swift; sourceTree = "<group>"; };
 		5C7B89369A495CC2525609A8 /* drug_models.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = drug_models.json; sourceTree = "<group>"; };
+		631CC124FD439277881C3AA8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6A5F61FDC88CBF2BA894B647 /* ReviewExportScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewExportScreen.swift; sourceTree = "<group>"; };
 		6A757B5C13DD6AE7A165A8CC /* MockPKEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockPKEngine.swift; sourceTree = "<group>"; };
 		7B25B9740DC26D5E19C56BFB /* CaseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaseStore.swift; sourceTree = "<group>"; };
@@ -190,6 +193,7 @@
 		2B2E1CF7AEE0C28CE4C13907 /* PharmaApp */ = {
 			isa = PBXGroup;
 			children = (
+				631CC124FD439277881C3AA8 /* Info.plist */,
 				0589A738D77A6A669AB11C23 /* App */,
 				88CE6A89E1C3E4880E63F869 /* Engine */,
 				9C55464E77D68938979AD460 /* Models */,
@@ -303,6 +307,7 @@
 			isa = PBXGroup;
 			children = (
 				4A3934F7D358E1304791579C /* Author.swift */,
+				52DE8BEA9A938EC0500EDF55 /* CaseCompletion.swift */,
 				D471C5B6B7EDD4FCE47CB9CA /* ClinicalRecord.swift */,
 				C84938A2DC0520995C51F0B8 /* DrugModel.swift */,
 				9FEDD7730320B6F1F6B01019 /* PatientProfile.swift */,
@@ -453,6 +458,7 @@
 				BB99EEC2391FDCC9F3A40BE5 /* AppState.swift in Sources */,
 				24965654D1482E3013794F63 /* Author.swift in Sources */,
 				E6AE6D7E491277500A9AD949 /* CaseBackend.swift in Sources */,
+				8648D9F509FF0E1B45AEABF8 /* CaseCompletion.swift in Sources */,
 				40AD2A0EEBC86EAD07F41253 /* CaseStore.swift in Sources */,
 				61C47C8E0E5BDA167105A8D9 /* CaseStoreProvider.swift in Sources */,
 				B03DBD911B365B7C280C1B9C /* ChartCanvas.swift in Sources */,
@@ -507,10 +513,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = TivaTrainer;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_FILE = PharmaApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -586,10 +589,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = TivaTrainer;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_FILE = PharmaApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
