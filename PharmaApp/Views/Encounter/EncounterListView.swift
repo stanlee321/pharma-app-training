@@ -30,6 +30,8 @@ struct EncounterListView: View {
                 Text("Encounters")
             }
         }
+        .task { await store.refresh() }
+        .refreshable { await store.refresh() }
         .navigationTitle("Encounters")
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {

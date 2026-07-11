@@ -38,6 +38,12 @@ struct EncounterHubView: View {
             }
             .navigationTitle(store.cases[idx].title)
             .navigationBarTitleDisplayMode(.inline)
+            .onDisappear { Task { await store.save(caseID: caseID) } }
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Save") { Task { await store.save(caseID: caseID) } }
+                }
+            }
         } else {
             ContentUnavailableView("Case not found", systemImage: "exclamationmark.triangle")
         }

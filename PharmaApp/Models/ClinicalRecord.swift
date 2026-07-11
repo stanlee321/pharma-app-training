@@ -43,6 +43,11 @@ struct Provider: Codable, Sendable, Hashable {
 struct RecommendedDose: Codable, Sendable, Hashable {
     var bolusMl: Double
     var infusionMlHr: Double
+
+    enum CodingKeys: String, CodingKey {
+        case bolusMl = "bolus_ml"
+        case infusionMlHr = "infusion_ml_hr"
+    }
 }
 
 // MARK: - Entity DTOs
@@ -59,6 +64,17 @@ struct PatientRecord: Codable, Sendable {
     var rh: String = ""
     var grupoSanguineo: String = ""
     var cama: String = ""
+
+    enum CodingKeys: String, CodingKey {
+        case profile
+        case registro
+        case nombre
+        case hb
+        case hto
+        case rh
+        case grupoSanguineo = "grupo_sanguineo"
+        case cama
+    }
 
     // Derived (computed, never stored authoritative)
     var imc: Double {
@@ -88,6 +104,21 @@ struct PreanestheticAssessment: Codable, Sendable {
     var raq: Int? = nil            // 1..5
     var labs: [String: Double] = [:]   // urea, creatinina, glucosa, hb, hto, ...
     var notes: String = ""
+
+    enum CodingKeys: String, CodingKey {
+        case alergia
+        case dentadura
+        case cuello
+        case viaAerea = "via_aerea"
+        case estadoPsiquico = "estado_psiquico"
+        case premedicacion
+        case ayuno
+        case consentimiento
+        case asa
+        case raq
+        case labs
+        case notes
+    }
 }
 
 struct AnestheticTechnique: Codable, Sendable {
@@ -119,6 +150,15 @@ struct VitalSnapshot: Codable, Sendable {
     var taDia: Double? = nil
     var spo2: Double? = nil
     var pvc: Double? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case fc
+        case fr
+        case taSys = "ta_sys"
+        case taDia = "ta_dia"
+        case spo2
+        case pvc
+    }
 }
 
 struct TransanestheticRecord: Codable, Sendable {
@@ -140,12 +180,29 @@ struct DrugAdministration: Codable, Sendable, Identifiable {
     var time: Date? = nil
     var recommended: RecommendedDose? = nil   // client-computed (ADR-5)
     var rustModelId: String? = nil            // set if a modelled TCI agent
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case label
+        case farmaco
+        case doseValue = "dose_value"
+        case doseUnit = "dose_unit"
+        case via
+        case time
+        case recommended
+        case rustModelId = "rust_model_id"
+    }
 }
 
 struct FluidBalance: Codable, Sendable {
     /// row_id -> hour ("1hr".."5hr") -> ml
     var matrix: [String: [String: Double]] = [:]
     var bloodComponents: [String: Bool] = [:]
+
+    enum CodingKeys: String, CodingKey {
+        case matrix
+        case bloodComponents = "blood_components"
+    }
 }
 
 struct RecoveryScore: Codable, Sendable {
@@ -154,6 +211,13 @@ struct RecoveryScore: Codable, Sendable {
     var otras: [String: Int] = [:]   // ramsay, bromage, ena
     var altaAPiso: String = ""
     var medicoResponsable: String = ""
+
+    enum CodingKeys: String, CodingKey {
+        case aldrete
+        case otras
+        case altaAPiso = "alta_a_piso"
+        case medicoResponsable = "medico_responsable"
+    }
 }
 
 struct NewbornRecord: Codable, Sendable, Identifiable {
@@ -164,6 +228,16 @@ struct NewbornRecord: Codable, Sendable, Identifiable {
     var apgar1: Int? = nil
     var apgar5: Int? = nil
     var apgar10: Int? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case sexo
+        case pesoGramos = "peso_gramos"
+        case tallaCm = "talla_cm"
+        case apgar1
+        case apgar5
+        case apgar10
+    }
 }
 
 // MARK: - Aggregate root
@@ -200,6 +274,33 @@ struct AnesthesiaCase: Codable, Sendable, Identifiable {
     // Collections
     var drugs: [DrugAdministration] = []
     var newborns: [NewbornRecord] = []
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case createdAt = "created_at"
+        case owner
+        case fecha
+        case sala
+        case servicio
+        case turno
+        case tipoAdmision = "tipo_admision"
+        case diagnosticoPreop = "diagnostico_preop"
+        case diagnosticoPostop = "diagnostico_postop"
+        case operacionPropuesta = "operacion_propuesta"
+        case operacionRealizada = "operacion_realizada"
+        case asa
+        case raq
+        case anestesiologo
+        case cirujano
+        case patient
+        case preAssessment = "pre_assessment"
+        case technique
+        case transRecord = "trans_record"
+        case fluidBalance = "fluid_balance"
+        case recovery
+        case drugs
+        case newborns
+    }
 
     // Convenience
     var title: String {

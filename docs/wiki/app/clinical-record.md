@@ -83,8 +83,10 @@ checkbox-value rows) are `private` to their screen files. New `DesignSystem` sem
 
 ## What's mock / pending
 
-- **No backend yet** — `MockCaseStore` is in-memory; the FastAPI/Postgres impl behind the port
-  is [[rest-contract]].
+- **Backend wired (2026-07-10)** — `MockCaseStore` sits over a `CaseBackend` port
+  (`Services/CaseBackend.swift`): `InMemoryBackend` (default, offline) and `RestBackend` (the live
+  FastAPI/Postgres service — [[backend-api]]); `CaseStoreProvider.useREST` toggles. Verified
+  end-to-end via a standalone create→save→load→delete round-trip ([[log]]).
 - **Field ids are hand-chosen** in the values-blob / dict-keyed screens — the canonical
   schema-id binding is the [[field-crosswalk]] + a schema field-catalogue bridge.
 - **Derived values are client-side display-only** (IMC, fluid balance, Aldrete totals); the

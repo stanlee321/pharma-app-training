@@ -10,6 +10,24 @@ Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
 
+## [2026-07-10] build | app↔backend wiring (RestBackend) — verified round-trip
+
+Wired the app to the backend behind the `CaseStore` port (delegated to a 3-agent workflow, then
+audited). New `CaseBackend` port (`PharmaApp/Services/CaseBackend.swift`): `InMemoryBackend` (actor,
+seeded) + `RestBackend` (URLSession → the API, ISO-8601, **no** key strategy — snake↔camel rides on
+explicit `CodingKeys` so the `technique.values` / `fluid.matrix` / `aldrete` dict keys survive).
+`MockCaseStore` keeps its name + sync surface (screens unchanged) but now holds a `backend` +
+optimistic `createCase`/`delete` + async `refresh()`/`save(caseID:)`; `CaseStoreProvider.useREST`
+(default **false** → in-memory, app still runs standalone) picks the backend; `EncounterList`
+refreshes, `EncounterHub` saves on disappear + a Save button. Added `PUT /cases/{id}` full-aggregate
+upsert to the backend (client owns the id → one idempotent save; commit `e24471a`).
+
+**Audited two ways:** (1) app compiles + links (asset-aside `xcodebuild`, 0 Swift errors); (2) a
+**standalone round-trip** — compiled the app's real `ClinicalRecord.swift` + `PatientProfile.swift` +
+`CaseBackend.swift` and ran create→save→load→delete against the **live Postgres-backed server**:
+server-derived `imc` round-trips, and the dict keys (`propofol_42`, `Ingreso Critaloide`) survive
+untouched — **ROUND-TRIP OK**. Flip `useREST = true` and the app persists to the service. [[backend-api]].
+
 ## [2026-07-10] ingest | backend API reference into the wiki
 
 Added [[backend-api]] — the **as-built** API reference + usage procedure (Docker Postgres → Alembic →

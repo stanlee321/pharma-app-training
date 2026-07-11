@@ -47,10 +47,10 @@ ADR-3); the original 5 screens are recyclable building blocks. **2 near-ready ([
   clone (verified end-to-end via `backend/scripts/e2e.py`; filled `registro_transanestesico` in
   `notebooks/forms/out/e2e_*.pdf`). API reference + run guide: [[backend-api]]. Commits `7fd34ce` /
   `768a4ef` / `a956c58`.
-- **Next action → wire the app to the backend:** swap the in-memory `MockCaseStore` for a
-  `RestCaseStore` (Swift) behind the same port so the app persists to the real service
-  ([[backend-api]] "How the app connects"). Then: fill-pdf polish (derived fluid rows + vitals chart),
-  Phase 0 (Schnider V3), full [[field-crosswalk]] + canonical keys.
+- **App↔backend wired (2026-07-10):** `MockCaseStore` sits over a `CaseBackend` port with
+  `RestBackend` (flip `CaseStoreProvider.useREST`); verified via a live create→save→load→delete
+  round-trip ([[backend-api]]). **Next:** offline cache + auth, fill-pdf polish (derived fluid rows +
+  vitals chart), Phase 0 (Schnider V3), full [[field-crosswalk]] + canonical keys.
 - **Phase 0 (still pending):** fix the safety-critical Schnider V3 10× bug (`MockPKEngine.swift:69`,
   `v3 = 23800 → 238000`) + a PK regression suite ([[frontend-audit-2026-07-09]]) — required before
   the TCI recommendation chips (Drug Ledger / Technique) surface a correct number.

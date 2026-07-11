@@ -111,9 +111,12 @@ The full worked flow is `backend/scripts/e2e.py`.
 
 ## How the app connects
 
-The app talks to this service through the `CaseStore` port ([[decisions]] ADR-2, [[clinical-record]]):
-swap the in-memory `MockCaseStore` for a `RestCaseStore` that maps these endpoints to the Swift DTOs —
-no screen changes. That wiring is the next step (see [[log]]).
+The app talks to this service through the `CaseStore` port ([[decisions]] ADR-2, [[clinical-record]]).
+This is **built + verified** ([[log]] 2026-07-10): `MockCaseStore` sits over a `CaseBackend` port
+(`PharmaApp/Services/CaseBackend.swift`) with `InMemoryBackend` (default) and `RestBackend` (these
+endpoints, snake_case via the models' explicit `CodingKeys`). Flip `CaseStoreProvider.useREST = true`
+to persist to this service. Verified end-to-end by a standalone create→save→load→delete round-trip —
+even the values-blob / fluid-matrix dict keys survive intact.
 
 ## Sources
 
