@@ -15,8 +15,22 @@ def _derive(case: dto.AnesthesiaCaseDTO) -> dto.AnesthesiaCaseDTO:
     p.imc = derivations.imc(p.profile.weight, p.profile.height)
     p.peso_ideal = derivations.peso_ideal(p.profile.height, p.profile.gender == "male")
     p.vsc = derivations.vsc(p.profile.weight)
+    p.vsc_25 = round(p.vsc * 0.25, 1)
+    p.vsc_15 = round(p.vsc * 0.15, 1)
     case.recovery.totals = derivations.aldrete_total(case.recovery.aldrete)
-    case.fluid_balance.balance = derivations.fluid_balance(case.fluid_balance.matrix)
+    fentanyl = sum(
+        (d.dose_value or 0)
+        for d in case.drugs
+        if "fentanil" in d.farmaco.lower() and d.dose_unit.lower() in ("mcg", "µg", "ug")
+    )
+    fb = derivations.fluid_balance(
+        case.fluid_balance.matrix, weight_kg=p.profile.weight, fentanyl_mcg_total=fentanyl
+    )
+    case.fluid_balance.balance_parcial = fb["balance_parcial"]
+    case.fluid_balance.balance_total = fb["balance_total"]
+    case.fluid_balance.total_a_reponer = fb["total_a_reponer"]
+    case.fluid_balance.gasto_urinario = fb["gasto_urinario"]
+    case.fluid_balance.tasa_fentanilo = fb["tasa_fentanilo"]
     return case
 
 

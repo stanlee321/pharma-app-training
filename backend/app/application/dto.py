@@ -2,11 +2,13 @@
 
 Wire is snake_case (the Swift side decodes with .convertFromSnakeCase). Fields marked
 "derived" are server-stamped read-only. Mirrors PharmaApp/Models/ClinicalRecord.swift.
+Coverage validated against the parsed schemas in
+docs/wiki/reports/contract-reconciliation-2026-07-10.md.
 """
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -37,10 +39,13 @@ class PatientRecordDTO(DTO):
     rh: str = ""
     grupo_sanguineo: str = ""
     cama: str = ""
+    hab: str = ""
     # derived (server-stamped)
     imc: Optional[float] = None
     peso_ideal: Optional[float] = None
     vsc: Optional[float] = None
+    vsc_25: Optional[float] = None
+    vsc_15: Optional[float] = None
 
 
 class PreanestheticAssessmentDTO(DTO):
@@ -49,18 +54,28 @@ class PreanestheticAssessmentDTO(DTO):
     cuello: str = ""
     via_aerea: str = ""
     estado_psiquico: str = ""
+    aparato_respiratorio: str = ""
+    aparato_cardiovascular: str = ""
+    tegumentos: str = ""
+    antecedentes_anestesicos: str = ""
+    medicamentos_previos: str = ""
+    analgesica_obstetrica: str = ""
+    otros: str = ""
     premedicacion: str = ""
     ayuno: bool = False
     consentimiento: bool = False
     asa: Optional[int] = None
     raq: Optional[int] = None
-    labs: dict[str, float] = Field(default_factory=dict)
+    labs: dict[str, Union[str, float]] = Field(default_factory=dict)  # quantitative + qualitative (orina)
     notes: str = ""
 
 
 class AnestheticTechniqueDTO(DTO):
     modality: str = ""
-    values: dict[str, Any] = Field(default_factory=dict)  # values_blob keyed by field id
+    # values_blob keyed by the canonical schema field id (e.g. "propofol_25").
+    # checkbox_value fields carry a composite value (bool + Quantity + unit) — the value shape
+    # convention is pinned in the field-crosswalk (see reconciliation report §2/§5.5).
+    values: dict[str, Any] = Field(default_factory=dict)
 
 
 class VitalPointDTO(DTO):
@@ -73,9 +88,27 @@ class VitalSeriesDTO(DTO):
     points: list[VitalPointDTO] = Field(default_factory=list)
 
 
+class SurgicalEventDTO(DTO):
+    marker: int          # 1..6 (Ingresa a quirófano … Sale de quirófano)
+    t: float
+    label: str = ""
+
+
+class VitalSnapshotDTO(DTO):
+    fc: Optional[float] = None
+    fr: Optional[float] = None
+    ta_sys: Optional[float] = None
+    ta_dia: Optional[float] = None
+    spo2: Optional[float] = None
+    pvc: Optional[float] = None
+
+
 class TransanestheticRecordDTO(DTO):
     series: list[VitalSeriesDTO] = Field(default_factory=list)
+    events: list[SurgicalEventDTO] = Field(default_factory=list)
     monitoring: dict[str, bool] = Field(default_factory=dict)
+    basal: VitalSnapshotDTO = Field(default_factory=VitalSnapshotDTO)
+    termination: VitalSnapshotDTO = Field(default_factory=VitalSnapshotDTO)
     complicaciones: str = ""
 
 
@@ -93,7 +126,12 @@ class DrugAdministrationDTO(DTO):
 class FluidBalanceDTO(DTO):
     matrix: dict[str, dict[str, float]] = Field(default_factory=dict)
     blood_components: dict[str, bool] = Field(default_factory=dict)
-    balance: dict[str, float] = Field(default_factory=dict)  # derived
+    # derived (server-stamped) — the form's named rows
+    balance_parcial: dict[str, float] = Field(default_factory=dict)
+    balance_total: dict[str, float] = Field(default_factory=dict)
+    total_a_reponer: dict[str, float] = Field(default_factory=dict)
+    gasto_urinario: dict[str, Optional[float]] = Field(default_factory=dict)
+    tasa_fentanilo: Optional[float] = None
 
 
 class RecoveryScoreDTO(DTO):
@@ -112,11 +150,25 @@ class NewbornRecordDTO(DTO):
     apgar1: Optional[int] = None
     apgar5: Optional[int] = None
     apgar10: Optional[int] = None
+    expulsion_placenta: str = ""
+    estado_general: str = ""
 
 
 class ProviderDTO(DTO):
     nombre: str = ""
     clave: str = ""
+    cedula: str = ""
+    universidad: str = ""
+
+
+class IsquemiaDTO(DTO):
+    hr_inicio: Optional[str] = None
+    hr_termino: Optional[str] = None
+    sitio: str = ""
+
+
+class NeumoperitoneoDTO(DTO):
+    hr_inicio: Optional[str] = None
 
 
 class AnesthesiaCaseDTO(DTO):
@@ -128,13 +180,22 @@ class AnesthesiaCaseDTO(DTO):
     sala: str = ""
     servicio: str = ""
     turno: str = ""
-    tipo_admision: str = ""
+    tipo_admision: str = ""     # urgencia | electiva
+    tipo: str = ""              # I | II
+    procedimiento: str = ""
+    posicion: str = ""
+    duracion_anestesia: str = ""
     diagnostico_preop: str = ""
     diagnostico_postop: str = ""
     operacion_propuesta: str = ""
     operacion_realizada: str = ""
+    equipo_quirurgico: str = ""
+    observaciones: str = ""
+    complicaciones_post: str = ""
     asa: Optional[int] = None
     raq: Optional[int] = None
+    isquemia: IsquemiaDTO = Field(default_factory=IsquemiaDTO)
+    neumoperitoneo: NeumoperitoneoDTO = Field(default_factory=NeumoperitoneoDTO)
     anestesiologo: ProviderDTO = Field(default_factory=ProviderDTO)
     cirujano: ProviderDTO = Field(default_factory=ProviderDTO)
     # singleton children
@@ -166,10 +227,17 @@ class CaseEnvelopePatch(DTO):
     servicio: Optional[str] = None
     turno: Optional[str] = None
     tipo_admision: Optional[str] = None
+    tipo: Optional[str] = None
+    procedimiento: Optional[str] = None
+    posicion: Optional[str] = None
+    duracion_anestesia: Optional[str] = None
     diagnostico_preop: Optional[str] = None
     diagnostico_postop: Optional[str] = None
     operacion_propuesta: Optional[str] = None
     operacion_realizada: Optional[str] = None
+    equipo_quirurgico: Optional[str] = None
+    observaciones: Optional[str] = None
+    complicaciones_post: Optional[str] = None
     asa: Optional[int] = None
     raq: Optional[int] = None
 

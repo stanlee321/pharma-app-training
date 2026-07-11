@@ -10,6 +10,29 @@ Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
 
+## [2026-07-10] build | backend MVP + contract reconciliation
+
+Stood up the FastAPI service behind the app's `CaseStore` port (ADR-2) in a dedicated conda env
+(`tiva_backend`, py3.11): clean-architecture rings (domain / application / infrastructure / api),
+Case aggregate CRUD + singleton/collection sub-resources, `derive_service`, `GET /forms` + schema
+serving (the real notebooks JSON), a summary-PDF export, SQLite dev DB + Alembic baseline. Core
+authored directly; routers / main / tests / Alembic built by a 5-agent workflow, then audited
+(pytest 2 passed; every endpoint category verified). Lives in `backend/`; run guide in
+`backend/README.md`. Commit `7fd34ce`.
+
+Then a reconciliation pass ([[contract-reconciliation-2026-07-10]]) validated the DTOs/derivations
+against the **actual parsed schemas** (not just the entity docs). Entity coverage 9/9; found + fixed
+**2 blockers** — `fluid_balance()` referenced `control_fluidos` rows that don't exist (the real
+intake row is the source-misspelled `"Ingreso Critaloide"`; `NCL` was wrongly counted as intake,
+inverting the sign) → rewritten to the real rows + the named derived rows (Balance parcial/total,
+Total a reponer, Gasto urinario, Tasa Fentanilo); and `TransanestheticRecordDTO` had dropped
+`events`/`basal`/`termination` vs the frozen Swift → restored (+`SurgicalEventDTO`/`VitalSnapshotDTO`).
+Also added the missing `AnesthesiaCase` envelope, `PreanestheticAssessment` exam, `NewbornRecord`,
+Patient/Provider attrs, and hardened `aldrete_total` (5-criteria guard + 0–10 clamp). **Deferred**
+(documented in the report): Swift-side field mirroring, the `checkbox_value` Quantity convention,
+`imss_gen.py` schema-side ids for composites/newborn, and the exact clinical **Balance parcial/total
+formula — flagged for anesthesiologist confirmation**.
+
 ## [2026-07-10] ingest | register the built clinical app into the source-grounded wiki
 
 Registered the Phase A+B build into the **app** wiki so the source-grounded pages reflect the code,

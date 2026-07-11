@@ -6,7 +6,13 @@ tags: [plan, backend, rest, fastapi]
 
 # Plan — REST Contract & Backend Architecture (notebooks pipeline → FastAPI)
 
-**Status: proposal.** This is a design, not an implementation. It promotes the Python
+**Status: MVP implemented 2026-07-10.** A working FastAPI service now lives in `backend/`
+(conda env `tiva_backend`, py3.11) and follows this contract — the [[clinical-record|CaseStore]]
+port has a real service to talk to. Built: the clean-architecture rings, Case aggregate CRUD +
+singleton/collection sub-resources, `derive_service`, `GET /forms` + schema serving, and a
+summary-PDF export; SQLite dev DB + Alembic. Parsing-forced contract deltas (the `fluid_balance`
+row-name fix, restored `TransanestheticRecord` fields, +~30 attrs) are in
+[[contract-reconciliation-2026-07-10]]. Still a **design of record** below — it promotes the Python
 forms pipeline in `notebooks/forms/**` from notebook scripts into a **FastAPI service**
 the SwiftUI app consumes over REST. The frontend owns only *payloads + REST calls*: it
 binds entity DTOs to `Codable` structs and asks the server to render filled PDFs. All PDF
