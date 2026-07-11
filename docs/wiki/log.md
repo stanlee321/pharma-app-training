@@ -10,6 +10,16 @@ Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
 
+## [2026-07-10] fix | text fields not editable — accessibilityElement(.combine) swallowed input
+
+Device bug: text fields (Encounter Hub Dx/Sala/Servicio, and every `LabeledTextRow` across screens)
+focused + showed the keyboard but wouldn't accept typed text. Root cause:
+`.accessibilityElement(children: .combine)` wrapping an editable `TextField` flattens the row into a
+single element and **swallows keyboard input**. Removed it from the 4 **editable** rows
+(`LabeledTextRow`, `TechCheckboxValueRow`, `DrugLedgerRowEditor`, `NewbornEditor`); kept it on the
+read-only `RE_SummaryRow`. Added a regression comment on `LabeledTextRow` + a ⚠️ caveat in
+[[ux-components]] §0.3. App compiles + links.
+
 ## [2026-07-10] build | wire N10 export to the backend + section-completion coloring
 
 App fixes from device testing. (1) **Review & Export (N10)** now calls the backend's real fill-pdf:

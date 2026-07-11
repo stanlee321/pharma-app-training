@@ -38,6 +38,10 @@ extension View {
 
 // MARK: - LabeledTextRow (label + trailing text field + optional unit)
 
+/// Editable label + value row. IMPORTANT: do NOT wrap this in
+/// `.accessibilityElement(children: .combine)` — combine flattens the row into one element and
+/// **swallows the TextField's keyboard input** (the field focuses but won't accept text). Combine is
+/// only safe on read-only rows.
 struct LabeledTextRow: View {
     let label: String
     @Binding var text: String
@@ -57,7 +61,6 @@ struct LabeledTextRow: View {
             }
         }
         .frame(minHeight: Spacing.tapTarget)
-        .accessibilityElement(children: .combine)
     }
 }
 

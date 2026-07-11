@@ -224,9 +224,7 @@ private struct DrugLedgerRowEditor: View {
         .overlay(
             RoundedRectangle(cornerRadius: 10)
                 .stroke(AppColors.infusion.opacity(0.4), lineWidth: 0.5)
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Recommended TCI dose")
+        )        .accessibilityLabel("Recommended TCI dose")
     }
 
     // MARK: Helpers

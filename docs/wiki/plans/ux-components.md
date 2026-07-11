@@ -73,7 +73,11 @@ text scales — never a fixed `.system(size:)` on an entry field.
 Every component adopts, without exception (contract detailed in [[ux-ui]] §2):
 
 - **Combined element**: `.accessibilityElement(children: .combine)` per row/cell so VoiceOver
-  reads "Propofol, 120 milligrams, checked" as one swipe, not five fragments.
+  reads "Propofol, 120 milligrams, checked" as one swipe, not five fragments. **⚠️ NEVER on a row
+  containing an editable `TextField`** — `combine` flattens the row and swallows keyboard input (the
+  field focuses but won't accept text; fixed 2026-07-10, see [[log]]). Use it only on **read-only**
+  rows; for editable rows leave children individually accessible (default) or use per-field
+  `.accessibilityLabel`.
 - **Label / value / hint split**: `label` = the field's schema `label`; `value` = current value +
   spoken unit; `hint` = the gesture ("Double-tap to toggle", "Swipe up or down to adjust").
 - **Adjustable trait for anything numeric**: `.accessibilityAdjustableAction` maps VoiceOver

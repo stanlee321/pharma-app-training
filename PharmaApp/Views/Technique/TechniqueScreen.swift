@@ -337,9 +337,7 @@ private struct TechCheckboxValueRow: View {
                 .foregroundStyle(.tertiary)
                 .frame(width: 34, alignment: .leading)
         }
-        .frame(minHeight: Spacing.tapTarget)
-        .accessibilityElement(children: .combine)
-    }
+        .frame(minHeight: Spacing.tapTarget)    }
 }
 
 /// Client-side TCI decision aid (ADR-5): a target-Cp stepper + the engine's recommended

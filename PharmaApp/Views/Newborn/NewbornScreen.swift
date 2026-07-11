@@ -145,7 +145,5 @@ private struct NewbornEditor: View {
             .pickerStyle(.menu)
             .labelsHidden()
         }
-        .frame(minHeight: Spacing.tapTarget)
-        .accessibilityElement(children: .combine)
-    }
+        .frame(minHeight: Spacing.tapTarget)    }
 }
