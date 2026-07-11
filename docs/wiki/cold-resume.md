@@ -47,16 +47,29 @@ ADR-3); the original 5 screens are recyclable building blocks. **2 near-ready ([
   clone (verified end-to-end via `backend/scripts/e2e.py`; filled `registro_transanestesico` in
   `notebooks/forms/out/e2e_*.pdf`). API reference + run guide: [[backend-api]]. Commits `7fd34ce` /
   `768a4ef` / `a956c58`.
-- **App↔backend wired (2026-07-10):** `MockCaseStore` sits over a `CaseBackend` port with
-  `RestBackend` (flip `CaseStoreProvider.useREST`); verified via a live create→save→load→delete
-  round-trip ([[backend-api]]). **Next:** offline cache + auth, fill-pdf polish (derived fluid rows +
-  vitals chart), Phase 0 (Schnider V3), full [[field-crosswalk]] + canonical keys.
+- **App↔backend wired + running e2e on a physical device (2026-07-10):** `MockCaseStore` over a
+  `CaseBackend` port (`RestBackend`, `CaseStoreProvider.useREST=true`; base URL is a **runtime setting**
+  — Login "Server" field / `UserDefaults backend_base_url`, default the Mac LAN IP). **Per-tenant
+  isolation** via the `X-User-Id` gateway header (guest→parent `owner_id`; [[backend-api]] "Gateway
+  integration"). The app **creates → fills (native input) → saves → exports the real filled form** from
+  the device (backend on `0.0.0.0:8000`). Fixed two device bugs: N10 export now calls the backend
+  fill-pdf (not the local summary); text fields were un-editable (`.accessibilityElement(.combine)` on
+  editable rows — removed). Hub rows color **green+✓ when filled**. Commits `c553e0e`…`d0e9d87`.
+- **Next milestone → deploy the backend to prod.** Prerequisites (per governance): fix the P1 Schnider
+  safety bug first (below); put the real **API gateway in front** (the service trusts `X-User-Id` and
+  currently runs `0.0.0.0` **unauthenticated** — never expose it publicly without the gateway); clear
+  the **gated** items with Stanley (`git push` to the `stanlee321` personal remote — 17+ commits ahead;
+  personal→KipustecAI org move; PHI confirmation on the IMSS material); then real DB creds/migrations +
+  fill-pdf polish (derived fluid rows + vitals chart) + full [[field-crosswalk]].
 - **Phase 0 (still pending):** fix the safety-critical Schnider V3 10× bug (`MockPKEngine.swift:69`,
   `v3 = 23800 → 238000`) + a PK regression suite ([[frontend-audit-2026-07-09]]) — required before
   the TCI recommendation chips (Drug Ledger / Technique) surface a correct number.
-- **Awaiting Stanley's OK:** [[decisions]] ADR-1 (native screens) and ADR-2 (online-first
-  persistence). The one integration artifact still to build is the [[field-crosswalk]]
-  (gates the fill-pdf export, not Phase 0).
+- **Governance (registry onboarding 2026-07-10):** this repo is in the lookia-ceo agentmemory registry
+  (slug `pharma-app-training`). **Gated — propose, don't self-run:** `git push` to the personal remote,
+  org-transfer, TestFlight/prod deploy, anything touching real patient data. **PHI rule:** no patient
+  values in the bank or wiki (structure only); `notebooks/forms/imss/` + `notebooks/data/*.pdf` are
+  PHI-suspect. ADR-1/ADR-2 are now realized (the built app runs on them); the remaining artifact is the
+  [[field-crosswalk]] (gates the full fill-pdf, not Phase 0).
 
 ## Where things live
 

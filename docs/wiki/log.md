@@ -10,6 +10,19 @@ Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
 
+## [2026-07-10] milestone | TivaTrainer runs end-to-end on a physical device 🎉
+
+The app now works fully **on-device against the live backend**: create a case → fill sections with
+native text / steppers / toggles → **Save** (persists to Postgres under the caller's tenant) → **Review
+& Export → the real filled 1:1 form PDF**, with Hub section rows going **green + ✓** as they're filled.
+Getting here, this session: per-tenant `X-User-Id` scoping + gateway-header alignment; the app↔backend
+`RestBackend` wiring with a **runtime-configurable base URL** (Login "Server" field) + `--host 0.0.0.0`
++ an ATS localhost exception for device access; N10 export **rewired from the local summary to the
+backend fill-pdf**; the `.accessibilityElement(.combine)` text-input bug; and Hub section-completion
+coloring. **Next milestone: deploy the backend to prod** — gated on the Phase-0 Schnider safety fix,
+the real API gateway in front (no unauthenticated public exposure), and Stanley's call on
+push / org-move / PHI. See [[cold-resume]] "Where we are".
+
 ## [2026-07-10] fix | text fields not editable — accessibilityElement(.combine) swallowed input
 
 Device bug: text fields (Encounter Hub Dx/Sala/Servicio, and every `LabeledTextRow` across screens)

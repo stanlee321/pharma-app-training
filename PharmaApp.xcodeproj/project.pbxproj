@@ -62,7 +62,7 @@
 		09926A4C7CA1D75EB975FFFA /* PreanestheticView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreanestheticView.swift; sourceTree = "<group>"; };
 		09A986115F4BE58E552723EE /* LaunchModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchModalView.swift; sourceTree = "<group>"; };
 		10033497F8668C8CD69F11F1 /* EngineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineProvider.swift; sourceTree = "<group>"; };
-		165F650BE7CAD980B4C063DE /* PharmaApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PharmaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		165F650BE7CAD980B4C063DE /* PharmaApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PharmaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1B1307BCBF35B318BDCFDF98 /* ChartCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartCanvas.swift; sourceTree = "<group>"; };
 		26B5E097D3BCE017A1AD6DE9 /* CaseStoreProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaseStoreProvider.swift; sourceTree = "<group>"; };
 		352DADC99E05C219A32FA4EA /* EncounterListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncounterListView.swift; sourceTree = "<group>"; };
@@ -513,6 +513,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 923BHPTBX7;
 				INFOPLIST_FILE = PharmaApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -589,6 +590,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 923BHPTBX7;
 				INFOPLIST_FILE = PharmaApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
