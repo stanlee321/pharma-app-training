@@ -49,6 +49,16 @@ def patch_case(
     return svc.patch_envelope(case_id, body)
 
 
+@router.put("/cases/{case_id}", response_model=dto.AnesthesiaCaseDTO)
+def upsert_case(
+    case_id: str,
+    body: dict,
+    svc: CaseService = Depends(get_case_service),
+):
+    """Full-aggregate create-or-replace (client-owned id). Used by the app's RestCaseStore save."""
+    return svc.upsert(case_id, body)
+
+
 @router.delete("/cases/{case_id}", status_code=204)
 def delete_case(case_id: str, svc: CaseService = Depends(get_case_service)):
     svc.delete(case_id)

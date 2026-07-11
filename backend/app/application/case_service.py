@@ -84,6 +84,22 @@ class CaseService:
     def delete(self, case_id: str) -> None:
         self.repo.delete(self._model(case_id))
 
+    def upsert(self, case_id: str, payload: dict) -> dto.AnesthesiaCaseDTO:
+        """Full-aggregate create-or-replace with a client-owned id (PUT /cases/{id}).
+
+        Lets an offline-first client mint the UUID and persist the whole case in one call.
+        """
+        data = dict(payload)
+        data["id"] = case_id
+        case = dto.AnesthesiaCaseDTO.model_validate(data)
+        m = self.repo.get(case_id)
+        if m is None:
+            m = CaseModel(id=case_id, owner=case.owner, created_at=case.created_at,
+                          data=case.model_dump(mode="json"))
+            self.repo.add(m)
+            return _derive(self._load(m))
+        return self._persist(m, case)
+
     # --- singleton children ---
     def get_child(self, case_id: str, name: str):
         attr, _ = dto.SINGLETONS[name]
