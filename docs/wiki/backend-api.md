@@ -122,6 +122,30 @@ endpoints, snake_case via the models' explicit `CodingKeys`). Flip `CaseStorePro
 to persist to this service. Verified end-to-end by a standalone create→save→load→delete round-trip —
 even the values-blob / fluid-matrix dict keys survive intact.
 
+## Gateway integration (`ms-api-gateway`)
+
+Designed to run behind the Lookia **API gateway**, which authenticates once and injects `X-*`
+identity headers — **trust them; never re-validate with Identity**. Cross-repo contract:
+`…/video-server_microservicios_apigateway/docs/GATEWAY_HEADERS.md`. `backend/app/api/deps.py` parses
+them into a `UserContext` mirroring the gateway's recommended dependency:
+
+| Header | We use it for |
+|---|---|
+| `X-User-Id` | authenticated user UUID — **primary tenancy key** |
+| `X-User-Created-By` | **guest** tokens → the parent is the effective owner (`ctx.owner_id`) |
+| `X-User-Role` / `X-User-Scopes` | parsed into `UserContext` (role/scope gates — future authz) |
+| `X-App-Type` | app namespace (`1`=LOOKIA/`2`=PARKIA/`3`=GOBIA); omitted-when-null, guarded |
+| `X-Request-Id` | correlation id (parse + log downstream) |
+| `X-Service-Name` / `X-Auth-Mode` | S2S calls (`ctx.is_service_call`) — policy TBD |
+
+**Tenant key = `ctx.owner_id`** (`created_by` for guests, else `user_id`) → scopes `cases.user_id`.
+No gateway (local dev) → falls back to `settings.mock_user_id`. Verified: 2-tenant isolation + a
+guest whose data scopes to its parent ([[log]]).
+
+**Trust boundary:** keep the service on the internal network — the gateway is the sole trusted source
+of `X-User-*`. If ever exposed publicly, strip inbound `X-User-*` / `X-Service-*` first. Real token
+auth (the Identity flow) stays upstream; this service never calls Identity.
+
 ## Sources
 
 - Routers: `backend/app/api/v1/{routes_cases,routes_forms,routes_export}.py`; DTOs

@@ -10,6 +10,21 @@ Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
 
+## [2026-07-10] build | align tenancy to the API-gateway header contract
+
+Aligned the backend to the Lookia `ms-api-gateway` header contract (external ref
+`…/video-server_microservicios_apigateway/docs/GATEWAY_HEADERS.md`; captured as a [[backend-api]]
+"Gateway integration" section + a `reference` memory). `api/deps.py` now parses the full gateway
+identity into a `UserContext` (mirrors the gateway's recommended dependency): `X-User-Id`,
+`X-User-Role`, `X-User-Scopes`, `X-User-Created-By`, `X-App-Type` (omitted-when-null guarded),
+`X-Request-Id`, and S2S `X-Service-Name`/`X-Auth-Mode`. **Tenant key is now `ctx.owner_id`** — the
+parent `created_by` for **guest** tokens, else `user_id` — closing the doc's #1 warning (guests
+would otherwise filter to the wrong tenant). Local dev still falls back to `settings.mock_user_id`;
+our `X-User-Id` choice already matched the gateway's primary tenancy key. **Audited:** pytest 2
+passed + a live test — a guest (`created_by=parent`) sees & writes the parent's cases and an
+unrelated user 404s → **gateway-aligned tenancy OK**. Role/scope/app-type gates + S2S policy are
+parsed-for-later, not enforced yet.
+
 ## [2026-07-10] build | per-tenant scoping (X-User-Id) — mock gateway tenant
 
 Added multi-tenant isolation ahead of the API gateway (which will inject **X-User-Id**). Backend: a
