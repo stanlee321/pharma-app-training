@@ -34,6 +34,12 @@ workflows: [[SCHEMA]]. Whole-system view: [[architecture]].
 | [[input-screens]] | Launch modal, drug-selection picker, and patient-input steppers with per-model validation clamping; hold-to-accelerate `StepperRow`. |
 | [[design-system-build]] | `DesignSystem.swift` styling namespaces (colors/fonts/haptics/spacing) and the XcodeGen build (`project.yml`, re-run `xcodegen` on file changes). |
 
+## Backend — `backend/**` (Python / FastAPI)
+
+| Page | What it covers |
+|---|---|
+| [[backend-api]] | **As-built API reference + usage**: the run procedure (Docker Postgres → Alembic → uvicorn → e2e), every endpoint, snake_case payload examples, derived read-only fields, the filled-PDF export, and how the app connects via the `CaseStore` port. Design of record: [[rest-contract]]. |
+
 ## Parsing — `notebooks/forms/**` (Python)
 
 | Page | What it covers |

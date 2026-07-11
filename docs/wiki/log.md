@@ -10,6 +10,14 @@ Append-only change log. One entry per operation, grep-able prefix:
 `## [YYYY-MM-DD] <op> | <subject>`, `<op>` ∈ `ingest | query | lint | build`. Newest on
 top. See [[SCHEMA]] for the workflow that produces entries.
 
+## [2026-07-10] ingest | backend API reference into the wiki
+
+Added [[backend-api]] — the **as-built** API reference + usage procedure (Docker Postgres → Alembic →
+uvicorn → e2e), every endpoint, snake_case payload examples, the derived read-only fields, the
+filled-PDF export, and the `CaseStore`-port connection path — grounded in the live OpenAPI spec.
+Registered under a new **Backend** section in [[index]] and oriented [[cold-resume]] (backend live;
+**app-wiring is the next step**). Milestone marker: the app can now connect to a real service.
+
 ## [2026-07-10] build | backend on Postgres + e2e + real fill-pdf export
 
 Ran the backend live: **Postgres via Docker** (`backend/docker-compose.yml`, host port 5433) +

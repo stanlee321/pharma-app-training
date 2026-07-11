@@ -42,9 +42,15 @@ ADR-3); the original 5 screens are recyclable building blocks. **2 near-ready ([
   Build gate: `xcodebuild` **BUILD SUCCEEDED** (asset catalog set aside to bypass the `actool`/
   sim-runtime env gap — SDK 26.6 vs installed 26.2; install the matching sim runtime for a runnable
   `.app`). Commits `9945a93` (foundation), `6ef5b11` (screens).
-- **Next actions:** (1) the FastAPI/Postgres backend behind the `CaseStore` port ([[rest-contract]]);
-  (2) the schema field-catalogue bridge + [[field-crosswalk]] (screens use hand-chosen field keys
-  today); (3) the real fill-pdf export (Review ships an MVP summary PDF only).
+- **Backend is live (2026-07-10):** FastAPI on **Postgres** (Docker), full Case CRUD + sub-resources +
+  server derivations, and a **real fill-pdf export** that stamps case data into the notebook's 1:1
+  clone (verified end-to-end via `backend/scripts/e2e.py`; filled `registro_transanestesico` in
+  `notebooks/forms/out/e2e_*.pdf`). API reference + run guide: [[backend-api]]. Commits `7fd34ce` /
+  `768a4ef` / `a956c58`.
+- **Next action → wire the app to the backend:** swap the in-memory `MockCaseStore` for a
+  `RestCaseStore` (Swift) behind the same port so the app persists to the real service
+  ([[backend-api]] "How the app connects"). Then: fill-pdf polish (derived fluid rows + vitals chart),
+  Phase 0 (Schnider V3), full [[field-crosswalk]] + canonical keys.
 - **Phase 0 (still pending):** fix the safety-critical Schnider V3 10× bug (`MockPKEngine.swift:69`,
   `v3 = 23800 → 238000`) + a PK regression suite ([[frontend-audit-2026-07-09]]) — required before
   the TCI recommendation chips (Drug Ledger / Technique) surface a correct number.
