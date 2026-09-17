@@ -25,6 +25,10 @@ targets:
       path: PharmaApp/Info.plist
       properties:
         CFBundleDisplayName: TivaTrainer
+        # Read from build settings so bumping CURRENT_PROJECT_VERSION / MARKETING_VERSION takes effect
+        # (XcodeGen otherwise writes literal "1" / "1.0" defaults here).
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
