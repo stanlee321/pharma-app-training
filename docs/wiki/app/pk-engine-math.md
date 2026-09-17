@@ -134,7 +134,8 @@ property on `PatientProfile` used by Schnider and Minto. See [[input-screens]].
 
 ### Schnider (`schniderParams`) — propofol, LBM/age-adjusted clearance
 
-- Fixed volumes: `v1 = 4270`, `v2 = 18900`, `v3 = 23800` (ml).
+- Volumes (ml): `v1 = 4270`, `v2 = (18.9 - 0.391*(age-53)) * 1000` (age-adjusted), `v3 = 238000` (238 L).
+  Fixed 2026-09-16: V3 was 23800 (10× too small) and V2 omitted the age term.
 - `cl1 = (1.89 + (weight-77)*0.0456 + (lbm-59)*(-0.0681) + (height-177)*0.0264) * 1000` (L/min → ml/min).
 - `cl2 = (1.29 - 0.024*(age-53)) * 1000`; `cl3 = 836` (ml/min).
 - `ke0 = 0.456`; `displayFactor = 1000` (mcg/ml).

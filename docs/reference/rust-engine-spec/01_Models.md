@@ -145,10 +145,10 @@ if gender == male:
 if gender == female:
     LBM = 1.07 * weight - 148 * (weight / height)^2
 
-# Volumes (fixed, not weight-scaled!)
+# Volumes (not weight-scaled; V2 is age-adjusted)
 V1  = 4270 ml
-V2  = 18900 ml
-V3  = 23800 ml
+V2  = (18.9 - 0.391 * (age - 53)) * 1000 ml
+V3  = 238000 ml    (238 L)
 
 # Clearances
 Cl1 = 1.89 + ((weight - 77) * 0.0456) + ((LBM - 59) * (-0.0681)) + ((height - 177) * 0.0264)

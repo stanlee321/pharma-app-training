@@ -54,7 +54,7 @@ func schniderParams(weight: Double, height: Double, age: Double, male: Bool) -> 
         : 1.07 * weight - 148.0 * pow(weight / height, 2)
     let cl1 = (1.89 + (weight - 77) * 0.0456 + (lbm - 59) * (-0.0681) + (height - 177) * 0.0264) * 1000.0
     let cl2 = (1.29 - 0.024 * (age - 53)) * 1000.0
-    return PKParams(v1: 4270, v2: 18900, v3: 23800,
+    return PKParams(v1: 4270, v2: (18.9 - 0.391 * (age - 53)) * 1000.0, v3: 238000,
                     cl1: cl1, cl2: cl2, cl3: 836.0,
                     ke0: 0.456, displayFactor: 1_000.0)
 }

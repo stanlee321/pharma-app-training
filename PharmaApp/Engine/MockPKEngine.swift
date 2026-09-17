@@ -65,8 +65,8 @@ final class MockPKEngine: PKEngineProtocol, @unchecked Sendable {
     private func schniderParams(patient: PatientProfile) -> PKParams {
         let lbm = patient.leanBodyMass
         let v1 = 4270.0
-        let v2 = 18900.0
-        let v3 = 23800.0
+        let v2 = (18.9 - 0.391 * (patient.age - 53)) * 1000.0
+        let v3 = 238000.0
         let cl1 = (1.89 + (patient.weight - 77) * 0.0456
                    + (lbm - 59) * (-0.0681)
                    + (patient.height - 177) * 0.0264) * 1000.0
