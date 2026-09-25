@@ -15,9 +15,10 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
+from ...application import dto
 from ...core.config import settings
 
-router = APIRouter()
+router = APIRouter(tags=["forms"], responses={404: dto.ERROR_RESPONSES[404]})
 
 _GLOB = "*.schema.json"
 
@@ -43,7 +44,7 @@ def _title_for(form_id: str, data: dict) -> str:
     return form_id.replace("_", " ").title()
 
 
-@router.get("/forms")
+@router.get("/forms", response_model=list[dto.FormInfoDTO])
 def list_forms() -> list[dict]:
     """List available form schemas as ``{form_id, title}`` entries."""
     directory = _schema_dir()
@@ -59,9 +60,15 @@ def list_forms() -> list[dict]:
     return out
 
 
-@router.get("/forms/{form_id}/schema")
+@router.get(
+    "/forms/{form_id}/schema",
+    response_model=dto.FormSchemaDTO,
+    # keys the pipeline did not emit stay absent (the payload is the schema file as parsed)
+    response_model_exclude_unset=True,
+)
 def get_form_schema(form_id: str) -> dict:
-    """Return the parsed schema whose ``form_id`` matches; 404 if none."""
+    """Return the parsed schema whose ``form_id`` matches; 404 if none. The common keys are
+    typed (``FormSchemaDTO``); any other key in the file passes through unchanged."""
     directory = _schema_dir()
     if directory.is_dir():
         for path in sorted(directory.glob(_GLOB)):

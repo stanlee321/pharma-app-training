@@ -2,50 +2,19 @@
 
 Run from the backend/ directory so `app` is importable:  cd backend && python -m pytest
 
-The DB URL is pinned to an isolated SQLite file *before* importing the app, because
-`app.core.config.Settings()` and `app.core.db.engine` are both instantiated at import
-time. The autouse module-scoped fixture guarantees a clean schema for this module.
+DB wiring (temp SQLite by default, Postgres via TIVA_TEST_DATABASE_URL), schema creation and
+per-test isolation live in tests/conftest.py; `client` is its TestClient fixture.
 """
-import os
-
-# MUST be set before importing the app: config/engine bind the DB URL at import time.
-os.environ["TIVA_DATABASE_URL"] = "sqlite:///./test_tiva.db"
-
-import pathlib
-
-import pytest
-from fastapi.testclient import TestClient
-
-from app.main import app
-from app.core.db import Base, engine
-
-client = TestClient(app)
-
-_DB_FILE = pathlib.Path("./test_tiva.db")
 
 
-def _remove_db() -> None:
-    engine.dispose()
-    if _DB_FILE.exists():
-        _DB_FILE.unlink()
-
-
-@pytest.fixture(autouse=True, scope="module")
-def _isolated_db():
-    # Start from a clean file + fresh schema, tear the file down afterwards.
-    _remove_db()
-    Base.metadata.create_all(engine)
-    yield
-    _remove_db()
-
-
-def test_health():
+def test_health(client):
     resp = client.get("/health")
     assert resp.status_code == 200
     assert resp.json() == {"status": "ok"}
 
 
-def test_case_lifecycle():
+def test_case_lifecycle(client, anesthesiologist, auth_headers):
+    client.headers.update(auth_headers(anesthesiologist))
     # create
     resp = client.post("/api/v1/cases", json={"owner": "tester"})
     assert resp.status_code == 200, resp.text

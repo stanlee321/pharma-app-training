@@ -1,20 +1,54 @@
-"""Request-scoped dependencies, incl. the API-gateway caller identity.
+"""Request-scoped dependencies: the caller identity (both auth modes) and the services.
 
-The service runs behind the Lookia `ms-api-gateway`, which authenticates once and injects
-`X-*` identity headers (see the cross-repo reference GATEWAY_HEADERS.md, mirrored in
-docs/wiki/backend-api.md "Gateway integration"). We TRUST those headers — never re-validate
-with Identity. For guest tokens the effective tenant is the parent (`X-User-Created-By`),
-surfaced as `UserContext.owner_id`. With no gateway (local dev) we fall back to a mock tenant.
+``get_current_user`` is the ONE identity dependency, switched by ``TIVA_AUTH_MODE``:
+
+* ``local`` (default) — ``Authorization: Bearer <JWT>`` issued by ``POST /auth/login``;
+  missing/invalid/expired token or inactive user -> 401.
+* ``gateway`` (legacy) — the service runs behind the Lookia ``ms-api-gateway``, which
+  authenticates once and injects ``X-*`` identity headers (GATEWAY_HEADERS.md, mirrored in
+  docs/wiki/backend-api.md "Gateway integration"). We TRUST those headers. For guest tokens the
+  effective tenant is the parent (``X-User-Created-By``, ``UserContext.owner_id``); with no
+  header we fall back to the mock tenant. The tenant id is provisioned as a ``users`` row
+  just-in-time (``cases.user_id`` is a FK to ``users.id``); an existing row is accepted only
+  if it is gateway-provisioned (never a local account).
+
+Pending password change (local mode): a user with ``must_change_password`` may only call the
+two routes that depend on ``get_current_user_allow_pending`` (``GET /auth/me`` and
+``POST /auth/change-password``); every route behind ``get_current_user`` (cases, documents,
+export, ``/admin``) answers 403 ``{"detail": "password change required"}``.
 """
 from dataclasses import dataclass, field
 
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from ..application.admin_service import AdminService
+from ..application.auth_service import AuthService
 from ..application.case_service import CaseService
+from ..application.document_service import DocumentService
+from ..application.identity import CurrentUser
 from ..core.config import settings
 from ..core.db import get_db
-from ..infrastructure.repository import SqlCaseRepository
+from ..infrastructure.repository import (
+    SqlCaseRepository,
+    SqlDocumentRepository,
+    SqlUserRepository,
+)
+from ..infrastructure.storage import DocumentStorage, LocalFileStorage
+
+__all__ = [
+    "CurrentUser", "UserContext", "get_admin_service", "get_auth_service", "get_case_service",
+    "get_current_user", "get_current_user_allow_pending", "get_document_service",
+    "get_document_storage", "get_user_context", "require_admin",
+]
+
+ADMIN_ONLY_DETAIL = "admin only"
+PASSWORD_CHANGE_REQUIRED_DETAIL = "password change required"
+
+# auto_error=False: we raise our own 401 (and gateway mode needs no header at all). Declaring
+# the scheme also publishes it in openapi.json for the generated web client.
+_bearer = HTTPBearer(auto_error=False, description="JWT from POST /api/v1/auth/login")
 
 
 @dataclass
@@ -61,11 +95,65 @@ def get_user_context(request: Request) -> UserContext:
     )
 
 
+def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
+    return AuthService(SqlUserRepository(db))
+
+
+def get_current_user_allow_pending(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    auth: AuthService = Depends(get_auth_service),
+) -> CurrentUser:
+    """The caller, even while a password change is pending. ONLY for ``GET /auth/me`` and
+    ``POST /auth/change-password``; every other route uses ``get_current_user``."""
+    if settings.auth_mode == "gateway":
+        ctx = get_user_context(request)
+        # Tenant key = the effective owner (parent for guests); no header -> mock tenant.
+        return auth.resolve_gateway(ctx.owner_id or settings.mock_user_id)
+    return auth.resolve_bearer(credentials.credentials if credentials else None)
+
+
+def get_current_user(
+    user: CurrentUser = Depends(get_current_user_allow_pending),
+) -> CurrentUser:
+    """The caller; 403 while ``must_change_password`` is set (local mode)."""
+    if settings.auth_mode == "local" and user.must_change_password:
+        raise HTTPException(status_code=403, detail=PASSWORD_CHANGE_REQUIRED_DETAIL)
+    return user
+
+
+def get_document_storage() -> DocumentStorage:
+    """The generated-PDF store (absolute ``TIVA_DOCUMENTS_DIR``). Tests override this."""
+    return LocalFileStorage(settings.documents_dir)
+
+
 def get_case_service(
     db: Session = Depends(get_db),
-    ctx: UserContext = Depends(get_user_context),
+    user: CurrentUser = Depends(get_current_user),
+    storage: DocumentStorage = Depends(get_document_storage),
 ) -> CaseService:
-    # Tenant key = the effective owner (parent for guests). Local dev without a gateway falls
-    # back to the mock tenant so the service is usable standalone.
-    tenant_id = ctx.owner_id or settings.mock_user_id
-    return CaseService(SqlCaseRepository(db), tenant_id)
+    return CaseService(SqlCaseRepository(db), user, SqlDocumentRepository(db), storage)
+
+
+def get_document_service(
+    db: Session = Depends(get_db),
+    cases: CaseService = Depends(get_case_service),
+    storage: DocumentStorage = Depends(get_document_storage),
+) -> DocumentService:
+    return DocumentService(cases, SqlDocumentRepository(db), storage)
+
+
+def require_admin(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+    """Admin-only guard for every ``/admin`` route: 401 unauthenticated, 403 non-admin.
+    The role is the one re-read from the DB by ``get_current_user``."""
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail=ADMIN_ONLY_DETAIL)
+    return user
+
+
+def get_admin_service(
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_admin),
+    cases: CaseService = Depends(get_case_service),
+) -> AdminService:
+    return AdminService(user, SqlUserRepository(db), cases, SqlDocumentRepository(db))

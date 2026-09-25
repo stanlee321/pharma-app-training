@@ -16,6 +16,10 @@ SQLAlchemy>=2.0
 alembic>=1.13
 psycopg[binary]>=3.2
 
+# --- auth (local mode: username/password -> Bearer JWT) ---
+PyJWT>=2.8
+pwdlib[argon2]>=0.2
+
 # --- filled-PDF export adapter (wraps notebooks/forms renderers) ---
 reportlab>=4.0
 PyMuPDF>=1.24

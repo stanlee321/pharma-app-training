@@ -25,12 +25,14 @@ import app.infrastructure.models  # noqa: E402,F401  (registers tables on Base.m
 # Alembic Config object, provides access to values within alembic.ini.
 config = context.config
 
-# Inject the runtime DB URL from application settings.
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# Inject the runtime DB URL from application settings, unless the caller already set one
+# programmatically (alembic.ini leaves it blank; tests pass a throwaway DB via Config).
+if not config.get_main_option("sqlalchemy.url"):
+    config.set_main_option("sqlalchemy.url", settings.database_url)
 
 # Configure Python logging from the ini file, if present.
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 target_metadata = Base.metadata
 

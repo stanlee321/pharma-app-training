@@ -1,24 +1,26 @@
-"""Case aggregate HTTP router: root CRUD, collection CRUD, and singleton upsert.
+"""Case aggregate HTTP router: root CRUD, singleton children, collection children.
 
-Route declaration order matters. The collection write routes ({coll}) are declared
-BEFORE the generic singleton route ({child}) so FastAPI resolves 'drugs'/'newborns'
-against the collection handlers rather than capturing them as a {child} segment.
+Every route is explicit and typed (request body model + ``response_model``) because the web
+client is generated from openapi.json. The child routes are registered per resource from
+``dto.SINGLETONS`` / ``dto.COLLECTIONS`` (literal path segments, so there is no generic
+``{child}``/``{coll}`` template left to shadow another route). An unknown resource segment is
+therefore a plain 404/405 from the router.
 
-The one place ordering alone is NOT enough is GET: the collection GET and the
-singleton GET share the identical two-segment template `/cases/{case_id}/{seg}`,
-so Starlette would always match whichever is declared first for EVERY value and
-shadow the other. They are therefore served by a single GET dispatcher below that
-resolves COLLECTIONS first, then SINGLETONS, then 404.
+``case_id`` / ``item_id`` are declared as UUIDs: a non-UUID is a 422 at the edge, and the
+canonical lower-case string is what reaches the service.
+
+NOTE: no ``from __future__ import annotations`` here — the per-resource handlers are built in
+closures whose annotations must be real classes for FastAPI to read them.
 """
-from __future__ import annotations
+import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, Response
 
 from ..deps import get_case_service
 from ...application import dto
 from ...application.case_service import CaseService
 
-router = APIRouter()
+router = APIRouter(tags=["cases"], responses=dto.ERROR_RESPONSES)
 
 
 # --- root CRUD ---
@@ -36,96 +38,104 @@ def list_cases(svc: CaseService = Depends(get_case_service)):
 
 
 @router.get("/cases/{case_id}", response_model=dto.AnesthesiaCaseDTO)
-def get_case(case_id: str, svc: CaseService = Depends(get_case_service)):
-    return svc.get(case_id)
+def get_case(case_id: uuid.UUID, svc: CaseService = Depends(get_case_service)):
+    return svc.get(str(case_id))
 
 
 @router.patch("/cases/{case_id}", response_model=dto.AnesthesiaCaseDTO)
 def patch_case(
-    case_id: str,
+    case_id: uuid.UUID,
     body: dto.CaseEnvelopePatch,
     svc: CaseService = Depends(get_case_service),
 ):
-    return svc.patch_envelope(case_id, body)
+    return svc.patch_envelope(str(case_id), body)
 
 
 @router.put("/cases/{case_id}", response_model=dto.AnesthesiaCaseDTO)
 def upsert_case(
-    case_id: str,
-    body: dict,
+    case_id: uuid.UUID,
+    body: dto.AnesthesiaCaseWrite,
     svc: CaseService = Depends(get_case_service),
 ):
-    """Full-aggregate create-or-replace (client-owned id). Used by the app's RestCaseStore save."""
-    return svc.upsert(case_id, body)
+    """Full-aggregate create-or-replace (client-owned id). Used by the app's RestCaseStore save.
+    Server-owned fields (status, updated_at, finalized_at, user_id) and ``id`` in the body are
+    ignored; an upper-case path id addresses the same case as its lower-case form."""
+    return svc.upsert(str(case_id), body.model_dump(exclude_unset=True, exclude={"id"}))
 
 
-@router.delete("/cases/{case_id}", status_code=204)
-def delete_case(case_id: str, svc: CaseService = Depends(get_case_service)):
-    svc.delete(case_id)
+@router.delete("/cases/{case_id}", status_code=204, response_class=Response)
+def delete_case(case_id: uuid.UUID, svc: CaseService = Depends(get_case_service)) -> Response:
+    """Also deletes the case's stored documents (rows and files)."""
+    svc.delete(str(case_id))
     return Response(status_code=204)
 
 
-# --- collection children (declared BEFORE the generic singleton {child} route) ---
-@router.post("/cases/{case_id}/{coll}")
-def add_collection_item(
-    case_id: str,
-    coll: str,
-    body: dict,
-    svc: CaseService = Depends(get_case_service),
-):
-    if coll not in dto.COLLECTIONS:
-        raise HTTPException(status_code=404, detail="Unknown resource")
-    return svc.add_item(case_id, coll, body)
+# --- singleton children: GET + PUT per resource ---
+def _op(segment: str) -> str:
+    return segment.replace("-", "_")
 
 
-@router.patch("/cases/{case_id}/{coll}/{item_id}")
-def update_collection_item(
-    case_id: str,
-    coll: str,
-    item_id: str,
-    body: dict,
-    svc: CaseService = Depends(get_case_service),
-):
-    if coll not in dto.COLLECTIONS:
-        raise HTTPException(status_code=404, detail="Unknown resource")
-    return svc.update_item(case_id, coll, item_id, body)
+def _register_singleton(segment: str, model: type) -> None:
+    def get_child(case_id: uuid.UUID, svc: CaseService = Depends(get_case_service)):
+        return svc.get_child(str(case_id), segment)
+
+    def put_child(
+        case_id: uuid.UUID,
+        body: model,  # type: ignore[valid-type]
+        svc: CaseService = Depends(get_case_service),
+    ):
+        return svc.put_child(str(case_id), segment, body.model_dump())
+
+    path = f"/cases/{{case_id}}/{segment}"
+    router.add_api_route(path, get_child, methods=["GET"], response_model=model,
+                         name=f"get_{_op(segment)}")
+    router.add_api_route(path, put_child, methods=["PUT"], response_model=model,
+                         name=f"put_{_op(segment)}")
 
 
-@router.delete("/cases/{case_id}/{coll}/{item_id}", status_code=204)
-def delete_collection_item(
-    case_id: str,
-    coll: str,
-    item_id: str,
-    svc: CaseService = Depends(get_case_service),
-):
-    if coll not in dto.COLLECTIONS:
-        raise HTTPException(status_code=404, detail="Unknown resource")
-    svc.delete_item(case_id, coll, item_id)
-    return Response(status_code=204)
+# --- collection children: list / add / patch / delete per resource ---
+def _register_collection(segment: str, model: type, patch_model: type) -> None:
+    def list_items(case_id: uuid.UUID, svc: CaseService = Depends(get_case_service)):
+        return svc.list_items(str(case_id), segment)
+
+    def add_item(
+        case_id: uuid.UUID,
+        body: model,  # type: ignore[valid-type]
+        svc: CaseService = Depends(get_case_service),
+    ):
+        return svc.add_item(str(case_id), segment, body.model_dump())
+
+    def update_item(
+        case_id: uuid.UUID,
+        item_id: uuid.UUID,
+        body: patch_model,  # type: ignore[valid-type]
+        svc: CaseService = Depends(get_case_service),
+    ):
+        return svc.update_item(str(case_id), segment, str(item_id),
+                               body.model_dump(exclude_unset=True))
+
+    def delete_item(
+        case_id: uuid.UUID,
+        item_id: uuid.UUID,
+        svc: CaseService = Depends(get_case_service),
+    ) -> Response:
+        svc.delete_item(str(case_id), segment, str(item_id))
+        return Response(status_code=204)
+
+    base = f"/cases/{{case_id}}/{segment}"
+    item = f"{base}/{{item_id}}"
+    op = _op(segment)
+    router.add_api_route(base, list_items, methods=["GET"], response_model=list[model],
+                         name=f"list_{op}")
+    router.add_api_route(base, add_item, methods=["POST"], response_model=model,
+                         name=f"add_{op}")
+    router.add_api_route(item, update_item, methods=["PATCH"], response_model=model,
+                         name=f"update_{op}")
+    router.add_api_route(item, delete_item, methods=["DELETE"], status_code=204,
+                         response_class=Response, name=f"delete_{op}")
 
 
-# --- singleton upsert (declared AFTER collections) ---
-@router.put("/cases/{case_id}/{child}")
-def put_singleton_child(
-    case_id: str,
-    child: str,
-    body: dict,
-    svc: CaseService = Depends(get_case_service),
-):
-    if child not in dto.SINGLETONS:
-        raise HTTPException(status_code=404, detail="Unknown resource")
-    return svc.put_child(case_id, child, body)
-
-
-# --- shared GET dispatcher (collection LIST or singleton GET share one template) ---
-@router.get("/cases/{case_id}/{resource}")
-def get_child_or_collection(
-    case_id: str,
-    resource: str,
-    svc: CaseService = Depends(get_case_service),
-):
-    if resource in dto.COLLECTIONS:
-        return svc.list_items(case_id, resource)
-    if resource in dto.SINGLETONS:
-        return svc.get_child(case_id, resource)
-    raise HTTPException(status_code=404, detail="Unknown resource")
+for _segment, (_attr, _model) in dto.SINGLETONS.items():
+    _register_singleton(_segment, _model)
+for _segment, (_attr, _model) in dto.COLLECTIONS.items():
+    _register_collection(_segment, _model, dto.COLLECTION_PATCHES[_segment])
