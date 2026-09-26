@@ -27,12 +27,14 @@ from ..application.admin_service import AdminService
 from ..application.auth_service import AuthService
 from ..application.case_service import CaseService
 from ..application.document_service import DocumentService
+from ..application.patient_service import PatientService
 from ..application.identity import CurrentUser
 from ..core.config import settings
 from ..core.db import get_db
 from ..infrastructure.repository import (
     SqlCaseRepository,
     SqlDocumentRepository,
+    SqlPatientRepository,
     SqlUserRepository,
 )
 from ..infrastructure.storage import DatabaseBlobStorage, DocumentStores, LocalFileStorage
@@ -40,7 +42,8 @@ from ..infrastructure.storage import DatabaseBlobStorage, DocumentStores, LocalF
 __all__ = [
     "CurrentUser", "UserContext", "get_admin_service", "get_auth_service", "get_case_service",
     "get_current_user", "get_current_user_allow_pending", "get_document_service",
-    "get_document_stores", "get_local_storage", "get_user_context", "require_admin",
+    "get_document_stores", "get_local_storage", "get_patient_service", "get_user_context",
+    "require_admin",
 ]
 
 ADMIN_ONLY_DETAIL = "admin only"
@@ -151,6 +154,13 @@ def get_document_service(
     stores: DocumentStores = Depends(get_document_stores),
 ) -> DocumentService:
     return DocumentService(cases, SqlDocumentRepository(db), stores)
+
+
+def get_patient_service(
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> PatientService:
+    return PatientService(SqlPatientRepository(db), SqlCaseRepository(db), user)
 
 
 def require_admin(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:

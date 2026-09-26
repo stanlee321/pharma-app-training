@@ -20,6 +20,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from .application.auth_service import AuthService
+from .application.patient_service import PatientExists
 from .core.config import settings
 from .core.db import Base, SessionLocal, engine
 from .infrastructure import models  # noqa: F401 — registers the tables on Base.metadata before create_all
@@ -31,6 +32,7 @@ from .api.v1 import (
     routes_documents,
     routes_export,
     routes_forms,
+    routes_patients,
 )
 
 logger = logging.getLogger(__name__)
@@ -108,6 +110,11 @@ async def validation_exception_handler(_request: Request, exc: RequestValidation
     )
 
 
+async def patient_exists_handler(_request: Request, exc: PatientExists):
+    """409 ``{"detail": "patient exists", "patient_id": ...}`` (duplicate registro)."""
+    return JSONResponse(status_code=409, content=exc.body())
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     check_auth_config()
@@ -124,8 +131,10 @@ def create_app() -> FastAPI:
 
     app = FastAPI(title="TivaTrainer API", version="0.2.0", lifespan=lifespan)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(PatientExists, patient_exists_handler)
 
     app.include_router(routes_auth.router, prefix="/api/v1")
+    app.include_router(routes_patients.router, prefix="/api/v1")
     app.include_router(routes_cases.router, prefix="/api/v1")
     app.include_router(routes_forms.router, prefix="/api/v1")
     app.include_router(routes_export.router, prefix="/api/v1")

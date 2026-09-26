@@ -177,6 +177,9 @@ CaseStatus = Literal["draft", "finalized"]
 # Server-owned, read-only fields of AnesthesiaCaseDTO. They live in `cases` columns (never in
 # the JSON `data` blob) and are always stripped from client payloads (PUT /cases/{id}).
 SERVER_FIELDS: frozenset[str] = frozenset({"status", "updated_at", "finalized_at", "user_id"})
+# Every AnesthesiaCaseDTO field that is a `cases` column rather than part of the `data` blob.
+# ``patient_id`` is client-supplied on create only (required there) and ignored afterwards.
+COLUMN_FIELDS: frozenset[str] = SERVER_FIELDS | {"patient_id"}
 
 
 class AnesthesiaCaseDTO(DTO):
@@ -188,6 +191,9 @@ class AnesthesiaCaseDTO(DTO):
     updated_at: Optional[datetime] = None
     finalized_at: Optional[datetime] = None
     user_id: Optional[str] = None
+    # the patient (historia clínica) this encounter belongs to; required when creating a case,
+    # fixed afterwards (a different value on a replace is ignored)
+    patient_id: Optional[UUID] = None
     # envelope
     fecha: Optional[datetime] = None
     sala: str = ""
@@ -253,10 +259,17 @@ class CaseSummaryDTO(DTO):
     finalized_at: Optional[datetime] = None
     user_id: Optional[str] = None
     owner_name: Optional[str] = None  # the owning user's full_name, else username
+    # the case's own snapshot registro (like `nombre`); the fallback when the patient has none
+    registro: str = ""
+    # the case's patient (historia clínica): its id and CURRENT identity from `patients`
+    patient_id: Optional[str] = None
+    patient_nombre: Optional[str] = None
+    patient_registro: Optional[str] = None
 
 
 class CreateCaseRequest(DTO):
     owner: str = ""
+    patient_id: UUID = Field(description="The patient (historia clínica) of the new case.")
 
 
 class CaseEnvelopePatch(DTO):
@@ -317,6 +330,148 @@ COLLECTION_PATCHES: dict[str, type[DTO]] = {
     "drugs": DrugAdministrationPatch,
     "newborns": NewbornRecordPatch,
 }
+
+
+# --- patients (historias clínicas) ------------------------------------------------------
+
+Sexo = Literal["male", "female", ""]
+REGISTRO_MAX_LENGTH = 255  # = patients.registro String(255) (models + migration 0009)
+
+
+def _non_blank(value: Optional[str], field: str) -> Optional[str]:
+    if value is None:
+        return None
+    value = value.strip()
+    if not value:
+        raise ValueError(f"{field} cannot be blank")
+    return value
+
+
+def _not_future(value: Optional[date_type]) -> Optional[date_type]:
+    if value is not None and value > datetime.now(timezone.utc).date():
+        raise ValueError("fecha_nacimiento cannot be in the future")
+    return value
+
+
+class PatientDTO(DTO):
+    """A patient (shared hospital-wide). ``edad`` is derived (whole years today, UTC) from
+    ``fecha_nacimiento``; ``cases_count`` counts every case of the patient (all authors).
+    ``registro`` is null only for legacy patients grouped from cases without one."""
+
+    id: str
+    registro: Optional[str] = None
+    nombre: str
+    sexo: Sexo = ""
+    fecha_nacimiento: Optional[date_type] = None
+    grupo_sanguineo: str = ""
+    rh: str = ""
+    created_by: Optional[str] = None
+    updated_by: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    edad: Optional[int] = None
+    cases_count: int = 0
+
+
+class PatientCaseSummaryDTO(DTO):
+    """One case of a patient. ``numero`` is 1-based by ``created_at`` (then id) within the
+    patient. ``can_edit``: the caller owns it, it is a draft, and the caller is not an admin."""
+
+    id: str
+    numero: int
+    created_at: datetime
+    fecha: Optional[datetime] = None
+    diagnostico_preop: str = ""
+    status: CaseStatus = "draft"
+    user_id: Optional[str] = None
+    author_name: Optional[str] = None
+    can_edit: bool = False
+
+
+class PatientDetailDTO(PatientDTO):
+    cases: list[PatientCaseSummaryDTO] = Field(default_factory=list)  # numero ascending
+
+
+class PatientPage(DTO):
+    items: list[PatientDTO]
+    total: int
+    limit: int
+    offset: int
+
+
+class PatientCreate(DTO):
+    """New patient. ``registro`` (expediente) is required and unique (trimmed,
+    case-insensitive): a duplicate is a 409 carrying the existing ``patient_id``. Text is
+    trimmed. Unknown fields are rejected (422)."""
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    registro: str = Field(min_length=1, max_length=REGISTRO_MAX_LENGTH)
+    nombre: str = Field(min_length=1, max_length=255)
+    sexo: Sexo = ""
+    fecha_nacimiento: Optional[date_type] = None
+    grupo_sanguineo: str = Field(default="", max_length=16)
+    rh: str = Field(default="", max_length=16)
+
+    @field_validator("registro", "nombre")
+    @classmethod
+    def _required_text(cls, v: str, info) -> str:
+        return _non_blank(v, info.field_name)  # type: ignore[return-value]
+
+    @field_validator("grupo_sanguineo", "rh")
+    @classmethod
+    def _strip(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("fecha_nacimiento")
+    @classmethod
+    def _birth(cls, v: Optional[date_type]) -> Optional[date_type]:
+        return _not_future(v)
+
+
+class PatientUpdate(DTO):
+    """Partial update: only the keys sent are applied. ``null`` is rejected except for
+    ``fecha_nacimiento`` (clears it). ``registro``/``nombre`` cannot be blank. Unknown fields
+    are rejected (422)."""
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    registro: Optional[str] = Field(default=None, min_length=1, max_length=REGISTRO_MAX_LENGTH)
+    nombre: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    sexo: Optional[Sexo] = None
+    fecha_nacimiento: Optional[date_type] = None
+    grupo_sanguineo: Optional[str] = Field(default=None, max_length=16)
+    rh: Optional[str] = Field(default=None, max_length=16)
+
+    @field_validator("registro", "nombre")
+    @classmethod
+    def _required_text(cls, v: Optional[str], info) -> Optional[str]:
+        return _non_blank(v, info.field_name)
+
+    @field_validator("grupo_sanguineo", "rh")
+    @classmethod
+    def _strip(cls, v: Optional[str]) -> Optional[str]:
+        return v.strip() if v is not None else None
+
+    @field_validator("fecha_nacimiento")
+    @classmethod
+    def _birth(cls, v: Optional[date_type]) -> Optional[date_type]:
+        return _not_future(v)
+
+    @model_validator(mode="after")
+    def _no_explicit_nulls(self) -> "PatientUpdate":
+        nulls = sorted(k for k in self.model_fields_set
+                       if getattr(self, k) is None and k != "fecha_nacimiento")
+        if nulls:
+            raise ValueError(f"fields cannot be null: {', '.join(nulls)}")
+        return self
+
+
+class PatientConflictDTO(BaseModel):
+    """409 body of POST /patients and PATCH /patients/{id} on a duplicate registro."""
+
+    detail: Literal["patient exists"] = "patient exists"
+    patient_id: str
 
 
 # --- accounts / auth ---------------------------------------------------------------------
@@ -549,6 +704,7 @@ class UserActivityDTO(DTO):
 
 
 class AdminStatsDTO(DTO):
+    patients_total: int
     cases_total: int
     cases_by_status: CasesByStatusDTO
     cases_per_day: list[DailyCountDTO]  # the last 30 UTC days (today included), oldest first

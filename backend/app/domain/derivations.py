@@ -6,6 +6,7 @@ docs/wiki/reports/contract-reconciliation-2026-07-10.md.
 """
 from __future__ import annotations
 
+from datetime import date, datetime, timezone
 from typing import Optional
 
 
@@ -93,3 +94,13 @@ def fluid_balance(
         "gasto_urinario": gasto_urinario,
         "tasa_fentanilo": tasa_fentanilo,
     }
+
+
+def age_years(birth: date | None, today: date | None = None) -> int | None:
+    """Whole years from ``birth`` to ``today`` (UTC today by default); None without a birth
+    date or when it lies in the future."""
+    if birth is None:
+        return None
+    today = today or datetime.now(timezone.utc).date()
+    years = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+    return years if years >= 0 else None

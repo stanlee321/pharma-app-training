@@ -20,7 +20,7 @@ if str(BACKEND_DIR) not in sys.path:
 
 from app.core.config import settings  # noqa: E402
 from app.core.db import Base  # noqa: E402
-import app.infrastructure.models  # noqa: E402,F401  (registers tables on Base.metadata)
+from app.infrastructure.models import autogenerate_include_object  # noqa: E402  (+ tables)
 
 # Alembic Config object, provides access to values within alembic.ini.
 config = context.config
@@ -46,6 +46,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_object=autogenerate_include_object,
     )
 
     with context.begin_transaction():
@@ -66,6 +67,7 @@ def run_migrations_online() -> None:
             connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
+            include_object=autogenerate_include_object,
         )
 
         with context.begin_transaction():

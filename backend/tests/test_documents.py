@@ -20,8 +20,10 @@ from app.infrastructure.models import CaseModel, DocumentBlobModel, DocumentMode
 from app.infrastructure.render import FORM_MAP, FormRenderer
 from app.infrastructure.repository import SqlCaseRepository, SqlDocumentRepository
 from app.main import app as fastapi_app
+from .conftest import fresh_patient_id
 
 API = "/api/v1"
+CASE_404 = "0badc0de-0000-4000-8000-000000000000"
 FORM = "nota_postanestesica"
 
 
@@ -42,7 +44,8 @@ def admin(admin_user, auth_headers):
 
 
 def _new_case(client, headers) -> str:
-    resp = client.post(f"{API}/cases", json={"owner": "tester"}, headers=headers)
+    resp = client.post(f"{API}/cases", json={"patient_id": fresh_patient_id(), "owner": "tester"},
+                       headers=headers)
     assert resp.status_code == 200, resp.text
     cid = resp.json()["id"]
     client.put(f"{API}/cases/{cid}/patient", json={"nombre": "Paciente Sintetico"},
@@ -141,20 +144,25 @@ def test_form_ids_match_renderer():
 
 
 @pytest.mark.usefixtures("local_mode")
-def test_cross_user_access_is_404(client, owner, other, db):
+def test_cross_user_reads_documents_but_cannot_write(client, owner, other, db):
+    """Shared hospital-wide: another anesthesiologist lists and downloads the documents of a
+    case they do not own, but cannot generate, delete or finalize (403)."""
     _, ho = owner
     _, hx = other
     cid = _new_case(client, ho)
     doc = _generate(client, ho, cid).json()
     path = Path(_row(db, doc["id"]).storage_path)
 
-    assert _generate(client, hx, cid).status_code == 404
-    assert client.get(f"{API}/cases/{cid}/documents", headers=hx).status_code == 404
-    assert client.get(doc["download_url"], headers=hx).status_code == 404
-    assert client.delete(f"{API}/documents/{doc['id']}", headers=hx).status_code == 404
-    assert client.post(f"{API}/cases/{cid}/finalize", headers=hx).status_code == 404
+    assert [d["id"] for d in client.get(f"{API}/cases/{cid}/documents",
+                                        headers=hx).json()] == [doc["id"]]
+    assert client.get(doc["download_url"], headers=hx).content.startswith(b"%PDF-")
+    assert _generate(client, hx, cid).status_code == 403
+    assert client.delete(f"{API}/documents/{doc['id']}", headers=hx).status_code == 403
+    assert client.post(f"{API}/cases/{cid}/finalize", headers=hx).status_code == 403
     assert path.is_file()
     assert len(client.get(f"{API}/cases/{cid}/documents", headers=ho).json()) == 1
+    # a document of a missing case is still 404
+    assert client.get(f"{API}/documents/{CASE_404}/file", headers=hx).status_code == 404
 
 
 def test_admin_generates_lists_downloads_and_deletes(client, owner, admin, db):

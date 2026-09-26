@@ -32,8 +32,11 @@ Fixtures
 ``client`` (TestClient), ``db`` (a SQLAlchemy Session), ``user_factory`` (insert a user —
 role/username/password/full_name/clave/is_active), ``auth_headers`` (Bearer headers for a user
 row, minted directly), ``anesthesiologist`` / ``admin_user`` (ready users),
+``patient_factory`` (insert a patient row directly; returns the PatientModel),
 ``case_factory`` (insert a case row directly — any ``user_id``/``status``; the owning user row is
-created when missing), ``gateway_mode``, ``tenant_headers`` (legacy gateway ``X-User-Id``
+created when missing, and a fresh patient unless ``patient_id`` is given),
+``new_case`` (create a case through ``POST /cases`` for a fresh patient, or ``patient_id=``;
+returns the response JSON), ``gateway_mode``, ``tenant_headers`` (legacy gateway ``X-User-Id``
 headers for a tenant id), ``documents_dir`` (this test's storage root, a ``tmp_path`` dir),
 ``document_storage`` (the ``LocalFileStorage`` the app uses in this test), ``test_database_url``,
 ``local_mode`` / ``db_mode`` (force ``TIVA_DOCUMENT_STORAGE`` for one test), ``stored_objects``
@@ -299,10 +302,59 @@ def tenant_headers():
     return make
 
 
+def insert_patient(db, *, registro: str | None = None, nombre: str = "Paciente Sintetico",
+                   **fields) -> models.PatientModel:
+    """Insert a patient row (synthetic values); a random registro unless one is given."""
+    now = datetime.now(timezone.utc)
+    row = models.PatientModel(
+        id=str(uuid.uuid4()),
+        registro=registro if registro is not None else f"SYN-{uuid.uuid4().hex[:10]}",
+        nombre=nombre, created_at=now, updated_at=now, **fields,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def fresh_patient_id(**kwargs) -> str:
+    """Insert a synthetic patient in its own session and return its id (for inline use in
+    request bodies, e.g. ``json={"patient_id": fresh_patient_id()}``)."""
+    with SessionLocal() as session:
+        return insert_patient(session, **kwargs).id
+
+
+@pytest.fixture
+def patient_factory(db):
+    """Insert a patient row directly (bypasses the API). All values synthetic."""
+
+    def make(**kwargs) -> models.PatientModel:
+        return insert_patient(db, **kwargs)
+
+    return make
+
+
+@pytest.fixture
+def new_case(client, db):
+    """Create a case through ``POST /api/v1/cases`` (for a fresh synthetic patient unless
+    ``patient_id`` is given); asserts 200 and returns the case JSON."""
+
+    def make(headers: dict[str, str] | None = None, *, patient_id: str | None = None,
+             **body) -> dict:
+        pid = patient_id or insert_patient(db).id
+        resp = client.post("/api/v1/cases", json={"patient_id": pid, **body},
+                           headers=headers or {})
+        assert resp.status_code == 200, resp.text
+        return resp.json()
+
+    return make
+
+
 @pytest.fixture
 def case_factory(db):
     """Insert a case row directly (bypasses the API), e.g. to seed another tenant's case or a
-    finalized one. Returns the persisted CaseModel. All values are synthetic."""
+    finalized one. Returns the persisted CaseModel. All values are synthetic. A fresh patient
+    (named after ``nombre``) is created unless ``patient_id`` is given."""
 
     def make(
         *,
@@ -311,12 +363,15 @@ def case_factory(db):
         owner: str = "tester",
         nombre: str = "Paciente Sintetico",
         finalized_at: datetime | None = None,
+        patient_id: str | None = None,
+        at: datetime | None = None,
         **data_overrides,
     ) -> models.CaseModel:
         case_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc)
+        now = at or datetime.now(timezone.utc)  # the row's created_at/updated_at
         owner_id = user_id if user_id is not None else settings.mock_user_id
         _ensure_user(db, owner_id)  # cases.user_id is a FK to users.id
+        pid = patient_id or insert_patient(db, nombre=nombre).id
         data = {
             "id": case_id,
             "created_at": now.isoformat(),
@@ -328,6 +383,7 @@ def case_factory(db):
             id=case_id,
             owner=owner,
             user_id=owner_id,
+            patient_id=pid,
             created_at=now,
             updated_at=now,
             status=status,

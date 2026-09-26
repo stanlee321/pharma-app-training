@@ -3,11 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import case, delete, func, or_, select, update
+from sqlalchemy import String, case, delete, func, literal, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .models import CaseModel, DocumentModel, UserModel, _now
+from .models import CaseModel, DocumentModel, PatientModel, UserModel, _now
 
 
 def _like(q: str) -> str:
@@ -22,6 +22,7 @@ class CaseFilter:
 
     status: str | None = None
     user_id: str | None = None
+    patient_id: str | None = None
     q: str | None = None
     created_from: datetime | None = None
     created_to: datetime | None = None
@@ -35,22 +36,66 @@ class UserActivity:
     last_case_update: datetime | None
 
 
+CaseRow = tuple[CaseModel, UserModel | None, PatientModel | None]
+
+
+def _case_rows():
+    """``(case, owner, patient)`` rows."""
+    return (
+        select(CaseModel, UserModel, PatientModel)
+        .outerjoin(UserModel, UserModel.id == CaseModel.user_id)
+        .outerjoin(PatientModel, PatientModel.id == CaseModel.patient_id)
+    )
+
+
 class SqlCaseRepository:
     """Implements the CaseRepository port (rest-contract §1) over SQLAlchemy."""
 
     def __init__(self, db: Session):
         self.db = db
 
-    def list(self, user_id: str | None) -> list[tuple[CaseModel, UserModel | None]]:
-        """Cases newest first with their owner row; ``user_id=None`` lists every tenant."""
+    def list(self, user_id: str | None) -> list[CaseRow]:
+        """Cases newest first with their owner and patient rows; ``user_id=None`` lists every
+        tenant."""
+        stmt = _case_rows().order_by(CaseModel.created_at.desc())
+        if user_id is not None:
+            stmt = stmt.where(CaseModel.user_id == user_id)
+        return [(c, u, p) for c, u, p in self.db.execute(stmt).all()]
+
+    def for_patient(self, patient_id: str) -> list[tuple[CaseModel, UserModel | None]]:
+        """Every case of a patient (all authors), oldest first (``created_at``, then id), with
+        its owner row."""
         stmt = (
             select(CaseModel, UserModel)
             .outerjoin(UserModel, UserModel.id == CaseModel.user_id)
-            .order_by(CaseModel.created_at.desc())
+            .where(CaseModel.patient_id == patient_id)
+            .order_by(CaseModel.created_at, CaseModel.id)
         )
-        if user_id is not None:
-            stmt = stmt.where(CaseModel.user_id == user_id)
         return [(c, u) for c, u in self.db.execute(stmt).all()]
+
+    def latest_for_patient(self, patient_id: str) -> CaseModel | None:
+        return self.db.scalar(
+            select(CaseModel).where(CaseModel.patient_id == patient_id)
+            .order_by(CaseModel.created_at.desc(), CaseModel.id.desc()).limit(1)
+        )
+
+    def drafts_for_patient(self, patient_id: str) -> list[CaseModel]:
+        return list(self.db.scalars(
+            select(CaseModel).where(CaseModel.patient_id == patient_id,
+                                    CaseModel.status == "draft")
+        ))
+
+    def replace_draft_data(self, case_id: str, *, data: dict, expected_version: int) -> bool:
+        """Compare-and-set the ``data`` of a draft still at ``expected_version`` WITHOUT
+        committing (bumps ``version``, stamps ``updated_at``). False if the row changed."""
+        result = self.db.execute(
+            update(CaseModel)
+            .where(CaseModel.id == case_id, CaseModel.status == "draft",
+                   CaseModel.version == expected_version)
+            .values(data=data, updated_at=_now(), version=CaseModel.version + 1)
+            .execution_options(synchronize_session=False)
+        )
+        return result.rowcount == 1
 
     def get(self, case_id: str) -> CaseModel | None:
         return self.db.get(CaseModel, case_id)
@@ -129,6 +174,8 @@ class SqlCaseRepository:
             conds.append(CaseModel.status == f.status)
         if f.user_id:
             conds.append(CaseModel.user_id == f.user_id)
+        if f.patient_id:
+            conds.append(CaseModel.patient_id == f.patient_id)
         if f.created_from is not None:
             conds.append(CaseModel.created_at >= f.created_from)
         if f.created_to is not None:
@@ -144,26 +191,29 @@ class SqlCaseRepository:
                 CaseModel.id,
                 UserModel.username,
                 UserModel.full_name,
+                PatientModel.nombre,
+                PatientModel.registro,
             ]
             conds.append(or_(*(func.lower(t).like(pattern, escape="\\") for t in texts)))
         return conds
 
     def search(self, f: CaseFilter, *, limit: int, offset: int
-               ) -> tuple[list[tuple[CaseModel, UserModel | None]], int]:
-        """One page of cases (newest first) with their owner row, and the filtered total."""
+               ) -> tuple[list[CaseRow], int]:
+        """One page of cases (newest first) with their owner and patient rows, and the
+        filtered total."""
         conds = self._search_conditions(f)
-        base = select(CaseModel, UserModel).outerjoin(UserModel, UserModel.id == CaseModel.user_id)
         total = self.db.scalar(
             select(func.count()).select_from(CaseModel)
             .outerjoin(UserModel, UserModel.id == CaseModel.user_id)
+            .outerjoin(PatientModel, PatientModel.id == CaseModel.patient_id)
             .where(*conds)
         ) or 0
         rows = self.db.execute(
-            base.where(*conds)
+            _case_rows().where(*conds)
             .order_by(CaseModel.created_at.desc(), CaseModel.id.desc())
             .limit(limit).offset(offset)
         ).all()
-        return [(c, u) for c, u in rows], total
+        return [(c, u, p) for c, u, p in rows], total
 
     def count_by_status(self) -> dict[str, int]:
         rows = self.db.execute(
@@ -178,6 +228,95 @@ class SqlCaseRepository:
         return list(self.db.scalars(
             select(CaseModel.created_at).where(CaseModel.created_at >= since)
         ))
+
+
+def registro_key_sql(value):
+    """The normalized registro exactly as the unique index ``uq_patients_registro_norm``
+    computes it: ``lower(trim(value))`` evaluated BY THE DATABASE. Python's ``str.lower()`` /
+    ``str.strip()`` differ from the DB's (e.g. ``'İ'.lower()`` is ``'i̇'`` in Python but
+    ``'i'`` in Postgres; ``trim`` only strips spaces), so never normalize in Python."""
+    return func.lower(func.trim(value))
+
+
+class SqlPatientRepository:
+    """Patients (historias clínicas). Writes do not commit unless stated: the service commits
+    the patient together with the snapshot refresh of its draft cases."""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    @staticmethod
+    def _cases_count():
+        return (
+            select(func.count(CaseModel.id))
+            .where(CaseModel.patient_id == PatientModel.id)
+            .correlate(PatientModel)
+            .scalar_subquery()
+        )
+
+    def get(self, patient_id: str) -> PatientModel | None:
+        return self.db.get(PatientModel, patient_id)
+
+    def get_by_registro(self, registro: str) -> PatientModel | None:
+        return self.db.scalar(
+            select(PatientModel)
+            .where(registro_key_sql(PatientModel.registro)
+                   == registro_key_sql(literal(registro, String)))
+        )
+
+    def count_cases(self, patient_id: str) -> int:
+        return self.db.scalar(
+            select(func.count()).select_from(CaseModel).where(CaseModel.patient_id == patient_id)
+        ) or 0
+
+    def count(self) -> int:
+        return self.db.scalar(select(func.count()).select_from(PatientModel)) or 0
+
+    def search(self, *, q: str | None, limit: int, offset: int
+               ) -> tuple[list[tuple[PatientModel, int]], int]:
+        """One page of patients ordered by name (case-insensitive, then id) with their case
+        counts, and the filtered total. ``q`` matches nombre or registro (substring,
+        case-insensitive)."""
+        conds = []
+        if q and q.strip():
+            pattern = _like(q.strip())
+            conds.append(or_(
+                func.lower(PatientModel.nombre).like(pattern, escape="\\"),
+                func.lower(func.coalesce(PatientModel.registro, "")).like(pattern, escape="\\"),
+            ))
+        total = self.db.scalar(
+            select(func.count()).select_from(PatientModel).where(*conds)
+        ) or 0
+        rows = self.db.execute(
+            select(PatientModel, self._cases_count())
+            .where(*conds)
+            .order_by(func.lower(PatientModel.nombre), PatientModel.id)
+            .limit(limit).offset(offset)
+        ).all()
+        return [(p, int(n or 0)) for p, n in rows], total
+
+    def add(self, model: PatientModel) -> None:
+        now = _now()
+        model.created_at = model.created_at or now
+        model.updated_at = now
+        self.db.add(model)
+        self.db.flush()
+
+    def touch(self, model: PatientModel) -> None:
+        model.updated_at = _now()
+        self.db.flush()
+
+    def delete(self, model: PatientModel) -> None:
+        """Hard delete (not committed). IntegrityError on flush/commit if a case still points
+        at it (``cases.patient_id`` is ON DELETE RESTRICT)."""
+        self.db.delete(model)
+        self.db.flush()
+
+    def commit(self) -> None:
+        self.db.commit()
+
+    def rollback(self) -> None:
+        self.db.rollback()
 
 
 class SqlUserRepository:

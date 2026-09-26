@@ -10,10 +10,14 @@ Users
   DELETE /admin/users/{user_id}                  -> 204; 409 if the user owns cases
   Guards (409): never delete/deactivate/demote yourself or the last active admin.
 Cases
-  GET    /admin/cases?status=&user_id=&q=&date_from=&date_to=&limit=&offset= -> AdminCasePage
+  GET    /admin/cases?status=&user_id=&patient_id=&q=&date_from=&date_to=&limit=&offset=
+                                                 -> AdminCasePage (rows carry patient fields)
   GET    /admin/cases/{case_id}                  -> AnesthesiaCaseDTO
   DELETE /admin/cases/{case_id}                  -> 204 (any status; removes its document files)
   POST   /admin/cases/{case_id}/reopen           -> AnesthesiaCaseDTO (finalized -> draft)
+Patients
+  GET    /admin/patients?q=&limit=&offset=       -> PatientPage (with cases_count)
+  DELETE /admin/patients/{patient_id}            -> 204; 409 while it has cases
 Documents
   GET    /admin/documents?case_id=&form_id=&limit=&offset= -> AdminDocumentPage
 Stats
@@ -25,9 +29,10 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Path, Query, Response
 
-from ..deps import get_admin_service, require_admin
+from ..deps import get_admin_service, get_patient_service, require_admin
 from ...application import dto
 from ...application.admin_service import AdminService
+from ...application.patient_service import PatientService
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)],
                    responses=dto.ERROR_RESPONSES)
@@ -93,16 +98,19 @@ def admin_delete_user(
 def admin_list_cases(
     status: Optional[dto.CaseStatus] = None,
     user_id: Optional[str] = Query(None, max_length=36),
+    patient_id: Optional[uuid.UUID] = None,
     q: Optional[str] = Query(None, max_length=200, description=(
-        "substring of patient name/registro, diagnosis, procedure, owner, case id, "
-        "owner username/full name")),
+        "substring of patient name/registro (case snapshot or patient), diagnosis, procedure, "
+        "owner, case id, owner username/full name")),
     date_from: Optional[date] = Query(None, description="created on/after (UTC day)"),
     date_to: Optional[date] = Query(None, description="created on/before (UTC day)"),
     limit: int = Limit,
     offset: int = Offset,
     svc: AdminService = Depends(get_admin_service),
 ):
-    return svc.list_cases(status=status, user_id=user_id, q=q, date_from=date_from,
+    return svc.list_cases(status=status, user_id=user_id,
+                          patient_id=str(patient_id) if patient_id else None,
+                          q=q, date_from=date_from,
                           date_to=date_to, limit=limit, offset=offset)
 
 
@@ -123,6 +131,27 @@ def admin_delete_case(
 def admin_reopen_case(case_id: uuid.UUID, svc: AdminService = Depends(get_admin_service)):
     """finalized -> draft (stored documents are kept). 409 if the case is not finalized."""
     return svc.reopen_case(str(case_id))
+
+
+# --- patients ------------------------------------------------------------------------------
+@router.get("/patients", response_model=dto.PatientPage)
+def admin_list_patients(
+    q: Optional[str] = Query(None, max_length=200,
+                             description="substring of nombre or registro"),
+    limit: int = Limit,
+    offset: int = Offset,
+    svc: PatientService = Depends(get_patient_service),
+):
+    return svc.list(q=q, limit=limit, offset=offset)
+
+
+@router.delete("/patients/{patient_id}", status_code=204, response_class=Response)
+def admin_delete_patient(
+    patient_id: uuid.UUID, svc: PatientService = Depends(get_patient_service)
+) -> Response:
+    """409 while the patient still has cases."""
+    svc.delete(str(patient_id))
+    return Response(status_code=204)
 
 
 # --- documents -----------------------------------------------------------------------------

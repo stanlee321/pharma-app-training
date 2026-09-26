@@ -1,9 +1,10 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy import (
     JSON,
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -11,6 +12,7 @@ from sqlalchemy import (
     LargeBinary,
     String,
     UniqueConstraint,
+    func,
     true,
 )
 from sqlalchemy import false as sa_false
@@ -66,6 +68,59 @@ class UserModel(Base):
     )
 
 
+class PatientModel(Base):
+    """A patient ("historia clínica"), shared hospital-wide. Identity lives here; the
+    per-encounter values (peso, talla, edad, Hb/Hto, cama, dilución) stay on each case, which
+    also keeps a snapshot of the identity for its PDFs (refreshed on DRAFT cases only).
+
+    ``registro`` (expediente) is unique on its normalized form ``lower(trim(registro))``
+    (functional unique index ``uq_patients_registro_norm``). It is stored trimmed; NULL only for
+    legacy rows grouped by migration 0009 from cases that had no registro. NOTE: SQLite's
+    ``lower()`` folds ASCII only, so on SQLite two registros differing only in the case of a
+    non-ASCII letter are not caught by the index (Postgres folds them).
+
+    ``created_by``/``updated_by`` are SET NULL when that user row is deleted.
+    """
+
+    __tablename__ = "patients"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    registro: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    nombre: Mapped[str] = mapped_column(String(255), default="", server_default="")
+    sexo: Mapped[str] = mapped_column(String(16), default="", server_default="")
+    fecha_nacimiento: Mapped[date | None] = mapped_column(Date, nullable=True)
+    grupo_sanguineo: Mapped[str] = mapped_column(String(16), default="", server_default="")
+    rh: Mapped[str] = mapped_column(String(16), default="", server_default="")
+    created_by: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("users.id", name="fk_patients_created_by_users", ondelete="SET NULL"),
+        nullable=True,
+    )
+    updated_by: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("users.id", name="fk_patients_updated_by_users", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+# Declared after the class so the expression can reference the mapped column.
+REGISTRO_INDEX = "uq_patients_registro_norm"
+Index(REGISTRO_INDEX, func.lower(func.trim(PatientModel.registro)), unique=True)
+
+# Expression indexes autogenerate cannot compare: SQLite cannot reflect them, and Postgres
+# reflects ``lower(trim(registro))`` back as ``lower(TRIM(BOTH FROM registro))``, which alembic
+# reports as drift. Migration 0009 owns this index; tests assert that it exists and enforces
+# uniqueness on both dialects.
+AUTOGENERATE_SKIP_INDEXES = frozenset({REGISTRO_INDEX})
+
+
+def autogenerate_include_object(obj, name, type_, reflected, compare_to) -> bool:
+    """Alembic ``include_object`` hook (env.py and the migration tests)."""
+    return not (type_ == "index" and name in AUTOGENERATE_SKIP_INDEXES)
+
+
 class CaseModel(Base):
     """One row per AnesthesiaCase. The nested aggregate (envelope + 9 children) is stored as
     a JSON document keyed by the DTO field names — matches rest-contract §1's "JSONB blobs".
@@ -85,6 +140,13 @@ class CaseModel(Base):
     user_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("users.id", name="fk_cases_user_id_users", ondelete="RESTRICT"),
+        index=True,
+    )
+    # The patient this encounter belongs to (NOT NULL since migration 0009; RESTRICT, so a
+    # patient with cases cannot be deleted). Server-owned: set at create, never changed.
+    patient_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("patients.id", name="fk_cases_patient_id_patients", ondelete="RESTRICT"),
         index=True,
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)

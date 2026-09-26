@@ -9,11 +9,16 @@ Drives the plan's e2e gate (docs/wiki/plans/auth-admin.md "Build and verificatio
      - any other route is 403 until the change        GET  /cases -> 403
   4. the new user changes the password, logs in again POST /auth/change-password (revokes the
                                                      old token) -> POST /auth/login
-  5. the new user writes a synthetic case            PUT  /cases/{id} (client-owned id) + the
-                                                     per-section PUT/POST/PATCH routes
+  5. the new user creates (or finds) a synthetic      POST /patients (409 -> the existing id),
+     patient and writes a case under it              PUT  /cases/{id} (client-owned id,
+                                                     patient_id) + the per-section routes,
+                                                     GET  /patients/{id} lists it numbered
   6. stores a document, then finalizes               POST /cases/{id}/documents,
                                                      POST /cases/{id}/finalize
-  7. admin checks the dashboard                      GET  /admin/stats, /admin/cases,
+  7. admin checks the dashboard                      GET  /admin/stats, /admin/cases
+                                                     (?patient_id=), /admin/patients,
+                                                     GET /patients/{id} (admin view),
+                                                     DELETE /admin/patients/{id} -> 409,
                                                      /admin/documents, GET /documents/{id}/file
                                                      (must start with %PDF-)
   8. legacy streaming export of the 4 forms          POST /cases/{id}/export/{form_id}, written
@@ -26,7 +31,8 @@ Every value is synthetic. Run the server first (uvicorn app.main:app) with an ad
     TIVA_E2E_ADMIN_USERNAME=... TIVA_E2E_ADMIN_PASSWORD=... \\
         python backend/scripts/e2e.py
 
-The created account (``e2e-<random>``) and case are left in place so they show up on the admin
+The created account (``e2e-<random>``), the synthetic patient (registro ``SYN-E2E-0000``, reused
+across runs) and the case are left in place so they show up on the admin
 dashboard; delete them from /admin afterwards if needed. Exits non-zero on the first failure.
 """
 import os
@@ -39,6 +45,8 @@ import httpx
 BASE = os.environ.get("TIVA_API", "http://127.0.0.1:8000/api/v1")
 ADMIN_USERNAME = os.environ.get("TIVA_E2E_ADMIN_USERNAME", "")
 ADMIN_PASSWORD = os.environ.get("TIVA_E2E_ADMIN_PASSWORD", "")
+PATIENT = {"registro": "SYN-E2E-0000", "nombre": "Paciente Sintetico E2E", "sexo": "female",
+           "fecha_nacimiento": "1972-03-04", "grupo_sanguineo": "O", "rh": "+"}
 OUT = Path(os.environ.get("TIVA_OUT", Path(__file__).resolve().parents[2] / "notebooks/forms/out"))
 
 FORMS = [
@@ -78,9 +86,12 @@ def fill_case(c: httpx.Client, h: dict[str, str], cid: str) -> None:
         "sala": "Q3", "servicio": "Cirugía General", "tipo_admision": "urgencia",
         "diagnostico_preop": "Colecistitis aguda",
         "operacion_propuesta": "Colecistectomía laparoscópica", "asa": 2, "raq": 2}))
+    # identity (nombre, registro, sexo, grupo, Rh) comes from the patient; only the
+    # per-encounter values are sent here
+    current = show("GET /cases/{id}/patient", c.get(f"/cases/{cid}/patient", headers=h)).json()
     p = show("PUT patient", c.put(f"/cases/{cid}/patient", headers=h, json={
-        "nombre": "Paciente Sintetico E2E", "registro": "SYN-0000", "rh": "+",
-        "grupo_sanguineo": "O", "hb": 13.2, "hto": 39.6, "cama": "000",
+        **{k: current[k] for k in ("nombre", "registro", "rh", "grupo_sanguineo")},
+        "hb": 13.2, "hto": 39.6, "cama": "000",
         "profile": {"weight": 72, "height": 161, "age": 54, "gender": "female"}})).json()
     print(f"    derived: imc={p['imc']} peso_ideal={p['peso_ideal']} vsc={p['vsc']}")
     show("PUT preanesthetic-assessment", c.put(
@@ -119,6 +130,18 @@ def fill_case(c: httpx.Client, h: dict[str, str], cid: str) -> None:
         "alta_a_piso": "Habitación 000"}))
 
 
+def find_or_create_patient(c: httpx.Client, h: dict[str, str]) -> str:
+    """POST /patients; a duplicate registro answers 409 with the existing patient's id."""
+    r = c.post("/patients", headers=h, json=PATIENT)
+    if r.status_code == 409:
+        body = r.json()
+        check(body.get("detail") == "patient exists" and bool(body.get("patient_id")),
+              "duplicate registro -> 409 with the existing patient_id")
+        print(f"  [OK 409] POST /patients (exists) -> {body['patient_id']}")
+        return body["patient_id"]
+    return show("POST /patients", r).json()["id"]
+
+
 def main() -> None:
     if not (ADMIN_USERNAME and ADMIN_PASSWORD):
         raise SystemExit("set TIVA_E2E_ADMIN_USERNAME and TIVA_E2E_ADMIN_PASSWORD (an admin)")
@@ -153,15 +176,27 @@ def main() -> None:
     check(user["user"]["must_change_password"] is False, "flag cleared")
     uh = bearer(user["access_token"])
 
-    print("== 5. PUT + fill a synthetic case ==")
+    print("== 5. patient + PUT + fill a synthetic case ==")
+    pid = find_or_create_patient(c, uh)
+    again = c.post("/patients", headers=uh, json={**PATIENT, "registro": " syn-e2e-0000 "})
+    check(again.status_code == 409 and again.json().get("patient_id") == pid,
+          "registro is unique (trimmed, case-insensitive)")
     cid = str(uuid.uuid4())
+    show("PUT /cases/{id} without patient_id -> 422", c.put(
+        f"/cases/{cid}", headers=uh, json={"owner": "e2e"}), expect=422)
     put = show("PUT /cases/{id} (client-owned id)", c.put(f"/cases/{cid}", headers=uh, json={
-        "owner": "e2e", "sala": "Q1"})).json()
+        "owner": "e2e", "sala": "Q1", "patient_id": pid})).json()
     check(put["id"] == cid and put["status"] == "draft", "case created as draft")
+    check(put["patient_id"] == pid and put["patient"]["registro"] == PATIENT["registro"],
+          "case carries the patient's identity")
     print("  anestesiologo prefill:", put["anestesiologo"])
     fill_case(c, uh, cid)
     full = show("GET /cases/{id}", c.get(f"/cases/{cid}", headers=uh)).json()
     print(f"    drugs={len(full['drugs'])} aldrete_totals={full['recovery']['totals']}")
+    detail = show("GET /patients/{id}", c.get(f"/patients/{pid}", headers=uh)).json()
+    mine = next((x for x in detail["cases"] if x["id"] == cid), None)
+    check(mine is not None and mine["can_edit"] and mine["numero"] == len(detail["cases"]),
+          f"case listed as Caso {mine['numero'] if mine else '?'} of the patient")
 
     print("== 6. store a document, finalize ==")
     doc = show("POST /cases/{id}/documents", c.post(
@@ -176,10 +211,24 @@ def main() -> None:
     stats = show("GET /admin/stats", c.get("/admin/stats", headers=ah)).json()
     row = next((u for u in stats["per_user"] if u["username"] == username), None)
     check(row is not None and row["finalized"] >= 1, "new user's finalized case in per_user")
-    print(f"    cases_total={stats['cases_total']} documents_total={stats['documents_total']}")
+    print(f"    patients_total={stats['patients_total']} cases_total={stats['cases_total']} "
+          f"documents_total={stats['documents_total']}")
     cases = show("GET /admin/cases", c.get("/admin/cases", headers=ah,
                                              params={"user_id": created["id"]})).json()
     check(any(x["id"] == cid for x in cases["items"]), "case listed in /admin/cases")
+    by_patient = show("GET /admin/cases?patient_id=", c.get(
+        "/admin/cases", headers=ah, params={"patient_id": pid})).json()
+    check(any(x["id"] == cid and x["patient_registro"] == PATIENT["registro"]
+              for x in by_patient["items"]), "case listed under its patient")
+    pats = show("GET /admin/patients", c.get("/admin/patients", headers=ah,
+                                             params={"q": PATIENT["registro"]})).json()
+    check(any(x["id"] == pid and x["cases_count"] >= 1 for x in pats["items"]),
+          "patient listed with its cases_count")
+    apat = show("GET /patients/{id} (admin)", c.get(f"/patients/{pid}", headers=ah)).json()
+    check(any(x["id"] == cid for x in apat["cases"]) and not any(x["can_edit"] for x in apat["cases"]),
+          "admin reads the patient's cases (none editable)")
+    show("DELETE /admin/patients/{id} while it has cases -> 409",
+         c.delete(f"/admin/patients/{pid}", headers=ah), expect=409)
     adocs = show("GET /admin/documents", c.get("/admin/documents", headers=ah,
                                                  params={"case_id": cid})).json()
     check(adocs["total"] >= 1 + len(FORMS), f"{adocs['total']} documents in /admin/documents")

@@ -8,6 +8,7 @@ from app.core.db import engine
 from app.infrastructure.models import CaseModel
 
 from .conftest import IS_SQLITE
+from .conftest import fresh_patient_id
 
 SERVER_FIELDS = {"status", "updated_at", "finalized_at", "user_id"}
 
@@ -23,7 +24,8 @@ def _aware(value: datetime) -> datetime:
 
 def test_new_case_has_server_fields(client, anesthesiologist, auth_headers, db):
     headers = auth_headers(anesthesiologist)
-    resp = client.post("/api/v1/cases", json={"owner": "tester"}, headers=headers)
+    resp = client.post("/api/v1/cases", json={"patient_id": fresh_patient_id(), "owner": "tester"},
+                       headers=headers)
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["status"] == "draft"
@@ -38,7 +40,7 @@ def test_new_case_has_server_fields(client, anesthesiologist, auth_headers, db):
 
 
 def test_gateway_no_header_falls_back_to_mock_tenant(client, gateway_mode):
-    body = client.post("/api/v1/cases", json={}).json()
+    body = client.post("/api/v1/cases", json={"patient_id": fresh_patient_id()}).json()
     assert body["user_id"] == settings.mock_user_id
 
 
@@ -52,6 +54,7 @@ def test_client_put_cannot_set_server_fields(client, anesthesiologist, auth_head
         "updated_at": "2020-01-01T00:00:00Z",
         "user_id": "someone-else",
         "patient": {"nombre": "Paciente Sintetico"},
+        "patient_id": fresh_patient_id(),
     }
     # create path
     resp = client.put(f"/api/v1/cases/{case_id}", json=forged, headers=headers)
@@ -82,7 +85,9 @@ def test_created_at_cannot_be_forged_on_replace(client, anesthesiologist, auth_h
     case_id = "21111111-2222-4333-8444-555555555555"
     # Create path accepts the client-minted created_at (offline-first).
     minted = "2026-09-20T08:30:00+00:00"
-    resp = client.put(f"/api/v1/cases/{case_id}", json={"created_at": minted}, headers=headers)
+    resp = client.put(f"/api/v1/cases/{case_id}",
+                      json={"created_at": minted, "patient_id": fresh_patient_id()},
+                      headers=headers)
     assert resp.status_code == 200, resp.text
     assert _ts(resp.json()["created_at"]) == _ts(minted)
 
@@ -110,7 +115,8 @@ def test_created_at_read_from_column_even_if_blob_differs(
 
 def test_updated_at_moves_on_every_write(client, anesthesiologist, auth_headers):
     headers = auth_headers(anesthesiologist)
-    case = client.post("/api/v1/cases", json={}, headers=headers).json()
+    case = client.post("/api/v1/cases", json={"patient_id": fresh_patient_id()},
+                       headers=headers).json()
     t0 = _ts(case["updated_at"])
     patched = client.patch(f"/api/v1/cases/{case['id']}", json={"sala": "3"}, headers=headers)
     assert patched.status_code == 200, patched.text

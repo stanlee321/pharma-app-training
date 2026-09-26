@@ -1,6 +1,8 @@
-"""Increment 2: case authorization matrix — tenant isolation, admin read-only on /cases,
-the finalized lock (409), and the anestesiologo prefill on create."""
+"""Case authorization matrix — shared read / owner-only write between anesthesiologists
+(plan patients-historias.md), admin read-only on /cases, the finalized lock (409), and the
+anestesiologo prefill on create."""
 import pytest
+from .conftest import fresh_patient_id
 
 CASE_ID = "31111111-2222-4333-8444-555555555555"
 
@@ -34,33 +36,42 @@ def two_anesthesiologists(user_factory, auth_headers):
     return (a, auth_headers(a)), (b, auth_headers(b))
 
 
-def test_tenant_isolation_between_anesthesiologists(client, two_anesthesiologists):
+def test_shared_read_owner_only_write(client, two_anesthesiologists):
+    """Cases are shared hospital-wide: B reads A's case (and its documents/exports) but every
+    write is 403; GET /cases still lists only the caller's own cases."""
     (a, ha), (b, hb) = two_anesthesiologists
-    cid = client.post("/api/v1/cases", json={}, headers=ha).json()["id"]
+    cid = client.post("/api/v1/cases", json={"patient_id": fresh_patient_id()},
+                      headers=ha).json()["id"]
     drug = client.post(f"/api/v1/cases/{cid}/drugs", json={"farmaco": "Propofol"}, headers=ha)
     drug_id = drug.json()["id"]
 
     assert [c["id"] for c in client.get("/api/v1/cases", headers=hb).json()] == []
     assert [c["id"] for c in client.get("/api/v1/cases", headers=ha).json()] == [cid]
     for path in [f"/api/v1/cases/{cid}", f"/api/v1/cases/{cid}/patient",
-                 f"/api/v1/cases/{cid}/drugs"]:
-        assert client.get(path, headers=hb).status_code == 404, path
-    assert client.post(f"/api/v1/cases/{cid}/export/nota_postanestesica",
-                       headers=hb).status_code == 404
+                 f"/api/v1/cases/{cid}/drugs", f"/api/v1/cases/{cid}/documents"]:
+        assert client.get(path, headers=hb).status_code == 200, path
+    exp = client.post(f"/api/v1/cases/{cid}/export/nota_postanestesica", headers=hb)
+    assert exp.status_code == 200 and exp.headers["content-type"].startswith("application/pdf")
     for method, path, body in _writes(cid, drug_id):
         resp = _call(client, method, path, body, hb)
-        assert resp.status_code == 404, (method, path, resp.text)
+        assert resp.status_code == 403, (method, path, resp.text)
+        assert resp.json() == {"detail": "case belongs to another anesthesiologist"}
+    # storing documents / finalizing another user's case are writes too
+    assert client.post(f"/api/v1/cases/{cid}/documents", json={"form_id": "nota_postanestesica"},
+                       headers=hb).status_code == 403
+    assert client.post(f"/api/v1/cases/{cid}/finalize", headers=hb).status_code == 403
 
     # nothing B tried changed A's case (incl. the PUT upsert hijack attempt)
     case = client.get(f"/api/v1/cases/{cid}", headers=ha).json()
     assert case["user_id"] == a.id and case["owner"] == "" and case["sala"] == ""
-    assert len(case["drugs"]) == 1
+    assert len(case["drugs"]) == 1 and case["status"] == "draft"
 
 
 def test_admin_reads_any_case_but_cannot_write(client, anesthesiologist, admin_user,
                                                auth_headers):
     ha, hadmin = auth_headers(anesthesiologist), auth_headers(admin_user)
-    cid = client.post("/api/v1/cases", json={}, headers=ha).json()["id"]
+    cid = client.post("/api/v1/cases", json={"patient_id": fresh_patient_id()},
+                      headers=ha).json()["id"]
     drug_id = client.post(f"/api/v1/cases/{cid}/drugs", json={"farmaco": "Propofol"},
                           headers=ha).json()["id"]
 
@@ -74,7 +85,8 @@ def test_admin_reads_any_case_but_cannot_write(client, anesthesiologist, admin_u
     exp = client.post(f"/api/v1/cases/{cid}/export/nota_postanestesica", headers=hadmin)
     assert exp.status_code == 200 and exp.headers["content-type"].startswith("application/pdf")
 
-    assert client.post("/api/v1/cases", json={}, headers=hadmin).status_code == 403
+    assert client.post("/api/v1/cases", json={"patient_id": fresh_patient_id()},
+                       headers=hadmin).status_code == 403
     assert client.put(f"/api/v1/cases/{CASE_ID}", json={}, headers=hadmin).status_code == 403
     for method, path, body in _writes(cid, drug_id):
         resp = _call(client, method, path, body, hadmin)
@@ -112,30 +124,37 @@ def test_draft_case_writes_still_allowed(client, anesthesiologist, auth_headers,
     assert client.delete(f"/api/v1/cases/{row.id}", headers=h).status_code == 204
 
 
-def test_other_users_finalized_case_is_404_not_409(client, two_anesthesiologists, case_factory):
+def test_other_users_finalized_case_is_403_not_409(client, two_anesthesiologists, case_factory):
     (a, _), (_, hb) = two_anesthesiologists
     row = case_factory(user_id=a.id, status="finalized")
-    assert client.patch(f"/api/v1/cases/{row.id}", json={"sala": "1"}, headers=hb).status_code == 404
+    resp = client.patch(f"/api/v1/cases/{row.id}", json={"sala": "1"}, headers=hb)
+    assert resp.status_code == 403
+    assert resp.json() == {"detail": "case belongs to another anesthesiologist"}
+    assert client.get(f"/api/v1/cases/{row.id}", headers=hb).status_code == 200
 
 
 # --- prefill -----------------------------------------------------------------------------
 
 def test_post_create_prefills_anestesiologo(client, anesthesiologist, auth_headers):
-    body = client.post("/api/v1/cases", json={}, headers=auth_headers(anesthesiologist)).json()
+    body = client.post("/api/v1/cases", json={"patient_id": fresh_patient_id()},
+                       headers=auth_headers(anesthesiologist)).json()
     assert body["anestesiologo"]["nombre"] == "Dra. Ana Sintetica"
     assert body["anestesiologo"]["clave"] == "ANE-111"
 
 
 def test_put_create_prefills_only_when_empty(client, anesthesiologist, auth_headers):
     h = auth_headers(anesthesiologist)
-    empty = client.put(f"/api/v1/cases/{CASE_ID}", json={"anestesiologo": {"cedula": "123"}},
+    empty = client.put(f"/api/v1/cases/{CASE_ID}",
+                       json={"anestesiologo": {"cedula": "123"},
+                             "patient_id": fresh_patient_id()},
                        headers=h).json()
     assert empty["anestesiologo"] == {"nombre": "Dra. Ana Sintetica", "clave": "ANE-111",
                                       "cedula": "123", "universidad": ""}
 
     other = "51111111-2222-4333-8444-555555555555"
     given = client.put(f"/api/v1/cases/{other}",
-                       json={"anestesiologo": {"nombre": "Dr. Suplente", "clave": ""}},
+                       json={"anestesiologo": {"nombre": "Dr. Suplente", "clave": ""},
+                             "patient_id": fresh_patient_id()},
                        headers=h).json()
     assert given["anestesiologo"]["nombre"] == "Dr. Suplente"
     assert given["anestesiologo"]["clave"] == ""

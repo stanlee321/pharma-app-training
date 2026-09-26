@@ -2,10 +2,12 @@
 
 Authorization (reuses ``CaseService``'s readable/writable checks):
 
-* generate + list + download — anyone who can READ the case: its owner (draft or finalized)
-  or an admin. Anyone else -> 404.
-* delete — an admin, or the owner while the case is still a draft (409 once finalized).
-* finalize — the owner of a draft case only (403 admin, 404 others, 409 already finalized).
+* list + download — anyone who can READ the case: every authenticated user (cases are shared
+  hospital-wide, plan patients-historias.md). 404 only when the case/document does not exist.
+* generate — the case owner (draft or finalized) or an admin; anyone else -> 403.
+* delete — an admin, or the owner while the case is still a draft (409 once finalized);
+  anyone else -> 403.
+* finalize — the owner of a draft case only (403 admin and others, 409 already finalized).
 
 Where the bytes go: ``DocumentStores.writer`` (``TIVA_DOCUMENT_STORAGE``). Where they are read
 from / deleted: the store named by the row's ``storage_backend``, so mixed rows work.
@@ -43,7 +45,7 @@ from ..infrastructure.storage import (
     sha256_hex,
 )
 from . import dto
-from .case_service import FINALIZED_DETAIL, CaseService, _utc, canonical_id
+from .case_service import FINALIZED_DETAIL, CaseService, _blob, _utc, canonical_id
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +154,10 @@ class DocumentService:
     # ------------------------------------------------------------------ use-cases
     def generate(self, case_id: str, form_id: str) -> dto.DocumentDTO:
         self._check_form(form_id)
-        case = self.cases.load(self.cases.readable(case_id))
+        m = self.cases.owned_or_admin(case_id)
+        case = self.cases.load(m)
+        if m.status == "draft":  # a draft prints its patient's current identity
+            self.cases.sync_identity(m, case)
         written: list[StoredFile] = []
         try:
             row, stored = self._store(case, form_id)
@@ -186,7 +191,7 @@ class DocumentService:
     def delete(self, document_id: str) -> None:
         m = self._document(document_id)
         if not self.user.is_admin:
-            case = self.cases.readable(m.case_id)  # the owner (readable already checked)
+            case = self.cases.owned_or_admin(m.case_id)  # 403 unless the owner
             if case.status == "finalized":
                 raise HTTPException(status_code=409, detail=FINALIZED_DETAIL)
         doc_id, backend, path = m.id, m.storage_backend, m.storage_path
@@ -210,13 +215,22 @@ class DocumentService:
     def finalize(self, case_id: str) -> dto.AnesthesiaCaseDTO:
         """Owner only: render + store all four forms, then atomically lock the case and record
         the documents. Each form falls back to the summary PDF on its own; nothing half-applies."""
-        m = self.cases.writable(case_id)  # 403 admin / 404 not own / 409 already finalized
+        m = self.cases.writable(case_id)  # 403 admin or not own / 409 already finalized
         # The snapshot is rendered from THIS version of the row; the lock below only applies
         # if nothing wrote to the case meanwhile, so the stored PDFs always match the locked data.
         loaded_version = m.version
         case = self.cases.load(m)
         written: list[StoredFile] = []
         try:
+            # The PDFs and the locked data carry the patient's CURRENT identity: a stale
+            # snapshot is rewritten (same transaction, compare-and-set on the loaded version).
+            if self.cases.sync_identity(m, case):
+                if not self.cases.repo.replace_draft_data(
+                    m.id, data=_blob(case), expected_version=loaded_version,
+                ):
+                    raise HTTPException(status_code=409,
+                                        detail=self._lost_finalize_detail(m.id))
+                loaded_version += 1
             for form_id in dto.FORM_IDS:
                 _row, stored = self._store(case, form_id)  # row (+ db blob) pending, uncommitted
                 written.append(stored)

@@ -28,7 +28,7 @@ from app.infrastructure.storage import (
 )
 from app.main import app as fastapi_app
 
-from .conftest import IS_SQLITE
+from .conftest import IS_SQLITE, fresh_patient_id
 
 API = "/api/v1"
 A = f"{API}/admin"
@@ -48,7 +48,8 @@ def admin(admin_user, auth_headers):
 
 
 def _new_case(client, headers) -> str:
-    cid = client.post(f"{API}/cases", json={"owner": "tester"}, headers=headers).json()["id"]
+    cid = client.post(f"{API}/cases", json={"patient_id": fresh_patient_id(), "owner": "tester"},
+                      headers=headers).json()["id"]
     client.put(f"{API}/cases/{cid}/patient", json={"nombre": "Paciente Sintetico"},
                headers=headers)
     return cid

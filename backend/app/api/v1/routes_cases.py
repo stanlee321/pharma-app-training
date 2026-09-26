@@ -29,7 +29,9 @@ def create_case(
     body: dto.CreateCaseRequest,
     svc: CaseService = Depends(get_case_service),
 ):
-    return svc.create(body.owner)
+    """New draft case for a patient (``patient_id`` required; 404 unknown patient). The
+    patient's identity and the last case's profile values are copied in."""
+    return svc.create(body.owner, str(body.patient_id))
 
 
 @router.get("/cases", response_model=list[dto.CaseSummaryDTO])
@@ -59,7 +61,9 @@ def upsert_case(
 ):
     """Full-aggregate create-or-replace (client-owned id). Used by the app's RestCaseStore save.
     Server-owned fields (status, updated_at, finalized_at, user_id) and ``id`` in the body are
-    ignored; an upper-case path id addresses the same case as its lower-case form."""
+    ignored; an upper-case path id addresses the same case as its lower-case form.
+    Create: ``patient_id`` is required (422 without, 404 unknown). Replace: ``patient_id`` is
+    ignored (a case never changes patient); 403 on another user's case, 409 if finalized."""
     return svc.upsert(str(case_id), body.model_dump(exclude_unset=True, exclude={"id"}))
 
 

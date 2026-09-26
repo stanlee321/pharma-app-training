@@ -5,6 +5,7 @@ Run from the backend/ directory so `app` is importable:  cd backend && python -m
 DB wiring (temp SQLite by default, Postgres via TIVA_TEST_DATABASE_URL), schema creation and
 per-test isolation live in tests/conftest.py; `client` is its TestClient fixture.
 """
+from .conftest import fresh_patient_id
 
 
 def test_health(client):
@@ -16,7 +17,7 @@ def test_health(client):
 def test_case_lifecycle(client, anesthesiologist, auth_headers):
     client.headers.update(auth_headers(anesthesiologist))
     # create
-    resp = client.post("/api/v1/cases", json={"owner": "tester"})
+    resp = client.post("/api/v1/cases", json={"patient_id": fresh_patient_id(), "owner": "tester"})
     assert resp.status_code == 200, resp.text
     case_id = resp.json()["id"]
     assert case_id

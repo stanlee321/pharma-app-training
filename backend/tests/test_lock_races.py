@@ -18,6 +18,7 @@ from app.application.identity import CurrentUser
 from app.core.db import SessionLocal
 from app.infrastructure.models import CaseModel
 from app.infrastructure.repository import SqlCaseRepository, SqlDocumentRepository
+from .conftest import fresh_patient_id
 
 API = "/api/v1"
 
@@ -33,9 +34,10 @@ def owner(anesthesiologist, auth_headers):
     return anesthesiologist, auth_headers(anesthesiologist)
 
 
-def _new_case(client, headers, nombre="NOMBRE ORIGINAL") -> str:
-    cid = client.post(f"{API}/cases", json={}, headers=headers).json()["id"]
-    assert client.put(f"{API}/cases/{cid}/patient", json={"nombre": nombre},
+def _new_case(client, headers, cama="CAMA ORIGINAL") -> str:
+    cid = client.post(f"{API}/cases", json={"patient_id": fresh_patient_id()},
+                      headers=headers).json()["id"]
+    assert client.put(f"{API}/cases/{cid}/patient", json={"cama": cama},
                       headers=headers).status_code == 200
     return cid
 
@@ -48,7 +50,7 @@ def test_draft_write_authorised_before_finalize_is_refused(client, owner, db):
         svc = _service(session_a, user)
         m = svc.writable(cid)                      # passes: still a draft
         case = svc._load(m)
-        case.patient.nombre = "NOMBRE MUTADO"
+        case.patient.cama = "CAMA MUTADA"
 
         assert client.post(f"{API}/cases/{cid}/finalize", headers=h).status_code == 200
 
@@ -61,7 +63,7 @@ def test_draft_write_authorised_before_finalize_is_refused(client, owner, db):
 
     got = client.get(f"{API}/cases/{cid}", headers=h).json()
     assert got["status"] == "finalized"
-    assert got["patient"]["nombre"] == "NOMBRE ORIGINAL"
+    assert got["patient"]["cama"] == "CAMA ORIGINAL"
 
 
 def test_owner_delete_authorised_before_finalize_is_refused(client, owner, db, stored_objects):
@@ -91,12 +93,12 @@ def test_write_committed_during_finalize_render_is_409_and_cleans_up(
     state = {"raced": False}
 
     def racing_render(case, form_id, *args, **kwargs):
-        rendered_names.append(case.patient.nombre)
+        rendered_names.append(case.patient.cama)
         if not state["raced"]:
             state["raced"] = True
             other = SessionLocal()           # a concurrent PUT from another request
             try:
-                _service(other, user).put_child(cid, "patient", {"nombre": "NOMBRE NUEVO"})
+                _service(other, user).put_child(cid, "patient", {"cama": "CAMA NUEVA"})
             finally:
                 other.close()
         return real_render(case, form_id, *args, **kwargs)
@@ -105,13 +107,13 @@ def test_write_committed_during_finalize_render_is_409_and_cleans_up(
     resp = client.post(f"{API}/cases/{cid}/finalize", headers=h)
     assert resp.status_code == 409, resp.text
     assert resp.json() == {"detail": FINALIZE_CONFLICT_DETAIL}
-    assert set(rendered_names) == {"NOMBRE ORIGINAL"}
+    assert set(rendered_names) == {"CAMA ORIGINAL"}
 
     # nothing half-applied: still a draft with the concurrent write, no rows, no files
     db.expire_all()
     row = db.get(CaseModel, cid)
     assert (row.status, row.finalized_at) == ("draft", None)
-    assert row.data["patient"]["nombre"] == "NOMBRE NUEVO"
+    assert row.data["patient"]["cama"] == "CAMA NUEVA"
     assert SqlDocumentRepository(db).list_for_case(cid) == []
     assert stored_objects() == 0
 
@@ -119,8 +121,8 @@ def test_write_committed_during_finalize_render_is_409_and_cleans_up(
     rendered_names.clear()
     resp = client.post(f"{API}/cases/{cid}/finalize", headers=h)
     assert resp.status_code == 200, resp.text
-    assert set(rendered_names) == {"NOMBRE NUEVO"}
-    assert resp.json()["patient"]["nombre"] == "NOMBRE NUEVO"
+    assert set(rendered_names) == {"CAMA NUEVA"}
+    assert resp.json()["patient"]["cama"] == "CAMA NUEVA"
     assert stored_objects() == 4
 
 

@@ -7,6 +7,8 @@ from app import main as app_main
 from app.core.config import settings
 from app.main import app as fastapi_app
 
+from .conftest import fresh_patient_id
+
 API = "/api/v1"
 CID = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
 
@@ -19,7 +21,8 @@ def lenient(client):
 
 def test_uppercase_case_id_addresses_the_same_row(client, anesthesiologist, auth_headers):
     h = auth_headers(anesthesiologist)
-    resp = client.put(f"{API}/cases/{CID.upper()}", json={"sala": "1"}, headers=h)
+    resp = client.put(f"{API}/cases/{CID.upper()}",
+                      json={"sala": "1", "patient_id": fresh_patient_id()}, headers=h)
     assert resp.status_code == 200 and resp.json()["id"] == CID
     got = client.get(f"{API}/cases/{CID}", headers=h)
     assert got.status_code == 200 and got.json()["sala"] == "1"
@@ -30,13 +33,15 @@ def test_uppercase_case_id_addresses_the_same_row(client, anesthesiologist, auth
                        headers=h).status_code == 200
 
 
-def test_uppercase_id_of_another_users_case_is_404(client, user_factory, auth_headers):
+def test_uppercase_id_of_another_users_case_is_403(client, user_factory, auth_headers):
     a = user_factory(username="dueno_a")
     b = user_factory(username="intruso_b")
     ha, hb = auth_headers(a), auth_headers(b)
-    assert client.put(f"{API}/cases/{CID}", json={"sala": "A"}, headers=ha).status_code == 200
-    resp = client.put(f"{API}/cases/{CID.upper()}", json={"sala": "B"}, headers=hb)
-    assert resp.status_code == 404
+    assert client.put(f"{API}/cases/{CID}", json={"sala": "A", "patient_id": fresh_patient_id()},
+                      headers=ha).status_code == 200
+    resp = client.put(f"{API}/cases/{CID.upper()}",
+                      json={"sala": "B", "patient_id": fresh_patient_id()}, headers=hb)
+    assert resp.status_code == 403
     assert client.get(f"{API}/cases", headers=hb).json() == []
     assert client.get(f"{API}/cases/{CID}", headers=ha).json()["sala"] == "A"
 
@@ -46,7 +51,11 @@ def test_invalid_bodies_are_422_not_500(lenient, anesthesiologist, auth_headers)
     assert lenient.put(f"{API}/cases/not-a-uuid", json={}, headers=h).status_code == 422
     assert lenient.get(f"{API}/cases/not-a-uuid", headers=h).status_code == 422
     assert lenient.put(f"{API}/cases/{CID}", json={"patient": "x"}, headers=h).status_code == 422
-    assert lenient.put(f"{API}/cases/{CID}", json={}, headers=h).status_code == 200
+    assert lenient.put(f"{API}/cases/{CID}", json={}, headers=h).status_code == 422  # no patient
+    assert lenient.put(f"{API}/cases/{CID}", json={"patient_id": "not-a-uuid"},
+                       headers=h).status_code == 422
+    assert lenient.put(f"{API}/cases/{CID}", json={"patient_id": fresh_patient_id()},
+                       headers=h).status_code == 200
     assert lenient.post(f"{API}/cases/{CID}/drugs", json={"dose_value": "abc"},
                         headers=h).status_code == 422
     drug = lenient.post(f"{API}/cases/{CID}/drugs", json={"farmaco": "Propofol"}, headers=h)
@@ -76,7 +85,7 @@ def test_service_level_validation_error_is_422():
 
 def test_unknown_child_resource_is_not_found(client, anesthesiologist, auth_headers):
     h = auth_headers(anesthesiologist)
-    client.put(f"{API}/cases/{CID}", json={}, headers=h)
+    client.put(f"{API}/cases/{CID}", json={"patient_id": fresh_patient_id()}, headers=h)
     assert client.get(f"{API}/cases/{CID}/nonexistent", headers=h).status_code == 404
     assert client.put(f"{API}/cases/{CID}/nonexistent", json={},
                       headers=h).status_code in (404, 405)
@@ -84,7 +93,8 @@ def test_unknown_child_resource_is_not_found(client, anesthesiologist, auth_head
 
 def test_every_cases_route_is_typed(client):
     spec = client.get("/openapi.json").json()
-    typed_prefixes = tuple(f"{API}/{p}" for p in ("cases", "documents", "forms", "admin"))
+    typed_prefixes = tuple(f"{API}/{p}" for p in ("cases", "documents", "forms", "admin",
+                                                     "patients"))
     walked = set()
     for path, ops in spec["paths"].items():
         if not path.startswith(typed_prefixes):
@@ -103,10 +113,12 @@ def test_every_cases_route_is_typed(client):
             if method in ("put", "post", "patch") and not path.endswith(("/finalize", "/reopen")):
                 body = op.get("requestBody", {}).get("content", {}).get("application/json", {})
                 assert body.get("schema", {}).get("$ref"), (method, path)
-    assert walked == {"cases", "documents", "forms", "admin"}
+    assert walked == {"cases", "documents", "forms", "admin", "patients"}
     schemas = spec["components"]["schemas"]
     write = schemas["AnesthesiaCaseWrite"]["properties"]
     assert not {"status", "updated_at", "finalized_at", "user_id"} & set(write)
+    assert "patient_id" in write and "patient_id" in schemas["AnesthesiaCaseDTO"]["properties"]
+    assert "patient_id" in schemas["CreateCaseRequest"]["required"]
     assert set(schemas["GenerateDocumentRequest"]["properties"]["form_id"]["enum"]) == {
         "registro_transanestesico", "nota_postanestesica", "imss_valoracion_preanestesica",
         "imss_registro_anestesia"}

@@ -26,6 +26,7 @@ from app.infrastructure.repository import (
 )
 
 from .conftest import TEST_PASSWORD
+from .conftest import fresh_patient_id
 
 API = "/api/v1"
 A = f"{API}/admin"
@@ -63,19 +64,22 @@ ADMIN_ROUTES = [
     ("get", "/cases/{cid}", None),
     ("delete", "/cases/{cid}", None),
     ("post", "/cases/{cid}/reopen", None),
+    ("get", "/patients", None),
+    ("delete", "/patients/{pid}", None),
     ("get", "/documents", None),
     ("get", "/stats", None),
 ]
 
 
-def _url(template: str, uid: str, cid: str) -> str:
-    return A + template.format(uid=uid, cid=cid)
+def _url(template: str, uid: str, cid: str, pid: str = "") -> str:
+    return A + template.format(uid=uid, cid=cid, pid=pid)
 
 
 def test_matrix_covers_every_admin_route(client):
     spec = client.get("/openapi.json").json()
     published = {
-        (method, path[len(A):].replace("{user_id}", "{uid}").replace("{case_id}", "{cid}"))
+        (method, path[len(A):].replace("{user_id}", "{uid}").replace("{case_id}", "{cid}")
+         .replace("{patient_id}", "{pid}"))
         for path, ops in spec["paths"].items() if path.startswith(A + "/")
         for method in ops
     }
@@ -92,14 +96,14 @@ def test_anesthesiologist_gets_403_on_every_admin_route(
     kwargs = {"headers": h}
     if body is not None:
         kwargs["json"] = body
-    # target ids that exist (their own case, the admin account): 403, not 404
-    resp = getattr(client, method)(_url(template, admin_user.id, own.id), **kwargs)
+    # target ids that exist (their own case and its patient, the admin account): 403, not 404
+    url = _url(template, admin_user.id, own.id, own.patient_id)
+    resp = getattr(client, method)(url, **kwargs)
     assert resp.status_code == 403, resp.text
     assert resp.json() == {"detail": "admin only"}
     # ...and without a token: 401
     kwargs.pop("headers")
-    assert getattr(client, method)(_url(template, admin_user.id, own.id),
-                                   **kwargs).status_code == 401
+    assert getattr(client, method)(url, **kwargs).status_code == 401
     # nothing changed
     assert client.get(f"{API}/cases/{own.id}", headers=h).json()["status"] == "finalized"
 
@@ -408,7 +412,8 @@ def test_admin_case_detail_and_404(client, admin, seeded_cases):
 def test_admin_delete_finalized_case_removes_files(client, admin, anest, db, documents_dir):
     _, h = admin
     _, uh = anest
-    cid = client.post(f"{API}/cases", json={}, headers=uh).json()["id"]
+    cid = client.post(f"{API}/cases", json={"patient_id": fresh_patient_id()},
+                      headers=uh).json()["id"]
     assert client.post(f"{API}/cases/{cid}/finalize", headers=uh).status_code == 200
     assert len(_files(documents_dir)) == 4
 
@@ -424,7 +429,8 @@ def test_admin_delete_finalized_case_removes_files(client, admin, anest, db, doc
 def test_admin_reopen_then_owner_can_edit(client, admin, anest):
     _, h = admin
     _, uh = anest
-    cid = client.post(f"{API}/cases", json={}, headers=uh).json()["id"]
+    cid = client.post(f"{API}/cases", json={"patient_id": fresh_patient_id()},
+                      headers=uh).json()["id"]
     assert client.post(f"{A}/cases/{cid}/reopen", headers=h).status_code == 409  # a draft
     client.post(f"{API}/cases/{cid}/finalize", headers=uh)
     assert client.patch(f"{API}/cases/{cid}", json={"sala": "4"}, headers=uh).status_code == 409
@@ -446,7 +452,8 @@ def test_admin_cannot_edit_case_content(client, admin, anest):
     """Admin on cases = view + PDFs + delete + reopen; editing stays 403 on /cases."""
     _, h = admin
     _, uh = anest
-    cid = client.post(f"{API}/cases", json={}, headers=uh).json()["id"]
+    cid = client.post(f"{API}/cases", json={"patient_id": fresh_patient_id()},
+                      headers=uh).json()["id"]
     assert client.patch(f"{API}/cases/{cid}", json={"sala": "9"}, headers=h).status_code == 403
     spec = client.get("/openapi.json").json()
     admin_case_methods = {m for p, ops in spec["paths"].items()
@@ -462,8 +469,10 @@ def test_admin_documents_index(client, admin, anest, user_factory, auth_headers,
     _, uh = anest
     other = user_factory(username="otra")
     oh = auth_headers(other)
-    c1 = client.post(f"{API}/cases", json={}, headers=uh).json()["id"]
-    c2 = client.post(f"{API}/cases", json={}, headers=oh).json()["id"]
+    c1 = client.post(f"{API}/cases", json={"patient_id": fresh_patient_id()},
+                     headers=uh).json()["id"]
+    c2 = client.post(f"{API}/cases", json={"patient_id": fresh_patient_id()},
+                     headers=oh).json()["id"]
     client.post(f"{API}/cases/{c1}/finalize", headers=uh)                        # 4 docs
     extra = client.post(f"{API}/cases/{c2}/documents", headers=oh,
                         json={"form_id": "nota_postanestesica"}).json()           # 1 doc
@@ -585,7 +594,10 @@ def test_admin_routes_are_typed(client):
     assert set(schemas["AdminCasePage"]["properties"]) >= {"items", "total"}
     assert "storage_path" in schemas["AdminDocumentDTO"]["properties"]
     assert set(schemas["AdminStatsDTO"]["properties"]) == {
-        "cases_total", "cases_by_status", "cases_per_day", "per_user", "documents_total"}
+        "patients_total", "cases_total", "cases_by_status", "cases_per_day", "per_user",
+        "documents_total"}
+    assert set(schemas["CaseSummaryDTO"]["properties"]) >= {
+        "patient_id", "patient_nombre", "patient_registro"}
     assert "password" not in schemas["UserDTO"]["properties"]
     op_ids = [op["operationId"] for p in spec["paths"].values() for op in p.values()]
     assert len(op_ids) == len(set(op_ids))

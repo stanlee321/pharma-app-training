@@ -24,7 +24,12 @@ from sqlalchemy.exc import IntegrityError
 
 from ..core import security
 from ..infrastructure.models import UserModel
-from ..infrastructure.repository import CaseFilter, SqlDocumentRepository, SqlUserRepository
+from ..infrastructure.repository import (
+    CaseFilter,
+    SqlDocumentRepository,
+    SqlPatientRepository,
+    SqlUserRepository,
+)
 from . import dto
 from .auth_service import mark_password_changed, to_user_dto
 from .case_service import CaseService, _utc, to_summary
@@ -55,6 +60,7 @@ class AdminService:
         users: SqlUserRepository,
         cases: CaseService,
         documents: SqlDocumentRepository,
+        patients: SqlPatientRepository | None = None,
     ):
         if not user.is_admin:
             raise HTTPException(status_code=403, detail="admin only")
@@ -62,6 +68,7 @@ class AdminService:
         self.users = users
         self.cases = cases
         self.documents = documents
+        self.patients = patients if patients is not None else SqlPatientRepository(users.db)
 
     # ------------------------------------------------------------------ users
     def _user(self, user_id: str) -> UserModel:
@@ -150,6 +157,7 @@ class AdminService:
 
     # ------------------------------------------------------------------ cases
     def list_cases(self, *, status: str | None = None, user_id: str | None = None,
+                   patient_id: str | None = None,
                    q: str | None = None, date_from: date | None = None,
                    date_to: date | None = None, limit: int = 50, offset: int = 0,
                    ) -> dto.AdminCasePage:
@@ -158,13 +166,13 @@ class AdminService:
         if date_from and date_to and date_from > date_to:
             raise HTTPException(status_code=422, detail="date_from must be on or before date_to")
         f = CaseFilter(
-            status=status, user_id=user_id, q=q,
+            status=status, user_id=user_id, patient_id=patient_id, q=q,
             created_from=day_start(date_from) if date_from else None,
             created_to=day_start(date_to + timedelta(days=1)) if date_to else None,
         )
         rows, total = self.cases.repo.search(f, limit=limit, offset=offset)
         return dto.AdminCasePage(
-            items=[to_summary(m, owner) for m, owner in rows], total=total,
+            items=[to_summary(m, owner, p) for m, owner, p in rows], total=total,
             limit=limit, offset=offset,
         )
 
@@ -210,6 +218,7 @@ class AdminService:
                 last_activity=max(stamps) if stamps else None,
             ))
         return dto.AdminStatsDTO(
+            patients_total=self.patients.count(),
             cases_total=sum(by_status.values()),
             cases_by_status=dto.CasesByStatusDTO(
                 draft=by_status.get("draft", 0), finalized=by_status.get("finalized", 0)

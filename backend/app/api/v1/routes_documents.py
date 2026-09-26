@@ -1,8 +1,8 @@
 """Stored documents + finalize (plan phase 3).
 
-POST   /cases/{case_id}/documents   {form_id}  -> DocumentDTO     (owner or admin)
-GET    /cases/{case_id}/documents              -> DocumentDTO[]   (newest first)
-GET    /documents/{document_id}/file           -> application/pdf (owner or admin)
+POST   /cases/{case_id}/documents   {form_id}  -> DocumentDTO     (owner or admin; else 403)
+GET    /cases/{case_id}/documents              -> DocumentDTO[]   (any user; newest first)
+GET    /documents/{document_id}/file           -> application/pdf (any user)
 DELETE /documents/{document_id}                -> 204             (admin, or owner while draft)
 POST   /cases/{case_id}/finalize               -> AnesthesiaCaseDTO (owner; draft -> finalized,
                                                   stores all four forms)
@@ -37,7 +37,7 @@ def list_documents(case_id: uuid.UUID, svc: DocumentService = Depends(get_docume
 @router.post("/cases/{case_id}/finalize", response_model=dto.AnesthesiaCaseDTO)
 def finalize_case(case_id: uuid.UUID, svc: DocumentService = Depends(get_document_service)):
     """Lock the case (draft -> finalized) and store all four forms as its snapshot.
-    403 admin, 404 not the owner's, 409 already finalized."""
+    403 admin or not the owner, 404 missing, 409 already finalized."""
     return svc.finalize(str(case_id))
 
 

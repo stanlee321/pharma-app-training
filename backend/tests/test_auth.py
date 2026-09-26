@@ -11,7 +11,7 @@ from app.core import security
 from app.core.config import settings
 from app.infrastructure.models import UserModel
 
-from .conftest import TEST_PASSWORD
+from .conftest import TEST_PASSWORD, fresh_patient_id
 
 
 def _ts(value: str) -> datetime:
@@ -77,7 +77,8 @@ def test_login_inactive_user_401(client, user_factory):
 
 def test_gateway_jit_user_cannot_log_in_locally(client, gateway_mode, tenant_headers, db):
     headers = tenant_headers()
-    assert client.post("/api/v1/cases", json={}, headers=headers).status_code == 200
+    assert client.post("/api/v1/cases", json={"patient_id": fresh_patient_id()},
+                       headers=headers).status_code == 200
     jit = db.get(UserModel, headers["X-User-Id"])
     assert jit.password_hash == security.UNUSABLE_PASSWORD
     gateway_mode.auth_mode = "local"  # login is disabled in gateway mode (restored after)
@@ -143,10 +144,15 @@ def test_role_comes_from_db_not_token(client, anesthesiologist, case_factory):
     token = security.create_access_token(anesthesiologist.id, "admin").access_token
     headers = {"Authorization": f"Bearer {token}"}
     assert client.get("/api/v1/auth/me", headers=headers).json()["role"] == "anesthesiologist"
-    # an anesthesiologist holding an "admin"-role token still cannot read others' cases
+    # an anesthesiologist holding an "admin"-role token is still not an admin: GET /cases
+    # lists only their own cases, and another user's case is readable (shared) but not
+    # writable (an admin would get the admin 403 detail instead)
     foreign = case_factory(user_id="other-tenant")
     assert client.get("/api/v1/cases", headers=headers).json() == []
-    assert client.get(f"/api/v1/cases/{foreign.id}", headers=headers).status_code == 404
+    assert client.get(f"/api/v1/cases/{foreign.id}", headers=headers).status_code == 200
+    resp = client.patch(f"/api/v1/cases/{foreign.id}", json={"sala": "1"}, headers=headers)
+    assert resp.status_code == 403
+    assert resp.json() == {"detail": "case belongs to another anesthesiologist"}
 
 
 def test_token_refused_without_secret(monkeypatch, anesthesiologist, client, auth_headers):
@@ -165,12 +171,16 @@ def test_token_refused_without_secret(monkeypatch, anesthesiologist, client, aut
 
 def test_gateway_mode_x_user_id_still_works(client, gateway_mode, tenant_headers, db):
     a, b = tenant_headers(), tenant_headers()
-    case = client.post("/api/v1/cases", json={"owner": "gw"}, headers=a)
+    case = client.post("/api/v1/cases", json={"patient_id": fresh_patient_id(), "owner": "gw"},
+                       headers=a)
     assert case.status_code == 200, case.text
     cid = case.json()["id"]
     assert case.json()["user_id"] == a["X-User-Id"]
     assert client.get(f"/api/v1/cases/{cid}", headers=a).status_code == 200
-    assert client.get(f"/api/v1/cases/{cid}", headers=b).status_code == 404
+    # shared read, owner-only write (plan patients-historias.md)
+    assert client.get(f"/api/v1/cases/{cid}", headers=b).status_code == 200
+    assert client.patch(f"/api/v1/cases/{cid}", json={"sala": "1"},
+                        headers=b).status_code == 403
     assert [c["id"] for c in client.get("/api/v1/cases", headers=b).json()] == []
     jit = db.get(UserModel, a["X-User-Id"])
     assert jit is not None and jit.role == "anesthesiologist"
@@ -180,7 +190,8 @@ def test_gateway_mode_x_user_id_still_works(client, gateway_mode, tenant_headers
 
 def test_gateway_guest_scopes_to_parent(client, gateway_mode, tenant_headers):
     parent = tenant_headers()
-    cid = client.post("/api/v1/cases", json={}, headers=parent).json()["id"]
+    cid = client.post("/api/v1/cases", json={"patient_id": fresh_patient_id()},
+                      headers=parent).json()["id"]
     guest = {"X-User-Id": "guest-1", "X-User-Role": "guest",
              "X-User-Created-By": parent["X-User-Id"]}
     assert client.get(f"/api/v1/cases/{cid}", headers=guest).status_code == 200
