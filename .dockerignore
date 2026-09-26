@@ -1,0 +1,16 @@
+# Allowlist for the backend image (build context = repo root). Everything else — the iOS app,
+# web/, source scans in notebooks/data, local secrets and databases — never enters the context.
+*
+!backend/
+!notebooks/forms/schema/*.json
+!notebooks/forms/out/nota2_clone.pdf
+!notebooks/forms/out/nota21_clone.pdf
+!notebooks/forms/out/imss_recreated.pdf
+
+backend/.env
+backend/var/
+backend/**/*.db
+backend/**/__pycache__/
+backend/.pytest_cache/
+backend/tests/
+backend/Dockerfile

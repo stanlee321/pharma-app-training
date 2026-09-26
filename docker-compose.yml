@@ -1,4 +1,6 @@
-# Local Postgres for the TivaTrainer backend (db only — backend + web run natively).
+# TivaTrainer stack: Postgres + backend (FastAPI, migrates on start) + web (nginx: SPA + /api proxy).
+#   docker compose up -d --build     # full stack at http://localhost:5174 (share it: ngrok http 5174)
+#   docker compose up -d db          # Postgres only, for native backend/web development
 # Run from the repo root:
 #   docker compose up -d      # start (waits on the healthcheck: docker compose ps)
 #   docker compose down       # stop (keeps data in the named volume tiva_pg_data)
@@ -25,6 +27,42 @@ services:
       timeout: 3s
       retries: 20
 
+  backend:
+    build:
+      context: .                      # repo root: needs notebooks/forms templates (see .dockerignore)
+      dockerfile: backend/Dockerfile
+    container_name: tiva_backend
+    env_file: backend/.env            # TIVA_JWT_SECRET etc. (never baked into the image)
+    environment:
+      TIVA_DATABASE_URL: postgresql+psycopg://tiva:tiva@db:5432/tiva
+      TIVA_AUTH_MODE: local
+      TIVA_DOCUMENT_STORAGE: db
+      TIVA_DOCUMENTS_DIR: /data/documents
+    volumes:
+      - tiva_documents:/data/documents   # only used by legacy "local" documents
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    # no host port: reached through the web container's nginx at /api
+
+  web:
+    build: ./web
+    container_name: tiva_web
+    ports:
+      - "5174:80"                     # the app + API on one origin: http://localhost:5174
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
+  tiva_documents:
+    name: tiva_documents
   tiva_pg_data:
     name: tiva_pg_data   # explicit, stable name (independent of the compose project dir)
