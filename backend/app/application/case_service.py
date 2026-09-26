@@ -28,7 +28,7 @@ from pydantic import BaseModel, ValidationError
 from ..domain import derivations
 from ..infrastructure.models import CaseModel, UserModel
 from ..infrastructure.repository import SqlCaseRepository, SqlDocumentRepository
-from ..infrastructure.storage import DocumentStorage, StorageError
+from ..infrastructure.storage import DocumentStores, StorageError
 from . import dto
 from .identity import CurrentUser
 
@@ -120,13 +120,14 @@ class CaseService:
         repo: SqlCaseRepository,
         user: CurrentUser,
         documents: SqlDocumentRepository | None = None,
-        storage: DocumentStorage | None = None,
+        stores: DocumentStores | None = None,
     ):
         self.repo = repo
         self.user = user
-        # Needed only to remove stored PDF files when a case is deleted.
+        # Needed only to remove stored PDF files (local backend) when a case is deleted;
+        # database blobs go with the rows (ON DELETE CASCADE).
         self.documents = documents
-        self.storage = storage
+        self.stores = stores
 
     @property
     def user_id(self) -> str:
@@ -239,21 +240,26 @@ class CaseService:
         self._delete_with_documents(self._model(case_id), draft_only=False)
 
     def _delete_with_documents(self, m: CaseModel, *, draft_only: bool) -> None:
-        """Delete the row (documents rows cascade), THEN the stored files. A file that cannot
-        be removed is logged and left orphaned rather than failing an already-committed delete.
+        """Delete the row (documents rows and their database blobs cascade in the same
+        statement), THEN any files of ``local`` documents. A file that cannot be removed is
+        logged and left orphaned rather than failing an already-committed delete.
         ``draft_only``: the DELETE carries ``status='draft'`` so a concurrent finalize wins."""
         case_id = m.id
-        paths = self.documents.paths_for_case(case_id) if self.documents is not None else []
+        locations = (
+            self.documents.locations_for_case(case_id) if self.documents is not None else []
+        )
         if draft_only:
             if not self.repo.delete_draft(case_id):
                 self._raise_lost_write(case_id)
         else:
             self.repo.delete(m)
-        if self.storage is None:
+        if self.stores is None:
             return
-        for path in paths:
+        for doc_id, backend, path in locations:
             try:
-                self.storage.delete(path)
+                store = self.stores.for_backend(backend)
+                if not store.transactional:  # transactional stores went with the rows
+                    store.delete(path, document_id=doc_id)
             except (OSError, StorageError):
                 logger.warning("could not delete stored document file of case %s", case_id,
                                exc_info=True)

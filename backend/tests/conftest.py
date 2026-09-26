@@ -35,12 +35,17 @@ row, minted directly), ``anesthesiologist`` / ``admin_user`` (ready users),
 ``case_factory`` (insert a case row directly — any ``user_id``/``status``; the owning user row is
 created when missing), ``gateway_mode``, ``tenant_headers`` (legacy gateway ``X-User-Id``
 headers for a tenant id), ``documents_dir`` (this test's storage root, a ``tmp_path`` dir),
-``document_storage`` (the ``LocalFileStorage`` the app uses in this test), ``test_database_url``.
+``document_storage`` (the ``LocalFileStorage`` the app uses in this test), ``test_database_url``,
+``local_mode`` / ``db_mode`` (force ``TIVA_DOCUMENT_STORAGE`` for one test), ``stored_objects``
+(files under the storage root + ``document_blobs`` rows, whatever the mode).
 
 Document storage
 ----------------
 Every test gets its own ``LocalFileStorage`` rooted in ``tmp_path`` (autouse override of the
-``get_document_storage`` dependency), so stored PDFs never leak between tests.
+``get_local_storage`` dependency), so stored PDFs never leak between tests. New documents go to
+``TIVA_DOCUMENT_STORAGE`` — ``db`` unless the variable is set when pytest starts, so
+``TIVA_DOCUMENT_STORAGE=local python -m pytest`` reruns the mode-agnostic tests on local files.
+Tests about one specific backend request ``local_mode`` or ``db_mode``.
 """
 from __future__ import annotations
 
@@ -88,6 +93,8 @@ TEST_DOCUMENTS_DIR = _TMP_ROOT / "documents"
 # MUST happen before importing the app (settings + engine bind at import time).
 os.environ["TIVA_DATABASE_URL"] = TEST_DATABASE_URL
 os.environ["TIVA_DOCUMENTS_DIR"] = str(TEST_DOCUMENTS_DIR)
+# Real env var wins (a "local" run of the suite); otherwise db, whatever backend/.env says.
+os.environ.setdefault("TIVA_DOCUMENT_STORAGE", "db")
 os.environ["TIVA_AUTH_MODE"] = "local"
 os.environ["TIVA_JWT_SECRET"] = "test-only-secret-" + "x" * 40  # >= 32 bytes for HS256
 os.environ["TIVA_JWT_TTL_MINUTES"] = "720"
@@ -97,9 +104,9 @@ os.environ["TIVA_BOOTSTRAP_ADMIN_PASSWORD"] = ""
 TEST_PASSWORD = "Sint3tico-pass"
 
 from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import create_engine, text  # noqa: E402
+from sqlalchemy import create_engine, func, select, text  # noqa: E402
 
-from app.api.deps import get_document_storage  # noqa: E402
+from app.api.deps import get_local_storage  # noqa: E402
 from app.core import security  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.db import Base, SessionLocal, engine  # noqa: E402
@@ -155,14 +162,42 @@ def test_database_url() -> str:
 def document_storage(tmp_path) -> LocalFileStorage:
     """Per-test storage root (absolute, resolved) wired into the app via dependency override."""
     storage = LocalFileStorage(tmp_path / "documents")
-    fastapi_app.dependency_overrides[get_document_storage] = lambda: storage
+    fastapi_app.dependency_overrides[get_local_storage] = lambda: storage
     yield storage
-    fastapi_app.dependency_overrides.pop(get_document_storage, None)
+    fastapi_app.dependency_overrides.pop(get_local_storage, None)
 
 
 @pytest.fixture
 def documents_dir(document_storage) -> Path:
     return document_storage.root
+
+
+@pytest.fixture
+def local_mode(monkeypatch):
+    """New documents are written as local files for this test."""
+    monkeypatch.setattr(settings, "document_storage", "local")
+    return settings
+
+
+@pytest.fixture
+def db_mode(monkeypatch):
+    """New documents are written as database blobs for this test."""
+    monkeypatch.setattr(settings, "document_storage", "db")
+    return settings
+
+
+@pytest.fixture
+def stored_objects(documents_dir):
+    """Callable -> number of stored PDFs in either backend (files + document_blobs rows)."""
+
+    def count() -> int:
+        files = [p for p in documents_dir.rglob("*") if p.is_file()] if documents_dir.exists() \
+            else []
+        with engine.connect() as conn:
+            blobs = conn.scalar(select(func.count()).select_from(models.DocumentBlobModel))
+        return len(files) + int(blobs or 0)
+
+    return count
 
 
 @pytest.fixture

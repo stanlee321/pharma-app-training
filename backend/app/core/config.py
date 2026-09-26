@@ -43,7 +43,13 @@ class Settings(BaseSettings):
     bootstrap_admin_username: str | None = None
     bootstrap_admin_password: str | None = None
 
-    # --- generated-document storage (LocalFileStorage root; always absolute) ---
+    # --- generated-document storage ---
+    # Where NEW PDFs go: "db" = raw bytes in the document_blobs table (bytea on Postgres; the
+    # row and its bytes commit in one transaction, one pg_dump backs up everything) or
+    # "local" = files under documents_dir. Existing rows are always read from the backend
+    # recorded on the row, so switching this never strands old documents.
+    document_storage: Literal["db", "local"] = "db"
+    # LocalFileStorage root (always absolute); still read for rows stored as "local".
     documents_dir: str = str(DEFAULT_DOCUMENTS_DIR)
 
     @field_validator("documents_dir")

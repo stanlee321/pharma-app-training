@@ -8,13 +8,14 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     UniqueConstraint,
     true,
 )
 from sqlalchemy import false as sa_false
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..core.db import Base
 
@@ -103,15 +104,25 @@ class CaseModel(Base):
 class DocumentModel(Base):
     """A generated PDF stored by the ``DocumentStorage`` port (plan phase 3).
 
-    ``storage_path`` is the ABSOLUTE path of the file (LocalFileStorage). Rows cascade with
-    their case (``ON DELETE CASCADE``); the application deletes the files. ``generated_by`` is
-    SET NULL when that user row is deleted, so a document outlives its author's account.
-    Regenerating a form adds a row (history); the newest per form is the current one.
+    ``storage_backend`` says where the bytes are: ``db`` -> one ``document_blobs`` row (then
+    ``storage_path`` is NULL), ``local`` -> the file at the ABSOLUTE ``storage_path``
+    (LocalFileStorage). Rows cascade with their case (``ON DELETE CASCADE``) and blobs with their
+    row; the application deletes local files. ``generated_by`` is SET NULL when that user row is
+    deleted, so a document outlives its author's account. Regenerating a form adds a row
+    (history); the newest per form is the current one. The PDF bytes are NOT a column of this
+    table, so listing documents never reads them.
     """
 
     __tablename__ = "documents"
     __table_args__ = (
         Index("ix_documents_case_id_created_at", "case_id", "created_at"),
+        CheckConstraint(
+            "storage_backend IN ('db', 'local')", name="ck_documents_storage_backend"
+        ),
+        CheckConstraint(
+            "storage_backend <> 'local' OR storage_path IS NOT NULL",
+            name="ck_documents_local_has_path",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
@@ -120,7 +131,10 @@ class DocumentModel(Base):
         ForeignKey("cases.id", name="fk_documents_case_id_cases", ondelete="CASCADE"),
     )
     form_id: Mapped[str] = mapped_column(String(64), index=True)
-    storage_path: Mapped[str] = mapped_column(String(1024))
+    storage_backend: Mapped[str] = mapped_column(
+        String(16), default="local", server_default="local"
+    )
+    storage_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     size_bytes: Mapped[int] = mapped_column(Integer)
     sha256: Mapped[str] = mapped_column(String(64))
     is_fallback: Mapped[bool] = mapped_column(Boolean, default=False, server_default=sa_false())
@@ -131,3 +145,26 @@ class DocumentModel(Base):
         index=True,
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class DocumentBlobModel(Base):
+    """The raw PDF bytes of a ``storage_backend='db'`` document (``bytea`` on Postgres, BLOB on
+    SQLite). A separate table so no document query ever drags the content along; read only by
+    ``DatabaseBlobStorage.open``. Deleted with its document (``ON DELETE CASCADE``).
+
+    The one-way ``document`` relationship exists only so the unit of work INSERTs the
+    ``documents`` row before its blob when both are pending in one flush; it is never loaded.
+    """
+
+    __tablename__ = "document_blobs"
+
+    document_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("documents.id", name="fk_document_blobs_document_id_documents",
+                   ondelete="CASCADE"),
+        primary_key=True,
+    )
+    content: Mapped[bytes] = mapped_column(LargeBinary)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    document: Mapped[DocumentModel] = relationship(DocumentModel, lazy="raise")

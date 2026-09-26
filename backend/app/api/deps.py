@@ -35,12 +35,12 @@ from ..infrastructure.repository import (
     SqlDocumentRepository,
     SqlUserRepository,
 )
-from ..infrastructure.storage import DocumentStorage, LocalFileStorage
+from ..infrastructure.storage import DatabaseBlobStorage, DocumentStores, LocalFileStorage
 
 __all__ = [
     "CurrentUser", "UserContext", "get_admin_service", "get_auth_service", "get_case_service",
     "get_current_user", "get_current_user_allow_pending", "get_document_service",
-    "get_document_storage", "get_user_context", "require_admin",
+    "get_document_stores", "get_local_storage", "get_user_context", "require_admin",
 ]
 
 ADMIN_ONLY_DETAIL = "admin only"
@@ -122,25 +122,35 @@ def get_current_user(
     return user
 
 
-def get_document_storage() -> DocumentStorage:
-    """The generated-PDF store (absolute ``TIVA_DOCUMENTS_DIR``). Tests override this."""
+def get_local_storage() -> LocalFileStorage:
+    """The on-disk store (absolute ``TIVA_DOCUMENTS_DIR``). Tests override this."""
     return LocalFileStorage(settings.documents_dir)
+
+
+def get_document_stores(
+    db: Session = Depends(get_db),
+    local: LocalFileStorage = Depends(get_local_storage),
+) -> DocumentStores:
+    """Both adapters for this request. The database one shares the request's Session (FastAPI
+    caches ``get_db`` per request), so blobs commit with their document rows. New documents go
+    to ``TIVA_DOCUMENT_STORAGE`` (read per request)."""
+    return DocumentStores(settings.document_storage, local=local, db=DatabaseBlobStorage(db))
 
 
 def get_case_service(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
-    storage: DocumentStorage = Depends(get_document_storage),
+    stores: DocumentStores = Depends(get_document_stores),
 ) -> CaseService:
-    return CaseService(SqlCaseRepository(db), user, SqlDocumentRepository(db), storage)
+    return CaseService(SqlCaseRepository(db), user, SqlDocumentRepository(db), stores)
 
 
 def get_document_service(
     db: Session = Depends(get_db),
     cases: CaseService = Depends(get_case_service),
-    storage: DocumentStorage = Depends(get_document_storage),
+    stores: DocumentStores = Depends(get_document_stores),
 ) -> DocumentService:
-    return DocumentService(cases, SqlDocumentRepository(db), storage)
+    return DocumentService(cases, SqlDocumentRepository(db), stores)
 
 
 def require_admin(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:

@@ -88,6 +88,15 @@ bodies, typed bodies + `response_model` on every `/cases` route (per-resource ro
 generic `{child}`/`{coll}` templates and the GET dispatcher), and startup refuses a JWT secret
 that is the `.env.example` placeholder or shorter than 32 bytes.
 
+**Status (2026-09-25): PDFs in Postgres (increment 5).** Migration `0008` adds `document_blobs`
+(raw `bytea`, `ON DELETE CASCADE`) and `documents.storage_backend` (`db`|`local`; `storage_path`
+nullable). `TIVA_DOCUMENT_STORAGE=db` (new default) stores PDFs through `DatabaseBlobStorage` in
+the request's Session, so generate/finalize are one commit with no filesystem writes; rows are
+read by their own backend, so legacy `local` files keep working (`TIVA_DOCUMENT_STORAGE=local`
+keeps the old behaviour). The `0008` data step copies readable, hash-matching local files into
+blobs; its downgrade writes blobs back to files. S3/MinIO comes later behind the same port. See
+[[backend-api]] "Stored documents".
+
 ## Phase 4 — Admin API
 
 - `/admin/users`: list/search, create (temporary password + `must_change_password`), update

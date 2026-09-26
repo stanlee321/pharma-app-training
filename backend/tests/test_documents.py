@@ -1,6 +1,8 @@
 """Increment 3: stored documents (generate / list / download / delete) and finalize.
 
-Storage is a per-test ``tmp_path`` root (conftest ``document_storage``). All data synthetic.
+Storage is a per-test ``tmp_path`` root (conftest ``document_storage``). Tests about files on
+disk force ``local_mode``; the rest run in whatever ``TIVA_DOCUMENT_STORAGE`` the suite uses
+(database-blob specifics live in ``test_document_blobs.py``). All data synthetic.
 """
 import hashlib
 import re
@@ -12,7 +14,9 @@ from fastapi.testclient import TestClient
 from app.application import dto
 from app.application.case_service import CaseService
 from app.application.identity import CurrentUser
-from app.infrastructure.models import CaseModel, DocumentModel
+from sqlalchemy import func, select
+
+from app.infrastructure.models import CaseModel, DocumentBlobModel, DocumentModel
 from app.infrastructure.render import FORM_MAP, FormRenderer
 from app.infrastructure.repository import SqlCaseRepository, SqlDocumentRepository
 from app.main import app as fastapi_app
@@ -62,6 +66,7 @@ def _files(root: Path) -> list[Path]:
 
 # --- generate / download / list / delete --------------------------------------------------
 
+@pytest.mark.usefixtures("local_mode")
 def test_generate_stores_file_with_matching_hash(client, owner, db, documents_dir):
     user, h = owner
     cid = _new_case(client, h)
@@ -103,6 +108,7 @@ def test_list_is_newest_first(client, owner):
     assert stamps == sorted(stamps, reverse=True)
 
 
+@pytest.mark.usefixtures("local_mode")
 def test_owner_deletes_draft_document_and_file(client, owner, db):
     _, h = owner
     cid = _new_case(client, h)
@@ -134,6 +140,7 @@ def test_form_ids_match_renderer():
     assert set(dto.FORM_IDS) == set(FORM_MAP)
 
 
+@pytest.mark.usefixtures("local_mode")
 def test_cross_user_access_is_404(client, owner, other, db):
     _, ho = owner
     _, hx = other
@@ -172,6 +179,7 @@ def test_no_token_is_401(client, owner):
     assert _generate(client, {}, cid).status_code == 401
 
 
+@pytest.mark.usefixtures("local_mode")
 def test_download_detects_missing_and_tampered_files(client, owner, db):
     _, h = owner
     cid = _new_case(client, h)
@@ -184,6 +192,7 @@ def test_download_detects_missing_and_tampered_files(client, owner, db):
     assert client.get(doc["download_url"], headers=h).status_code == 404
 
 
+@pytest.mark.usefixtures("local_mode")
 def test_stored_path_outside_root_is_never_served(client, owner, db, tmp_path):
     _, h = owner
     cid = _new_case(client, h)
@@ -209,6 +218,7 @@ def test_export_route_still_streams_and_stores_nothing(client, owner, documents_
     assert _files(documents_dir) == []
 
 
+@pytest.mark.usefixtures("local_mode")
 def test_case_delete_removes_its_document_files(client, owner, db, documents_dir):
     _, h = owner
     cid = _new_case(client, h)
@@ -221,6 +231,7 @@ def test_case_delete_removes_its_document_files(client, owner, db, documents_dir
 
 # --- finalize ------------------------------------------------------------------------------
 
+@pytest.mark.usefixtures("local_mode")
 def test_finalize_stores_four_forms_and_locks(client, owner, db, documents_dir):
     user, h = owner
     cid = _new_case(client, h)
@@ -253,6 +264,7 @@ def test_finalize_stores_four_forms_and_locks(client, owner, db, documents_dir):
     assert len(client.get(f"{API}/cases/{cid}/documents", headers=h).json()) == 5
 
 
+@pytest.mark.usefixtures("local_mode")
 def test_admin_can_delete_documents_of_finalized_case(client, owner, admin, db):
     _, ho = owner
     _, ha = admin
@@ -290,8 +302,10 @@ def _assert_untouched(db, cid, documents_dir):
     assert (row.status, row.finalized_at) == ("draft", None)
     assert SqlDocumentRepository(db).list_for_case(cid) == []
     assert _files(documents_dir) == []
+    assert db.scalar(select(func.count()).select_from(DocumentBlobModel)) == 0
 
 
+@pytest.mark.usefixtures("local_mode")
 def test_finalize_commit_failure_rolls_back_and_removes_files(client, owner, db, documents_dir,
                                                              monkeypatch):
     _, h = owner
@@ -300,15 +314,17 @@ def test_finalize_commit_failure_rolls_back_and_removes_files(client, owner, db,
     def boom(self):
         raise RuntimeError("synthetic commit failure")
 
+    real_commit = SqlDocumentRepository.commit
     monkeypatch.setattr(SqlDocumentRepository, "commit", boom)
     c = TestClient(fastapi_app, raise_server_exceptions=False)
     assert c.post(f"{API}/cases/{cid}/finalize", headers=h).status_code == 500
-    monkeypatch.undo()
+    monkeypatch.setattr(SqlDocumentRepository, "commit", real_commit)  # keep local_mode
     _assert_untouched(db, cid, documents_dir)
     # and the case can still be finalized afterwards
     assert client.post(f"{API}/cases/{cid}/finalize", headers=h).status_code == 200
 
 
+@pytest.mark.usefixtures("local_mode")
 def test_finalize_storage_failure_midway_removes_written_files(client, owner, db, documents_dir,
                                                               document_storage, monkeypatch):
     _, h = owner
@@ -316,11 +332,11 @@ def test_finalize_storage_failure_midway_removes_written_files(client, owner, db
     real_save = type(document_storage).save
     calls = {"n": 0}
 
-    def failing_save(self, data, key):
+    def failing_save(self, data, key, **kw):
         calls["n"] += 1
         if calls["n"] == 3:
             raise OSError("synthetic disk full")
-        return real_save(self, data, key)
+        return real_save(self, data, key, **kw)
 
     monkeypatch.setattr(type(document_storage), "save", failing_save)
     c = TestClient(fastapi_app, raise_server_exceptions=False)
@@ -329,6 +345,7 @@ def test_finalize_storage_failure_midway_removes_written_files(client, owner, db
     _assert_untouched(db, cid, documents_dir)
 
 
+@pytest.mark.usefixtures("local_mode")
 def test_generate_commit_failure_removes_file(client, owner, documents_dir, monkeypatch):
     _, h = owner
     cid = _new_case(client, h)

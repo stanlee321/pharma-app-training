@@ -404,6 +404,7 @@ def test_admin_case_detail_and_404(client, admin, seeded_cases):
     assert client.get(f"{A}/cases/not-a-uuid", headers=h).status_code == 422
 
 
+@pytest.mark.usefixtures("local_mode")
 def test_admin_delete_finalized_case_removes_files(client, admin, anest, db, documents_dir):
     _, h = admin
     _, uh = anest
@@ -455,6 +456,7 @@ def test_admin_cannot_edit_case_content(client, admin, anest):
 
 # --- documents -------------------------------------------------------------------------------
 
+@pytest.mark.usefixtures("local_mode")
 def test_admin_documents_index(client, admin, anest, user_factory, auth_headers, documents_dir):
     _, h = admin
     _, uh = anest
@@ -470,6 +472,7 @@ def test_admin_documents_index(client, admin, anest, user_factory, auth_headers,
     assert page["total"] == 5 and len(page["items"]) == 5
     newest = page["items"][0]
     assert newest["id"] == extra["id"]
+    assert newest["storage_backend"] == "local"
     assert Path(newest["storage_path"]).is_absolute()
     assert Path(newest["storage_path"]).parent == documents_dir / c2
     stamps = [d["created_at"] for d in page["items"]]

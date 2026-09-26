@@ -303,8 +303,9 @@ class SqlUserRepository:
 
 class SqlDocumentRepository:
     """Stored-document rows. ``add`` does not commit: generation commits (or rolls back) the
-    row together with the file it just wrote; finalize adds four rows plus the status change
-    in a single transaction."""
+    row together with its bytes (a blob in the same transaction, or the file it just wrote);
+    finalize adds four rows plus the status change in a single transaction. No query here ever
+    selects ``document_blobs.content`` (only ``DatabaseBlobStorage.open`` does)."""
 
     def __init__(self, db: Session):
         self.db = db
@@ -320,10 +321,12 @@ class SqlDocumentRepository:
             .order_by(DocumentModel.created_at.desc(), DocumentModel.id.desc())
         ))
 
-    def paths_for_case(self, case_id: str) -> list[str]:
-        return list(self.db.scalars(
-            select(DocumentModel.storage_path).where(DocumentModel.case_id == case_id)
-        ))
+    def locations_for_case(self, case_id: str) -> list[tuple[str, str, str | None]]:
+        """``(id, storage_backend, storage_path)`` of every document of the case (no content)."""
+        return [tuple(r) for r in self.db.execute(
+            select(DocumentModel.id, DocumentModel.storage_backend, DocumentModel.storage_path)
+            .where(DocumentModel.case_id == case_id)
+        ).all()]
 
     def search(self, *, case_id: str | None = None, form_id: str | None = None,
                limit: int, offset: int) -> tuple[list[DocumentModel], int]:

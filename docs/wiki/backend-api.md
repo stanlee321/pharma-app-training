@@ -63,9 +63,14 @@ same database at once; `public` is never touched.
 The suite runs in `local` auth mode with a fixed test secret and gives each test its own
 documents root. `tests/conftest.py` provides these fixtures: `client`, `db`, `user_factory`,
 `auth_headers`, `anesthesiologist`, `admin_user`, `case_factory`, `gateway_mode`,
-`tenant_headers`, `documents_dir` and `document_storage`. `tests/test_migrations.py` round-trips
+`tenant_headers`, `documents_dir`, `document_storage` (the per-test `LocalFileStorage`),
+`local_mode` / `db_mode` (force `TIVA_DOCUMENT_STORAGE` for one test) and `stored_objects` (files +
+blob rows). New documents go to the database unless `TIVA_DOCUMENT_STORAGE=local` is set when
+pytest starts; `TIVA_DOCUMENT_STORAGE=local python -m pytest` reruns the mode-agnostic tests on
+files (file-specific tests always force `local_mode`, blob-specific ones in
+`tests/test_document_blobs.py` force `db_mode`). `tests/test_migrations.py` round-trips
 every migration and checks that models and migrations have not drifted, on SQLite and on Postgres
-(in a throwaway schema). The e2e gate against a **running** server (local mode) is:
+(in a throwaway schema), and exercises the `0008` data step and its downgrade. The e2e gate against a **running** server (local mode) is:
 `TIVA_API=http://127.0.0.1:8000/api/v1 TIVA_E2E_ADMIN_USERNAME=… TIVA_E2E_ADMIN_PASSWORD=… python scripts/e2e.py`.
 It needs only an admin account. It logs in as the admin, creates an anesthesiologist
 (`e2e-<random>`, random temporary password), logs in as them, checks that the pending
@@ -84,7 +89,8 @@ Settings are read from real env vars first, then `backend/.env` (template: `back
 | `TIVA_AUTH_MODE` | `local` | `local` = Bearer JWT required · `gateway` = trust `X-User-*` headers |
 | `TIVA_JWT_SECRET` | *(empty)* | HS256 key. In `local` mode the app **refuses to start** if it is empty, shorter than 32 bytes, or still the `.env.example` placeholder |
 | `TIVA_JWT_TTL_MINUTES` | `720` | token lifetime (one shift; no refresh tokens) |
-| `TIVA_DOCUMENTS_DIR` | `<repo>/backend/var/documents` | storage root for generated PDFs; always resolved to an **absolute** path (relative values resolve against `backend/`); gitignored |
+| `TIVA_DOCUMENT_STORAGE` | `db` | where **new** generated PDFs go: `db` = raw bytes in `document_blobs` (bytea), `local` = files under `TIVA_DOCUMENTS_DIR`. Existing rows are always read from the backend recorded on the row |
+| `TIVA_DOCUMENTS_DIR` | `<repo>/backend/var/documents` | root for `local` PDFs (still read for legacy/`local` rows in `db` mode; also where the `0008` data step reads from and its downgrade writes to); always resolved to an **absolute** path (relative values resolve against `backend/`); gitignored |
 | `TIVA_BOOTSTRAP_ADMIN_USERNAME` / `_PASSWORD` | unset | dev seed: **creates** this admin at startup if the username is free; never modifies an existing account |
 | `TIVA_SCHEMA_DIR` | `<repo>/notebooks/forms/schema` | form-schema JSON served by `/forms` |
 | `TIVA_MOCK_USER_ID` | `00000000-…-0001` | gateway mode only: tenant id used when no header is sent |
@@ -230,12 +236,13 @@ finalized_at, user_id, owner_name}`. `owner_name` is the owning user's `full_nam
 |---|---|
 | `POST /cases/{id}/documents` `{form_id}` | render + store + record → `DocumentDTO`. Owner (draft or finalized) or admin; unknown `form_id` → **422** |
 | `GET /cases/{id}/documents` | `DocumentDTO[]`, newest first |
-| `GET /documents/{doc_id}/file` | the stored PDF (`application/pdf`). The file is re-hashed first: a mismatch → **500**, a missing file → **404** |
-| `DELETE /documents/{doc_id}` | **204**, row + file. Admin, or the owner while the case is a draft (**409** once finalized) |
+| `GET /documents/{doc_id}/file` | the stored PDF (`application/pdf`), from the row's own backend. The bytes are re-hashed first: a mismatch → **500**, missing content → **404** |
+| `DELETE /documents/{doc_id}` | **204**, row + bytes (blob or file). Admin, or the owner while the case is a draft (**409** once finalized) |
 
 `DocumentDTO = {id, case_id, form_id, size_bytes, sha256, generated_by, created_at, is_fallback,
 download_url}`. `is_fallback` means the real form failed to render and the summary PDF was stored
-instead. `AdminDocumentDTO` adds `storage_path`, which is shown to admins only.
+instead. `AdminDocumentDTO` adds `storage_backend` (`db` | `local`) and `storage_path` (absolute
+file path for `local`, `null` for `db`), shown to admins only.
 
 `form_id` is one of `registro_transanestesico`, `nota_postanestesica`,
 `imss_valoracion_preanestesica` or `imss_registro_anestesia`.
@@ -300,22 +307,44 @@ documents_total}`.
 
 ## Stored documents
 
-- **Port:** `DocumentStorage` (`save(bytes, key)` → `StoredFile(path, size_bytes, sha256)`,
-  `open(path)`, `delete(path)`), in `backend/app/infrastructure/storage.py`.
-- **Adapter:** `LocalFileStorage`, rooted at the absolute `TIVA_DOCUMENTS_DIR`. Files are stored
+- **Where the bytes live.** Each `documents` row records `storage_backend`: `db` (the PDF is a
+  `document_blobs` row, `storage_path` NULL) or `local` (a file at the absolute `storage_path`).
+  New documents go to `TIVA_DOCUMENT_STORAGE` (default `db`); reads and deletes always use the
+  backend named by the row, so legacy `local` rows and new `db` rows coexist and switching the
+  setting never strands a document.
+- **Why bytea in Postgres (the default).** The row and its bytes commit in the same transaction:
+  finalize (case lock + 4 rows + 4 blobs) is truly atomic with one commit, a failed request
+  leaves nothing behind with no file-cleanup path, and a single `pg_dump` backs up cases and
+  documents together. Raw `bytea` (never base64: no 33 % bloat, no encode/decode). A PDF is
+  ~0.1–1 MB, well within what Postgres handles comfortably; TOAST compresses/out-of-lines it.
+- **Port:** `DocumentStorage` in `backend/app/infrastructure/storage.py`:
+  `save(bytes, key, *, document_id)` → `StoredFile(path | None, size_bytes, sha256)`,
+  `open(path, *, document_id)`, `delete(path, *, document_id)`, plus `backend` (the value stored
+  on the row) and `transactional`. `DocumentStores` (built per request by
+  `api.deps.get_document_stores`) holds both adapters: `writer` for new documents,
+  `for_backend(row.storage_backend)` for existing ones (an unknown backend → 500, never guessed).
+- **`DatabaseBlobStorage` (`db`, transactional).** Uses the request's SQLAlchemy Session (the same
+  one as the document row) and never commits or flushes on its own; the unit of work inserts the
+  `documents` row before its blob (a one-way `DocumentBlobModel.document` relationship orders
+  them). The content is in a **separate table**, so no list/index/stats query ever selects it;
+  only `open` reads one `content` value (a test counts statements to enforce this). Deleting a
+  document deletes its blob in the same transaction; case deletes cascade
+  (`documents` → `document_blobs`, both `ON DELETE CASCADE`).
+- **`LocalFileStorage` (`local`).** Rooted at the absolute `TIVA_DOCUMENTS_DIR`. Files are stored
   as `<root>/<case_id>/<form_id>_<UTC yyyymmddTHHMMSSffffff>.pdf`, and `documents.storage_path`
-  holds the absolute path.
-- **Path safety:** each key segment is validated and must resolve inside the root, so `..`,
-  absolute paths, backslashes and symlink escapes are all refused. Paths read back from the
-  database are re-checked the same way.
-- **Writes** are atomic (temp file → fsync → hard link, never overwriting) and hashed with sha256.
-- **Consistency:** a file is written before its row commits, and is removed if the commit fails.
-  Deletes commit first, then remove the files; a file that cannot be removed is logged and
-  orphaned, never a dangling row. Finalize is all-or-nothing (see "Case lifecycle and
-  concurrency").
-- **Moving `TIVA_DOCUMENTS_DIR`** makes stored documents unreadable, because their absolute paths
-  then fall outside the new root and downloads get 500. Move the files and rewrite `storage_path`
-  together.
+  holds the absolute path. Each key segment is validated and must resolve inside the root, so
+  `..`, absolute paths, backslashes and symlink escapes are all refused; paths read back from the
+  database are re-checked the same way. Writes are atomic (temp file → fsync → hard link, never
+  overwriting). Not transactional: a file is written before its row commits and removed if the
+  commit fails; deletes commit first, then remove the file (an unremovable file is logged and
+  orphaned, never a dangling row).
+- **Moving `TIVA_DOCUMENTS_DIR`** makes `local` documents unreadable, because their absolute
+  paths then fall outside the new root and downloads get 500. Move the files and rewrite
+  `storage_path` together (or run the `0008` data step while the old root is configured).
+- **Object storage later.** S3/MinIO will be a third, non-transactional adapter (like
+  `LocalFileStorage`) behind the same port and a new `storage_backend` value (extend the CHECK in
+  a migration); nothing above the port changes.
+- Every download is re-hashed against `documents.sha256`, whatever the backend.
 - Regenerating a form adds a row (history); the newest row per form is the current one.
 
 ## Schema and migrations
@@ -328,6 +357,7 @@ documents_total}`.
 | `0005` | `documents` (FK `case_id` ON DELETE CASCADE, FK `generated_by` ON DELETE SET NULL, index `(case_id, created_at)`). Downgrade leaves the files on disk |
 | `0006` | `cases.version` (integer, default 1): the optimistic-concurrency counter behind the lock guarantees |
 | `0007` | `users.password_changed_at` (nullable, timezone-aware): tokens issued before it are revoked. NULL = never changed |
+| `0008` | `document_blobs(document_id PK/FK → documents.id ON DELETE CASCADE, content bytea, created_at)`; `documents.storage_backend` (`db`\|`local`, NOT NULL, server default `local`, CHECK) and nullable `storage_path` (CHECK: required when `local`). **Data step:** every `local` row whose file is readable inside the documents root (`-x documents_dir=/abs` or `TIVA_DOCUMENTS_DIR`) and matches its sha256 is copied into a blob and flipped to `db`; the rest stay `local` with a warning. Source files are left on disk. **Downgrade** writes every blob back to `<root>/<case_id>/<form_id>_<created_at stamp>.pdf` (reusing an identical existing file) and flips the rows to `local`; it refuses (no schema change) if the root is not writable, a blob is missing or fails its hash, or in offline `--sql` mode |
 
 Every migration runs on Postgres and SQLite (`batch_alter_table`) and has a working downgrade.
 SQLite enforces foreign keys on the app engine (`PRAGMA foreign_keys=ON`).
@@ -429,6 +459,6 @@ PUT on a finalized case gets 409). The app is on hold per [[auth-admin]]; the we
 - Repositories: `backend/app/infrastructure/repository.py`. Models: `…/models.py`. Storage:
   `…/storage.py`. Render: `…/render/`.
 - Security: `backend/app/core/security.py`. Settings: `…/core/config.py`. CLI: `backend/app/cli.py`.
-- Migrations: `backend/alembic/versions/0001–0007`. Tests: `backend/tests/`. Run guide:
+- Migrations: `backend/alembic/versions/0001–0008`. Tests: `backend/tests/`. Run guide:
   `backend/README.md`.
 - Design: [[auth-admin]], [[rest-contract]], [[web-port]].

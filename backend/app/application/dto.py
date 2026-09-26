@@ -388,7 +388,9 @@ class DocumentDTO(DTO):
 
 
 class AdminDocumentDTO(DocumentDTO):
-    storage_path: str
+    # Where the bytes live: "db" (document_blobs; storage_path is null) or "local" (file).
+    storage_backend: str
+    storage_path: str | None = None
 
 
 # --- form schemas (GET /forms, GET /forms/{form_id}/schema) --------------------------------

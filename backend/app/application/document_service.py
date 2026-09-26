@@ -7,14 +7,21 @@ Authorization (reuses ``CaseService``'s readable/writable checks):
 * delete — an admin, or the owner while the case is still a draft (409 once finalized).
 * finalize — the owner of a draft case only (403 admin, 404 others, 409 already finalized).
 
-Consistency: a file is written BEFORE its row is committed. If the commit fails, the file just
-written is removed, so a failed request leaves neither a row nor a file behind. Finalize writes
-all four PDFs, then flips the status and inserts the four rows in ONE transaction (a
-compare-and-set on ``status='draft'`` AND the ``version`` it rendered, so a write that commits
-while the PDFs render makes finalize fail with 409 instead of locking data the PDFs do not show);
-any failure removes every file it wrote.
-Deleting a document commits the row removal first, then removes the file (an unremovable file
-is logged and orphaned, never a dangling row).
+Where the bytes go: ``DocumentStores.writer`` (``TIVA_DOCUMENT_STORAGE``). Where they are read
+from / deleted: the store named by the row's ``storage_backend``, so mixed rows work.
+
+Consistency, database storage (``db``, transactional): the row and its blob are added to the
+request's Session and commit together; any failure rolls both back. No filesystem is touched and
+there is no cleanup path. Finalize adds the four rows + four blobs and flips the status in ONE
+transaction (a compare-and-set on ``status='draft'`` AND the ``version`` it rendered, so a write
+that commits while the PDFs render makes finalize fail with 409 instead of locking data the PDFs
+do not show).
+
+Consistency, local files (``local``): a file is written BEFORE its row is committed. If the
+commit fails, the file just written is removed, so a failed request leaves neither a row nor a
+file behind; finalize removes every file it wrote on any failure. Deleting a document commits
+the row removal first, then removes the file (an unremovable file is logged and orphaned, never
+a dangling row). A database blob is instead deleted inside the same transaction as its row.
 """
 from __future__ import annotations
 
@@ -29,7 +36,7 @@ from ..infrastructure.models import CaseModel, DocumentModel
 from ..infrastructure.render import render_case_pdf
 from ..infrastructure.repository import SqlDocumentRepository
 from ..infrastructure.storage import (
-    DocumentStorage,
+    DocumentStores,
     StorageError,
     StoredFile,
     StoredFileMissing,
@@ -58,7 +65,10 @@ def to_document_dto(m: DocumentModel) -> dto.DocumentDTO:
 
 
 def to_admin_document_dto(m: DocumentModel) -> dto.AdminDocumentDTO:
-    return dto.AdminDocumentDTO(**to_document_dto(m).model_dump(), storage_path=m.storage_path)
+    return dto.AdminDocumentDTO(
+        **to_document_dto(m).model_dump(),
+        storage_backend=m.storage_backend, storage_path=m.storage_path,
+    )
 
 
 def _utc_now() -> datetime:
@@ -71,10 +81,10 @@ def storage_key(case_id: str, form_id: str, at: datetime) -> str:
 
 
 class DocumentService:
-    def __init__(self, cases: CaseService, repo: SqlDocumentRepository, storage: DocumentStorage):
+    def __init__(self, cases: CaseService, repo: SqlDocumentRepository, stores: DocumentStores):
         self.cases = cases
         self.repo = repo
-        self.storage = storage
+        self.stores = stores
 
     @property
     def user(self):
@@ -85,28 +95,42 @@ class DocumentService:
         if form_id not in dto.FORM_IDS:  # the routes' Literal already 422s; defence in depth
             raise HTTPException(status_code=422, detail=f"unknown form_id: {form_id!r}")
 
-    def _store(self, case: dto.AnesthesiaCaseDTO, form_id: str) -> tuple[DocumentModel, StoredFile]:
-        """Render + write one file and build (not add) its row."""
+    def _store(self, case: dto.AnesthesiaCaseDTO, form_id: str
+               ) -> tuple[DocumentModel, StoredFile]:
+        """Render one form, write its bytes through the writer store and add (not commit) its
+        row. Returns what was written so a non-transactional store can be cleaned up."""
         pdf = render_case_pdf(case, form_id)
+        writer = self.stores.writer
         case_id = str(case.id)
+        doc_id = str(uuid.uuid4())
         at = _utc_now()
         try:
-            stored = self.storage.save(pdf.content, storage_key(case_id, form_id, at))
+            stored = writer.save(pdf.content, storage_key(case_id, form_id, at),
+                                 document_id=doc_id)
         except StorageError:
             # Same-microsecond collision on the same form: retry once with a fresh stamp.
             at = _utc_now()
-            stored = self.storage.save(pdf.content, storage_key(case_id, form_id, at))
+            stored = writer.save(pdf.content, storage_key(case_id, form_id, at),
+                                 document_id=doc_id)
         row = DocumentModel(
-            id=str(uuid.uuid4()), case_id=case_id, form_id=form_id,
-            storage_path=stored.path, size_bytes=stored.size_bytes, sha256=stored.sha256,
+            id=doc_id, case_id=case_id, form_id=form_id,
+            storage_backend=writer.backend, storage_path=stored.path,
+            size_bytes=stored.size_bytes, sha256=stored.sha256,
             is_fallback=pdf.is_fallback, generated_by=self.user.id, created_at=at,
         )
+        self.repo.add(row)
         return row, stored
 
-    def _discard(self, files: list[StoredFile]) -> None:
-        for f in files:
+    def _fail(self, written: list[StoredFile]) -> None:
+        """Roll the transaction back (pending rows and database blobs vanish with it) and
+        remove any file a non-transactional writer already put on disk."""
+        self.repo.rollback()
+        writer = self.stores.writer
+        if writer.transactional:
+            return
+        for f in written:
             try:
-                self.storage.delete(f.path)
+                writer.delete(f.path)
             except (OSError, StorageError):
                 logger.error("could not remove orphaned document file after a failed write",
                              exc_info=True)
@@ -129,13 +153,13 @@ class DocumentService:
     def generate(self, case_id: str, form_id: str) -> dto.DocumentDTO:
         self._check_form(form_id)
         case = self.cases.load(self.cases.readable(case_id))
-        row, stored = self._store(case, form_id)
+        written: list[StoredFile] = []
         try:
-            self.repo.add(row)
+            row, stored = self._store(case, form_id)
+            written.append(stored)
             self.repo.commit()
         except Exception:
-            self.repo.rollback()
-            self._discard([stored])
+            self._fail(written)
             raise
         return to_document_dto(row)
 
@@ -146,15 +170,16 @@ class DocumentService:
     def open(self, document_id: str) -> tuple[DocumentModel, bytes]:
         m = self._document(document_id)
         try:
-            content = self.storage.open(m.storage_path)
+            store = self.stores.for_backend(m.storage_backend)
+            content = store.open(m.storage_path, document_id=m.id)
         except StoredFileMissing as exc:
-            logger.error("document %s: file missing on disk", m.id)
+            logger.error("document %s: stored content missing (%s)", m.id, m.storage_backend)
             raise HTTPException(status_code=404, detail="document file is missing") from exc
         except StorageError as exc:
-            logger.error("document %s: stored path is outside the storage root", m.id)
+            logger.error("document %s: unreadable location (%s)", m.id, m.storage_backend)
             raise HTTPException(status_code=500, detail="document is unreadable") from exc
         if sha256_hex(content) != m.sha256:
-            logger.error("document %s: sha256 mismatch on disk", m.id)
+            logger.error("document %s: sha256 mismatch (%s)", m.id, m.storage_backend)
             raise HTTPException(status_code=500, detail="document integrity check failed")
         return m, content
 
@@ -164,13 +189,22 @@ class DocumentService:
             case = self.cases.readable(m.case_id)  # the owner (readable already checked)
             if case.status == "finalized":
                 raise HTTPException(status_code=409, detail=FINALIZED_DETAIL)
-        path = m.storage_path
+        doc_id, backend, path = m.id, m.storage_backend, m.storage_path
+        try:
+            store = self.stores.for_backend(backend)
+        except StorageError:
+            store = None  # unknown backend: drop the row anyway, nothing we can clean up
+            logger.warning("document %s: unknown storage backend %r", doc_id, backend)
+        if store is not None and store.transactional:
+            store.delete(path, document_id=doc_id)  # same transaction as the row
         self.repo.delete(m)
         self.repo.commit()
+        if store is None or store.transactional:
+            return
         try:
-            self.storage.delete(path)
+            store.delete(path, document_id=doc_id)
         except (OSError, StorageError):
-            logger.warning("document %s: row deleted but the file could not be removed", m.id,
+            logger.warning("document %s: row deleted but the file could not be removed", doc_id,
                            exc_info=True)
 
     def finalize(self, case_id: str) -> dto.AnesthesiaCaseDTO:
@@ -182,23 +216,18 @@ class DocumentService:
         loaded_version = m.version
         case = self.cases.load(m)
         written: list[StoredFile] = []
-        rows: list[DocumentModel] = []
         try:
             for form_id in dto.FORM_IDS:
-                row, stored = self._store(case, form_id)
+                _row, stored = self._store(case, form_id)  # row (+ db blob) pending, uncommitted
                 written.append(stored)
-                rows.append(row)
             if not self.cases.repo.set_status(
                 m.id, expected="draft", status="finalized", finalized_at=_utc_now(),
                 expected_version=loaded_version,
             ):
                 raise HTTPException(status_code=409, detail=self._lost_finalize_detail(m.id))
-            for row in rows:
-                self.repo.add(row)
-            self.repo.commit()
+            self.repo.commit()  # the ONE commit: status + 4 rows (+ 4 blobs in db mode)
         except Exception:
-            self.repo.rollback()
-            self._discard(written)
+            self._fail(written)
             raise
         self.repo.db.refresh(m)
         return self.cases.load(m)

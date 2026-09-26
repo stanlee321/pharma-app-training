@@ -8,8 +8,6 @@
 Both use two real DB sessions (the API request + an independent ``SessionLocal``). All data
 synthetic.
 """
-from pathlib import Path
-
 import pytest
 from fastapi import HTTPException
 
@@ -22,10 +20,6 @@ from app.infrastructure.models import CaseModel
 from app.infrastructure.repository import SqlCaseRepository, SqlDocumentRepository
 
 API = "/api/v1"
-
-
-def _files(root: Path) -> list[Path]:
-    return sorted(p for p in root.rglob("*") if p.is_file()) if root.exists() else []
 
 
 def _service(session, user) -> CaseService:
@@ -70,7 +64,7 @@ def test_draft_write_authorised_before_finalize_is_refused(client, owner, db):
     assert got["patient"]["nombre"] == "NOMBRE ORIGINAL"
 
 
-def test_owner_delete_authorised_before_finalize_is_refused(client, owner, db, documents_dir):
+def test_owner_delete_authorised_before_finalize_is_refused(client, owner, db, stored_objects):
     user, h = owner
     cid = _new_case(client, h)
     session_a = SessionLocal()
@@ -84,11 +78,11 @@ def test_owner_delete_authorised_before_finalize_is_refused(client, owner, db, d
     finally:
         session_a.close()
     assert client.get(f"{API}/cases/{cid}", headers=h).json()["status"] == "finalized"
-    assert len(_files(documents_dir)) == 4
+    assert stored_objects() == 4
 
 
 def test_write_committed_during_finalize_render_is_409_and_cleans_up(
-    client, owner, db, documents_dir, monkeypatch
+    client, owner, db, stored_objects, monkeypatch
 ):
     user, h = owner
     cid = _new_case(client, h)
@@ -119,7 +113,7 @@ def test_write_committed_during_finalize_render_is_409_and_cleans_up(
     assert (row.status, row.finalized_at) == ("draft", None)
     assert row.data["patient"]["nombre"] == "NOMBRE NUEVO"
     assert SqlDocumentRepository(db).list_for_case(cid) == []
-    assert _files(documents_dir) == []
+    assert stored_objects() == 0
 
     # a retry renders (and locks) the current data
     rendered_names.clear()
@@ -127,7 +121,7 @@ def test_write_committed_during_finalize_render_is_409_and_cleans_up(
     assert resp.status_code == 200, resp.text
     assert set(rendered_names) == {"NOMBRE NUEVO"}
     assert resp.json()["patient"]["nombre"] == "NOMBRE NUEVO"
-    assert len(_files(documents_dir)) == 4
+    assert stored_objects() == 4
 
 
 def test_every_write_bumps_version(client, owner, db):
