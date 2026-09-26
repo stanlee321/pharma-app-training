@@ -1,0 +1,19 @@
+.aldrete-grid th[scope='row'] {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+.aldrete-grid thead th:first-child {
+  font-size: var(--text-caption2);
+}
+.aldrete-grid th.aldrete-total-label {
+  font-size: var(--text-caption2);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.aldrete-cell .segmented {
+  width: 112px;
+}
+.aldrete-cell .segmented__option span {
+  min-height: 30px;
+  padding: 4px 6px;
+}

@@ -1,0 +1,44 @@
+/* Patient Data — read-only derived biometrics card (Swift PatientDerivedBiometricsCard). */
+.derived {
+  padding: var(--space-item) var(--space-screen);
+}
+.derived__header {
+  margin: 0 0 var(--space-item);
+  display: flex;
+  align-items: center;
+  gap: var(--space-tight);
+  font-size: var(--text-footnote);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--label-secondary);
+}
+.derived__grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-item);
+}
+.derived__metric {
+  padding: var(--space-cell);
+  border-radius: 10px;
+  background: var(--fill);
+  min-width: 0;
+}
+.derived__label {
+  font-size: var(--text-caption2);
+  color: var(--label-secondary);
+}
+.derived__value {
+  margin: 2px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--text-callout);
+  font-variant-numeric: tabular-nums;
+}
+.derived__unit {
+  font-family: var(--font-sans);
+  font-size: var(--text-caption2);
+  color: var(--label-tertiary);
+}

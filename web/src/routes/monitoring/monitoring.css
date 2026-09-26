@@ -1,0 +1,57 @@
+.mini-chart {
+  --chart-1: #007aff; /* Swift Charts default series palette (blue, green, orange) */
+  --chart-2: #34c759;
+  --chart-3: #ff9500;
+  padding: var(--space-item) var(--space-screen);
+}
+.mini-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 180px;
+}
+.mini-chart__grid {
+  stroke: var(--separator);
+  stroke-width: 0.5;
+}
+.mini-chart__tick {
+  font-size: 10px;
+  fill: var(--label-secondary);
+}
+.mini-chart__legend {
+  list-style: none;
+  margin: var(--space-tight) 0 0;
+  padding: 0;
+  display: flex;
+  gap: var(--space-item);
+  justify-content: center;
+  flex-wrap: wrap;
+  font-size: var(--text-caption);
+  color: var(--label-secondary);
+}
+.mini-chart__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.mini-chart__swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.mini-chart--empty {
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--label-secondary);
+  font-size: var(--text-caption);
+}
+.mini-chart--empty p {
+  margin: 0;
+}
+.row__value-text {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}

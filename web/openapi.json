@@ -1,0 +1,7164 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "TivaTrainer API",
+  "version": "0.2.0"
+ },
+ "paths": {
+  "/api/v1/auth/login": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Login",
+    "description": "Username is case-insensitive. 401 on bad credentials or an inactive account; 404 in\ngateway auth mode (identity comes from the gateway headers there).",
+    "operationId": "login_api_v1_auth_login_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LoginRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LoginResponse"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/me": {
+   "get": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Me",
+    "operationId": "me_api_v1_auth_me_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/auth/change-password": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Change Password",
+    "description": "400 if ``current_password`` is wrong; clears ``must_change_password``. Revokes every\ntoken issued before this second (including the caller's): log in again afterwards.",
+    "operationId": "change_password_api_v1_auth_change_password_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ChangePasswordRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/cases": {
+   "get": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "List Cases",
+    "operationId": "list_cases_api_v1_cases_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/CaseSummaryDTO"
+         },
+         "type": "array",
+         "title": "Response List Cases Api V1 Cases Get"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   },
+   "post": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Create Case",
+    "operationId": "create_case_api_v1_cases_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CreateCaseRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnesthesiaCaseDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/v1/cases/{case_id}": {
+   "get": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Get Case",
+    "operationId": "get_case_api_v1_cases__case_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnesthesiaCaseDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "patch": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Patch Case",
+    "operationId": "patch_case_api_v1_cases__case_id__patch",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CaseEnvelopePatch"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnesthesiaCaseDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Upsert Case",
+    "description": "Full-aggregate create-or-replace (client-owned id). Used by the app's RestCaseStore save.\nServer-owned fields (status, updated_at, finalized_at, user_id) and ``id`` in the body are\nignored; an upper-case path id addresses the same case as its lower-case form.",
+    "operationId": "upsert_case_api_v1_cases__case_id__put",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnesthesiaCaseWrite"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnesthesiaCaseDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Delete Case",
+    "description": "Also deletes the case's stored documents (rows and files).",
+    "operationId": "delete_case_api_v1_cases__case_id__delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/cases/{case_id}/patient": {
+   "get": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Get Patient",
+    "operationId": "get_patient_api_v1_cases__case_id__patient_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PatientRecordDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Put Patient",
+    "operationId": "put_patient_api_v1_cases__case_id__patient_put",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PatientRecordDTO"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PatientRecordDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/cases/{case_id}/preanesthetic-assessment": {
+   "get": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Get Preanesthetic Assessment",
+    "operationId": "get_preanesthetic_assessment_api_v1_cases__case_id__preanesthetic_assessment_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PreanestheticAssessmentDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Put Preanesthetic Assessment",
+    "operationId": "put_preanesthetic_assessment_api_v1_cases__case_id__preanesthetic_assessment_put",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PreanestheticAssessmentDTO"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PreanestheticAssessmentDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/cases/{case_id}/anesthetic-technique": {
+   "get": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Get Anesthetic Technique",
+    "operationId": "get_anesthetic_technique_api_v1_cases__case_id__anesthetic_technique_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnestheticTechniqueDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Put Anesthetic Technique",
+    "operationId": "put_anesthetic_technique_api_v1_cases__case_id__anesthetic_technique_put",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnestheticTechniqueDTO"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnestheticTechniqueDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/cases/{case_id}/transanesthetic-record": {
+   "get": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Get Transanesthetic Record",
+    "operationId": "get_transanesthetic_record_api_v1_cases__case_id__transanesthetic_record_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TransanestheticRecordDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Put Transanesthetic Record",
+    "operationId": "put_transanesthetic_record_api_v1_cases__case_id__transanesthetic_record_put",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TransanestheticRecordDTO"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TransanestheticRecordDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/cases/{case_id}/fluid-balance": {
+   "get": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Get Fluid Balance",
+    "operationId": "get_fluid_balance_api_v1_cases__case_id__fluid_balance_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/FluidBalanceDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Put Fluid Balance",
+    "operationId": "put_fluid_balance_api_v1_cases__case_id__fluid_balance_put",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FluidBalanceDTO"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/FluidBalanceDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/cases/{case_id}/recovery-score": {
+   "get": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Get Recovery Score",
+    "operationId": "get_recovery_score_api_v1_cases__case_id__recovery_score_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RecoveryScoreDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Put Recovery Score",
+    "operationId": "put_recovery_score_api_v1_cases__case_id__recovery_score_put",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RecoveryScoreDTO"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RecoveryScoreDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/cases/{case_id}/drugs": {
+   "get": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "List Drugs",
+    "operationId": "list_drugs_api_v1_cases__case_id__drugs_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/DrugAdministrationDTO"
+         },
+         "title": "Response List Drugs Api V1 Cases  Case Id  Drugs Get"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Add Drugs",
+    "operationId": "add_drugs_api_v1_cases__case_id__drugs_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DrugAdministrationDTO"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DrugAdministrationDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/cases/{case_id}/drugs/{item_id}": {
+   "patch": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Update Drugs",
+    "operationId": "update_drugs_api_v1_cases__case_id__drugs__item_id__patch",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     },
+     {
+      "name": "item_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Item Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DrugAdministrationPatch"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DrugAdministrationDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Delete Drugs",
+    "operationId": "delete_drugs_api_v1_cases__case_id__drugs__item_id__delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     },
+     {
+      "name": "item_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Item Id"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/cases/{case_id}/newborns": {
+   "get": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "List Newborns",
+    "operationId": "list_newborns_api_v1_cases__case_id__newborns_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/NewbornRecordDTO"
+         },
+         "title": "Response List Newborns Api V1 Cases  Case Id  Newborns Get"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Add Newborns",
+    "operationId": "add_newborns_api_v1_cases__case_id__newborns_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NewbornRecordDTO"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NewbornRecordDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/cases/{case_id}/newborns/{item_id}": {
+   "patch": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Update Newborns",
+    "operationId": "update_newborns_api_v1_cases__case_id__newborns__item_id__patch",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     },
+     {
+      "name": "item_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Item Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NewbornRecordPatch"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NewbornRecordDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "cases"
+    ],
+    "summary": "Delete Newborns",
+    "operationId": "delete_newborns_api_v1_cases__case_id__newborns__item_id__delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     },
+     {
+      "name": "item_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Item Id"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/forms": {
+   "get": {
+    "tags": [
+     "forms"
+    ],
+    "summary": "List Forms",
+    "description": "List available form schemas as ``{form_id, title}`` entries.",
+    "operationId": "list_forms_api_v1_forms_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/FormInfoDTO"
+         },
+         "type": "array",
+         "title": "Response List Forms Api V1 Forms Get"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/forms/{form_id}/schema": {
+   "get": {
+    "tags": [
+     "forms"
+    ],
+    "summary": "Get Form Schema",
+    "description": "Return the parsed schema whose ``form_id`` matches; 404 if none. The common keys are\ntyped (``FormSchemaDTO``); any other key in the file passes through unchanged.",
+    "operationId": "get_form_schema_api_v1_forms__form_id__schema_get",
+    "parameters": [
+     {
+      "name": "form_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Form Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/FormSchemaDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/cases/{case_id}/export/{form_id}": {
+   "post": {
+    "summary": "Export Case",
+    "description": "Render the real filled form for the case, falling back to a summary PDF.\n\n404 if the case is missing (or not readable by the caller). Nothing is stored.",
+    "operationId": "export_case_api_v1_cases__case_id__export__form_id__post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     },
+     {
+      "name": "form_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Form Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "PDF bytes",
+      "content": {
+       "application/pdf": {}
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/cases/{case_id}/documents": {
+   "post": {
+    "tags": [
+     "documents"
+    ],
+    "summary": "Generate Document",
+    "description": "Render the form (summary-PDF fallback), store it and record it. 422 on unknown form_id.",
+    "operationId": "generate_document_api_v1_cases__case_id__documents_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GenerateDocumentRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DocumentDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "tags": [
+     "documents"
+    ],
+    "summary": "List Documents",
+    "operationId": "list_documents_api_v1_cases__case_id__documents_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/DocumentDTO"
+         },
+         "title": "Response List Documents Api V1 Cases  Case Id  Documents Get"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/cases/{case_id}/finalize": {
+   "post": {
+    "tags": [
+     "documents"
+    ],
+    "summary": "Finalize Case",
+    "description": "Lock the case (draft -> finalized) and store all four forms as its snapshot.\n403 admin, 404 not the owner's, 409 already finalized.",
+    "operationId": "finalize_case_api_v1_cases__case_id__finalize_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnesthesiaCaseDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/documents/{document_id}/file": {
+   "get": {
+    "tags": [
+     "documents"
+    ],
+    "summary": "Download Document",
+    "operationId": "download_document_api_v1_documents__document_id__file_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "document_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Document Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "PDF bytes",
+      "content": {
+       "application/pdf": {}
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/documents/{document_id}": {
+   "delete": {
+    "tags": [
+     "documents"
+    ],
+    "summary": "Delete Document",
+    "operationId": "delete_document_api_v1_documents__document_id__delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "document_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Document Id"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/users": {
+   "get": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin List Users",
+    "operationId": "admin_list_users_api_v1_admin_users_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "maxLength": 200
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "substring of username, full_name or clave",
+       "title": "Q"
+      },
+      "description": "substring of username, full_name or clave"
+     },
+     {
+      "name": "role",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "anesthesiologist",
+          "admin"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Role"
+      }
+     },
+     {
+      "name": "is_active",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Is Active"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/UserDTO"
+         },
+         "title": "Response Admin List Users Api V1 Admin Users Get"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin Create User",
+    "description": "409 if the username (case-insensitive) is taken.",
+    "operationId": "admin_create_user_api_v1_admin_users_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AdminUserCreate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/users/{user_id}": {
+   "get": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin Get User",
+    "operationId": "admin_get_user_api_v1_admin_users__user_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "user_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "minLength": 1,
+       "maxLength": 36,
+       "title": "User Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "patch": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin Update User",
+    "operationId": "admin_update_user_api_v1_admin_users__user_id__patch",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "user_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "minLength": 1,
+       "maxLength": 36,
+       "title": "User Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AdminUserUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin Delete User",
+    "operationId": "admin_delete_user_api_v1_admin_users__user_id__delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "user_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "minLength": 1,
+       "maxLength": 36,
+       "title": "User Id"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/users/{user_id}/reset-password": {
+   "post": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin Reset Password",
+    "operationId": "admin_reset_password_api_v1_admin_users__user_id__reset_password_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "user_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "minLength": 1,
+       "maxLength": 36,
+       "title": "User Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ResetPasswordRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/cases": {
+   "get": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin List Cases",
+    "operationId": "admin_list_cases_api_v1_admin_cases_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "draft",
+          "finalized"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "name": "user_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "maxLength": 36
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "User Id"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "maxLength": 200
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "substring of patient name/registro, diagnosis, procedure, owner, case id, owner username/full name",
+       "title": "Q"
+      },
+      "description": "substring of patient name/registro, diagnosis, procedure, owner, case id, owner username/full name"
+     },
+     {
+      "name": "date_from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "created on/after (UTC day)",
+       "title": "Date From"
+      },
+      "description": "created on/after (UTC day)"
+     },
+     {
+      "name": "date_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "created on/before (UTC day)",
+       "title": "Date To"
+      },
+      "description": "created on/before (UTC day)"
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "description": "page size (1-200)",
+       "default": 50,
+       "title": "Limit"
+      },
+      "description": "page size (1-200)"
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "default": 0,
+       "title": "Offset"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminCasePage"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/cases/{case_id}": {
+   "get": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin Get Case",
+    "operationId": "admin_get_case_api_v1_admin_cases__case_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnesthesiaCaseDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin Delete Case",
+    "operationId": "admin_delete_case_api_v1_admin_cases__case_id__delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/cases/{case_id}/reopen": {
+   "post": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin Reopen Case",
+    "description": "finalized -> draft (stored documents are kept). 409 if the case is not finalized.",
+    "operationId": "admin_reopen_case_api_v1_admin_cases__case_id__reopen_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Case Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnesthesiaCaseDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/documents": {
+   "get": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin List Documents",
+    "operationId": "admin_list_documents_api_v1_admin_documents_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "case_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Case Id"
+      }
+     },
+     {
+      "name": "form_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "registro_transanestesico",
+          "nota_postanestesica",
+          "imss_valoracion_preanestesica",
+          "imss_registro_anestesia"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Form Id"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "description": "page size (1-200)",
+       "default": 50,
+       "title": "Limit"
+      },
+      "description": "page size (1-200)"
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "default": 0,
+       "title": "Offset"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminDocumentPage"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/stats": {
+   "get": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin Stats",
+    "operationId": "admin_stats_api_v1_admin_stats_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminStatsDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/health": {
+   "get": {
+    "summary": "Health",
+    "operationId": "health_health_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {
+          "type": "string"
+         },
+         "type": "object",
+         "title": "Response Health Health Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "AdminCasePage": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/CaseSummaryDTO"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "limit": {
+      "type": "integer",
+      "title": "Limit"
+     },
+     "offset": {
+      "type": "integer",
+      "title": "Offset"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "limit",
+     "offset"
+    ],
+    "title": "AdminCasePage"
+   },
+   "AdminDocumentDTO": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "case_id": {
+      "type": "string",
+      "title": "Case Id"
+     },
+     "form_id": {
+      "type": "string",
+      "enum": [
+       "registro_transanestesico",
+       "nota_postanestesica",
+       "imss_valoracion_preanestesica",
+       "imss_registro_anestesia"
+      ],
+      "title": "Form Id"
+     },
+     "size_bytes": {
+      "type": "integer",
+      "title": "Size Bytes"
+     },
+     "sha256": {
+      "type": "string",
+      "title": "Sha256"
+     },
+     "generated_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Generated By"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "is_fallback": {
+      "type": "boolean",
+      "title": "Is Fallback",
+      "default": false
+     },
+     "download_url": {
+      "type": "string",
+      "title": "Download Url"
+     },
+     "storage_backend": {
+      "type": "string",
+      "title": "Storage Backend"
+     },
+     "storage_path": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Storage Path"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "case_id",
+     "form_id",
+     "size_bytes",
+     "sha256",
+     "created_at",
+     "download_url",
+     "storage_backend"
+    ],
+    "title": "AdminDocumentDTO"
+   },
+   "AdminDocumentPage": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/AdminDocumentDTO"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "limit": {
+      "type": "integer",
+      "title": "Limit"
+     },
+     "offset": {
+      "type": "integer",
+      "title": "Offset"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "limit",
+     "offset"
+    ],
+    "title": "AdminDocumentPage"
+   },
+   "AdminStatsDTO": {
+    "properties": {
+     "cases_total": {
+      "type": "integer",
+      "title": "Cases Total"
+     },
+     "cases_by_status": {
+      "$ref": "#/components/schemas/CasesByStatusDTO"
+     },
+     "cases_per_day": {
+      "items": {
+       "$ref": "#/components/schemas/DailyCountDTO"
+      },
+      "type": "array",
+      "title": "Cases Per Day"
+     },
+     "per_user": {
+      "items": {
+       "$ref": "#/components/schemas/UserActivityDTO"
+      },
+      "type": "array",
+      "title": "Per User"
+     },
+     "documents_total": {
+      "type": "integer",
+      "title": "Documents Total"
+     }
+    },
+    "type": "object",
+    "required": [
+     "cases_total",
+     "cases_by_status",
+     "cases_per_day",
+     "per_user",
+     "documents_total"
+    ],
+    "title": "AdminStatsDTO"
+   },
+   "AdminUserCreate": {
+    "properties": {
+     "username": {
+      "type": "string",
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@-]*$",
+      "title": "Username"
+     },
+     "full_name": {
+      "type": "string",
+      "maxLength": 255,
+      "title": "Full Name",
+      "default": ""
+     },
+     "clave": {
+      "type": "string",
+      "maxLength": 64,
+      "title": "Clave",
+      "default": ""
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "anesthesiologist",
+       "admin"
+      ],
+      "title": "Role",
+      "default": "anesthesiologist"
+     },
+     "password": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 8,
+      "title": "Password"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "username",
+     "password"
+    ],
+    "title": "AdminUserCreate",
+    "description": "New account. The password is temporary: the user must change it at first login\n(``must_change_password`` is set). The username is stored lower-cased; the ``gw-``\nprefix is reserved for gateway users. Unknown fields are rejected (422)."
+   },
+   "AdminUserUpdate": {
+    "properties": {
+     "full_name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 255
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Full Name"
+     },
+     "clave": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 64
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Clave"
+     },
+     "role": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "anesthesiologist",
+         "admin"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Role"
+     },
+     "is_active": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Active"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "title": "AdminUserUpdate",
+    "description": "Partial update: only the keys sent are applied (``null`` is rejected). Unknown fields\nare rejected (422)."
+   },
+   "AnesthesiaCaseDTO": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "owner": {
+      "type": "string",
+      "title": "Owner",
+      "default": ""
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "draft",
+       "finalized"
+      ],
+      "title": "Status",
+      "default": "draft"
+     },
+     "updated_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated At"
+     },
+     "finalized_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Finalized At"
+     },
+     "user_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "User Id"
+     },
+     "fecha": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fecha"
+     },
+     "sala": {
+      "type": "string",
+      "title": "Sala",
+      "default": ""
+     },
+     "servicio": {
+      "type": "string",
+      "title": "Servicio",
+      "default": ""
+     },
+     "turno": {
+      "type": "string",
+      "title": "Turno",
+      "default": ""
+     },
+     "tipo_admision": {
+      "type": "string",
+      "title": "Tipo Admision",
+      "default": ""
+     },
+     "tipo": {
+      "type": "string",
+      "title": "Tipo",
+      "default": ""
+     },
+     "procedimiento": {
+      "type": "string",
+      "title": "Procedimiento",
+      "default": ""
+     },
+     "posicion": {
+      "type": "string",
+      "title": "Posicion",
+      "default": ""
+     },
+     "duracion_anestesia": {
+      "type": "string",
+      "title": "Duracion Anestesia",
+      "default": ""
+     },
+     "diagnostico_preop": {
+      "type": "string",
+      "title": "Diagnostico Preop",
+      "default": ""
+     },
+     "diagnostico_postop": {
+      "type": "string",
+      "title": "Diagnostico Postop",
+      "default": ""
+     },
+     "operacion_propuesta": {
+      "type": "string",
+      "title": "Operacion Propuesta",
+      "default": ""
+     },
+     "operacion_realizada": {
+      "type": "string",
+      "title": "Operacion Realizada",
+      "default": ""
+     },
+     "equipo_quirurgico": {
+      "type": "string",
+      "title": "Equipo Quirurgico",
+      "default": ""
+     },
+     "observaciones": {
+      "type": "string",
+      "title": "Observaciones",
+      "default": ""
+     },
+     "complicaciones_post": {
+      "type": "string",
+      "title": "Complicaciones Post",
+      "default": ""
+     },
+     "asa": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Asa"
+     },
+     "raq": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Raq"
+     },
+     "isquemia": {
+      "$ref": "#/components/schemas/IsquemiaDTO"
+     },
+     "neumoperitoneo": {
+      "$ref": "#/components/schemas/NeumoperitoneoDTO"
+     },
+     "anestesiologo": {
+      "$ref": "#/components/schemas/ProviderDTO"
+     },
+     "cirujano": {
+      "$ref": "#/components/schemas/ProviderDTO"
+     },
+     "patient": {
+      "$ref": "#/components/schemas/PatientRecordDTO"
+     },
+     "pre_assessment": {
+      "$ref": "#/components/schemas/PreanestheticAssessmentDTO"
+     },
+     "technique": {
+      "$ref": "#/components/schemas/AnestheticTechniqueDTO"
+     },
+     "trans_record": {
+      "$ref": "#/components/schemas/TransanestheticRecordDTO"
+     },
+     "fluid_balance": {
+      "$ref": "#/components/schemas/FluidBalanceDTO"
+     },
+     "recovery": {
+      "$ref": "#/components/schemas/RecoveryScoreDTO"
+     },
+     "drugs": {
+      "items": {
+       "$ref": "#/components/schemas/DrugAdministrationDTO"
+      },
+      "type": "array",
+      "title": "Drugs"
+     },
+     "newborns": {
+      "items": {
+       "$ref": "#/components/schemas/NewbornRecordDTO"
+      },
+      "type": "array",
+      "title": "Newborns"
+     }
+    },
+    "type": "object",
+    "title": "AnesthesiaCaseDTO"
+   },
+   "AnesthesiaCaseWrite": {
+    "properties": {
+     "id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id",
+      "description": "Ignored; the path id wins."
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "owner": {
+      "type": "string",
+      "title": "Owner",
+      "default": ""
+     },
+     "fecha": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fecha"
+     },
+     "sala": {
+      "type": "string",
+      "title": "Sala",
+      "default": ""
+     },
+     "servicio": {
+      "type": "string",
+      "title": "Servicio",
+      "default": ""
+     },
+     "turno": {
+      "type": "string",
+      "title": "Turno",
+      "default": ""
+     },
+     "tipo_admision": {
+      "type": "string",
+      "title": "Tipo Admision",
+      "default": ""
+     },
+     "tipo": {
+      "type": "string",
+      "title": "Tipo",
+      "default": ""
+     },
+     "procedimiento": {
+      "type": "string",
+      "title": "Procedimiento",
+      "default": ""
+     },
+     "posicion": {
+      "type": "string",
+      "title": "Posicion",
+      "default": ""
+     },
+     "duracion_anestesia": {
+      "type": "string",
+      "title": "Duracion Anestesia",
+      "default": ""
+     },
+     "diagnostico_preop": {
+      "type": "string",
+      "title": "Diagnostico Preop",
+      "default": ""
+     },
+     "diagnostico_postop": {
+      "type": "string",
+      "title": "Diagnostico Postop",
+      "default": ""
+     },
+     "operacion_propuesta": {
+      "type": "string",
+      "title": "Operacion Propuesta",
+      "default": ""
+     },
+     "operacion_realizada": {
+      "type": "string",
+      "title": "Operacion Realizada",
+      "default": ""
+     },
+     "equipo_quirurgico": {
+      "type": "string",
+      "title": "Equipo Quirurgico",
+      "default": ""
+     },
+     "observaciones": {
+      "type": "string",
+      "title": "Observaciones",
+      "default": ""
+     },
+     "complicaciones_post": {
+      "type": "string",
+      "title": "Complicaciones Post",
+      "default": ""
+     },
+     "asa": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Asa"
+     },
+     "raq": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Raq"
+     },
+     "isquemia": {
+      "$ref": "#/components/schemas/IsquemiaDTO"
+     },
+     "neumoperitoneo": {
+      "$ref": "#/components/schemas/NeumoperitoneoDTO"
+     },
+     "anestesiologo": {
+      "$ref": "#/components/schemas/ProviderDTO"
+     },
+     "cirujano": {
+      "$ref": "#/components/schemas/ProviderDTO"
+     },
+     "patient": {
+      "$ref": "#/components/schemas/PatientRecordDTO"
+     },
+     "pre_assessment": {
+      "$ref": "#/components/schemas/PreanestheticAssessmentDTO"
+     },
+     "technique": {
+      "$ref": "#/components/schemas/AnestheticTechniqueDTO"
+     },
+     "trans_record": {
+      "$ref": "#/components/schemas/TransanestheticRecordDTO"
+     },
+     "fluid_balance": {
+      "$ref": "#/components/schemas/FluidBalanceDTO"
+     },
+     "recovery": {
+      "$ref": "#/components/schemas/RecoveryScoreDTO"
+     },
+     "drugs": {
+      "items": {
+       "$ref": "#/components/schemas/DrugAdministrationDTO"
+      },
+      "type": "array",
+      "title": "Drugs"
+     },
+     "newborns": {
+      "items": {
+       "$ref": "#/components/schemas/NewbornRecordDTO"
+      },
+      "type": "array",
+      "title": "Newborns"
+     }
+    },
+    "type": "object",
+    "title": "AnesthesiaCaseWrite",
+    "description": "Full-aggregate create-or-replace body (server-owned fields are not accepted)."
+   },
+   "AnestheticTechniqueDTO": {
+    "properties": {
+     "modality": {
+      "type": "string",
+      "title": "Modality",
+      "default": ""
+     },
+     "values": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Values"
+     }
+    },
+    "type": "object",
+    "title": "AnestheticTechniqueDTO"
+   },
+   "CaseEnvelopePatch": {
+    "properties": {
+     "sala": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sala"
+     },
+     "servicio": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Servicio"
+     },
+     "turno": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Turno"
+     },
+     "tipo_admision": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tipo Admision"
+     },
+     "tipo": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tipo"
+     },
+     "procedimiento": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Procedimiento"
+     },
+     "posicion": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Posicion"
+     },
+     "duracion_anestesia": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Duracion Anestesia"
+     },
+     "diagnostico_preop": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Diagnostico Preop"
+     },
+     "diagnostico_postop": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Diagnostico Postop"
+     },
+     "operacion_propuesta": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Operacion Propuesta"
+     },
+     "operacion_realizada": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Operacion Realizada"
+     },
+     "equipo_quirurgico": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Equipo Quirurgico"
+     },
+     "observaciones": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Observaciones"
+     },
+     "complicaciones_post": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Complicaciones Post"
+     },
+     "asa": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Asa"
+     },
+     "raq": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Raq"
+     }
+    },
+    "type": "object",
+    "title": "CaseEnvelopePatch"
+   },
+   "CaseSummaryDTO": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "owner": {
+      "type": "string",
+      "title": "Owner"
+     },
+     "nombre": {
+      "type": "string",
+      "title": "Nombre"
+     },
+     "diagnostico_preop": {
+      "type": "string",
+      "title": "Diagnostico Preop"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "draft",
+       "finalized"
+      ],
+      "title": "Status",
+      "default": "draft"
+     },
+     "updated_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated At"
+     },
+     "finalized_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Finalized At"
+     },
+     "user_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "User Id"
+     },
+     "owner_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Owner Name"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "owner",
+     "nombre",
+     "diagnostico_preop",
+     "created_at"
+    ],
+    "title": "CaseSummaryDTO"
+   },
+   "CasesByStatusDTO": {
+    "properties": {
+     "draft": {
+      "type": "integer",
+      "title": "Draft",
+      "default": 0
+     },
+     "finalized": {
+      "type": "integer",
+      "title": "Finalized",
+      "default": 0
+     }
+    },
+    "type": "object",
+    "title": "CasesByStatusDTO"
+   },
+   "ChangePasswordRequest": {
+    "properties": {
+     "current_password": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Current Password"
+     },
+     "new_password": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 8,
+      "title": "New Password"
+     }
+    },
+    "type": "object",
+    "required": [
+     "current_password",
+     "new_password"
+    ],
+    "title": "ChangePasswordRequest"
+   },
+   "CreateCaseRequest": {
+    "properties": {
+     "owner": {
+      "type": "string",
+      "title": "Owner",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "title": "CreateCaseRequest"
+   },
+   "DailyCountDTO": {
+    "properties": {
+     "date": {
+      "type": "string",
+      "format": "date",
+      "title": "Date"
+     },
+     "count": {
+      "type": "integer",
+      "title": "Count"
+     }
+    },
+    "type": "object",
+    "required": [
+     "date",
+     "count"
+    ],
+    "title": "DailyCountDTO"
+   },
+   "DocumentDTO": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "case_id": {
+      "type": "string",
+      "title": "Case Id"
+     },
+     "form_id": {
+      "type": "string",
+      "enum": [
+       "registro_transanestesico",
+       "nota_postanestesica",
+       "imss_valoracion_preanestesica",
+       "imss_registro_anestesia"
+      ],
+      "title": "Form Id"
+     },
+     "size_bytes": {
+      "type": "integer",
+      "title": "Size Bytes"
+     },
+     "sha256": {
+      "type": "string",
+      "title": "Sha256"
+     },
+     "generated_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Generated By"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "is_fallback": {
+      "type": "boolean",
+      "title": "Is Fallback",
+      "default": false
+     },
+     "download_url": {
+      "type": "string",
+      "title": "Download Url"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "case_id",
+     "form_id",
+     "size_bytes",
+     "sha256",
+     "created_at",
+     "download_url"
+    ],
+    "title": "DocumentDTO",
+    "description": "A generated, stored PDF. ``storage_path`` is deliberately absent (admin DTO only)."
+   },
+   "DrugAdministrationDTO": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label",
+      "default": ""
+     },
+     "farmaco": {
+      "type": "string",
+      "title": "Farmaco",
+      "default": ""
+     },
+     "dose_value": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dose Value"
+     },
+     "dose_unit": {
+      "type": "string",
+      "title": "Dose Unit",
+      "default": "mg"
+     },
+     "via": {
+      "type": "string",
+      "title": "Via",
+      "default": "IV"
+     },
+     "time": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Time"
+     },
+     "rust_model_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rust Model Id"
+     }
+    },
+    "type": "object",
+    "title": "DrugAdministrationDTO"
+   },
+   "DrugAdministrationPatch": {
+    "properties": {
+     "label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Label"
+     },
+     "farmaco": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Farmaco"
+     },
+     "dose_value": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dose Value"
+     },
+     "dose_unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dose Unit"
+     },
+     "via": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Via"
+     },
+     "time": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Time"
+     },
+     "rust_model_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rust Model Id"
+     }
+    },
+    "type": "object",
+    "title": "DrugAdministrationPatch"
+   },
+   "ErrorDTO": {
+    "properties": {
+     "detail": {
+      "type": "string",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "required": [
+     "detail"
+    ],
+    "title": "ErrorDTO",
+    "description": "Every non-422 error body (401/403/404/409/400): ``{\"detail\": \"...\"}``."
+   },
+   "FluidBalanceDTO": {
+    "properties": {
+     "matrix": {
+      "additionalProperties": {
+       "additionalProperties": {
+        "type": "number"
+       },
+       "type": "object"
+      },
+      "type": "object",
+      "title": "Matrix"
+     },
+     "blood_components": {
+      "additionalProperties": {
+       "type": "boolean"
+      },
+      "type": "object",
+      "title": "Blood Components"
+     },
+     "balance_parcial": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "type": "object",
+      "title": "Balance Parcial"
+     },
+     "balance_total": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "type": "object",
+      "title": "Balance Total"
+     },
+     "total_a_reponer": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "type": "object",
+      "title": "Total A Reponer"
+     },
+     "gasto_urinario": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "type": "number"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "type": "object",
+      "title": "Gasto Urinario"
+     },
+     "tasa_fentanilo": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tasa Fentanilo"
+     }
+    },
+    "type": "object",
+    "title": "FluidBalanceDTO"
+   },
+   "FormFieldDTO": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "type": {
+      "type": "string",
+      "title": "Type"
+     },
+     "label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Label"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     },
+     "section": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Section"
+     },
+     "bbox": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "number"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Bbox"
+     },
+     "checkbox_bbox": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "number"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Checkbox Bbox"
+     },
+     "blank_bbox": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "number"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Blank Bbox"
+     }
+    },
+    "additionalProperties": true,
+    "type": "object",
+    "required": [
+     "id",
+     "type"
+    ],
+    "title": "FormFieldDTO"
+   },
+   "FormInfoDTO": {
+    "properties": {
+     "form_id": {
+      "type": "string",
+      "title": "Form Id"
+     },
+     "title": {
+      "type": "string",
+      "title": "Title"
+     }
+    },
+    "type": "object",
+    "required": [
+     "form_id",
+     "title"
+    ],
+    "title": "FormInfoDTO"
+   },
+   "FormPageDTO": {
+    "properties": {
+     "width": {
+      "type": "number",
+      "title": "Width"
+     },
+     "height": {
+      "type": "number",
+      "title": "Height"
+     }
+    },
+    "additionalProperties": true,
+    "type": "object",
+    "required": [
+     "width",
+     "height"
+    ],
+    "title": "FormPageDTO"
+   },
+   "FormSchemaDTO": {
+    "properties": {
+     "form_id": {
+      "type": "string",
+      "title": "Form Id"
+     },
+     "source": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source"
+     },
+     "page": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/FormPageDTO"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fields": {
+      "items": {
+       "$ref": "#/components/schemas/FormFieldDTO"
+      },
+      "type": "array",
+      "title": "Fields"
+     },
+     "tables": {
+      "items": {
+       "$ref": "#/components/schemas/FormTableDTO"
+      },
+      "type": "array",
+      "title": "Tables"
+     },
+     "charts": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Charts"
+     },
+     "major_sections": {
+      "items": {},
+      "type": "array",
+      "title": "Major Sections"
+     },
+     "subsections": {
+      "items": {},
+      "type": "array",
+      "title": "Subsections"
+     }
+    },
+    "additionalProperties": true,
+    "type": "object",
+    "required": [
+     "form_id"
+    ],
+    "title": "FormSchemaDTO"
+   },
+   "FormTableDTO": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "title": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Title"
+     },
+     "bbox": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "number"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Bbox"
+     },
+     "rows": {
+      "anyOf": [
+       {
+        "items": {
+         "additionalProperties": true,
+         "type": "object"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rows"
+     },
+     "columns": {
+      "anyOf": [
+       {
+        "items": {
+         "additionalProperties": true,
+         "type": "object"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Columns"
+     },
+     "row_cuts": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "number"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Row Cuts"
+     },
+     "col_cuts": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "number"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Col Cuts"
+     }
+    },
+    "additionalProperties": true,
+    "type": "object",
+    "required": [
+     "id"
+    ],
+    "title": "FormTableDTO"
+   },
+   "GenerateDocumentRequest": {
+    "properties": {
+     "form_id": {
+      "type": "string",
+      "enum": [
+       "registro_transanestesico",
+       "nota_postanestesica",
+       "imss_valoracion_preanestesica",
+       "imss_registro_anestesia"
+      ],
+      "title": "Form Id"
+     }
+    },
+    "type": "object",
+    "required": [
+     "form_id"
+    ],
+    "title": "GenerateDocumentRequest"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "IsquemiaDTO": {
+    "properties": {
+     "hr_inicio": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hr Inicio"
+     },
+     "hr_termino": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hr Termino"
+     },
+     "sitio": {
+      "type": "string",
+      "title": "Sitio",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "title": "IsquemiaDTO"
+   },
+   "LoginRequest": {
+    "properties": {
+     "username": {
+      "type": "string",
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Username"
+     },
+     "password": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Password"
+     }
+    },
+    "type": "object",
+    "required": [
+     "username",
+     "password"
+    ],
+    "title": "LoginRequest"
+   },
+   "LoginResponse": {
+    "properties": {
+     "access_token": {
+      "type": "string",
+      "title": "Access Token"
+     },
+     "token_type": {
+      "type": "string",
+      "const": "bearer",
+      "title": "Token Type",
+      "default": "bearer"
+     },
+     "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Expires At"
+     },
+     "user": {
+      "$ref": "#/components/schemas/UserDTO"
+     }
+    },
+    "type": "object",
+    "required": [
+     "access_token",
+     "expires_at",
+     "user"
+    ],
+    "title": "LoginResponse"
+   },
+   "NeumoperitoneoDTO": {
+    "properties": {
+     "hr_inicio": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hr Inicio"
+     }
+    },
+    "type": "object",
+    "title": "NeumoperitoneoDTO"
+   },
+   "NewbornRecordDTO": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "sexo": {
+      "type": "string",
+      "title": "Sexo",
+      "default": ""
+     },
+     "peso_gramos": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Peso Gramos"
+     },
+     "talla_cm": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Talla Cm"
+     },
+     "apgar1": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Apgar1"
+     },
+     "apgar5": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Apgar5"
+     },
+     "apgar10": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Apgar10"
+     },
+     "expulsion_placenta": {
+      "type": "string",
+      "title": "Expulsion Placenta",
+      "default": ""
+     },
+     "estado_general": {
+      "type": "string",
+      "title": "Estado General",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "title": "NewbornRecordDTO"
+   },
+   "NewbornRecordPatch": {
+    "properties": {
+     "sexo": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sexo"
+     },
+     "peso_gramos": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Peso Gramos"
+     },
+     "talla_cm": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Talla Cm"
+     },
+     "apgar1": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Apgar1"
+     },
+     "apgar5": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Apgar5"
+     },
+     "apgar10": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Apgar10"
+     },
+     "expulsion_placenta": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expulsion Placenta"
+     },
+     "estado_general": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Estado General"
+     }
+    },
+    "type": "object",
+    "title": "NewbornRecordPatch"
+   },
+   "PatientProfileDTO": {
+    "properties": {
+     "weight": {
+      "type": "number",
+      "title": "Weight",
+      "default": 70
+     },
+     "height": {
+      "type": "number",
+      "title": "Height",
+      "default": 170
+     },
+     "age": {
+      "type": "number",
+      "title": "Age",
+      "default": 40
+     },
+     "gender": {
+      "type": "string",
+      "title": "Gender",
+      "default": "male"
+     },
+     "dilution": {
+      "type": "number",
+      "title": "Dilution",
+      "default": 10.0
+     }
+    },
+    "type": "object",
+    "title": "PatientProfileDTO"
+   },
+   "PatientRecordDTO": {
+    "properties": {
+     "profile": {
+      "$ref": "#/components/schemas/PatientProfileDTO"
+     },
+     "registro": {
+      "type": "string",
+      "title": "Registro",
+      "default": ""
+     },
+     "nombre": {
+      "type": "string",
+      "title": "Nombre",
+      "default": ""
+     },
+     "hb": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hb"
+     },
+     "hto": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hto"
+     },
+     "rh": {
+      "type": "string",
+      "title": "Rh",
+      "default": ""
+     },
+     "grupo_sanguineo": {
+      "type": "string",
+      "title": "Grupo Sanguineo",
+      "default": ""
+     },
+     "cama": {
+      "type": "string",
+      "title": "Cama",
+      "default": ""
+     },
+     "hab": {
+      "type": "string",
+      "title": "Hab",
+      "default": ""
+     },
+     "imc": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Imc"
+     },
+     "peso_ideal": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Peso Ideal"
+     },
+     "vsc": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Vsc"
+     },
+     "vsc_25": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Vsc 25"
+     },
+     "vsc_15": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Vsc 15"
+     }
+    },
+    "type": "object",
+    "title": "PatientRecordDTO"
+   },
+   "PreanestheticAssessmentDTO": {
+    "properties": {
+     "alergia": {
+      "type": "string",
+      "title": "Alergia",
+      "default": ""
+     },
+     "dentadura": {
+      "type": "string",
+      "title": "Dentadura",
+      "default": ""
+     },
+     "cuello": {
+      "type": "string",
+      "title": "Cuello",
+      "default": ""
+     },
+     "via_aerea": {
+      "type": "string",
+      "title": "Via Aerea",
+      "default": ""
+     },
+     "estado_psiquico": {
+      "type": "string",
+      "title": "Estado Psiquico",
+      "default": ""
+     },
+     "aparato_respiratorio": {
+      "type": "string",
+      "title": "Aparato Respiratorio",
+      "default": ""
+     },
+     "aparato_cardiovascular": {
+      "type": "string",
+      "title": "Aparato Cardiovascular",
+      "default": ""
+     },
+     "tegumentos": {
+      "type": "string",
+      "title": "Tegumentos",
+      "default": ""
+     },
+     "antecedentes_anestesicos": {
+      "type": "string",
+      "title": "Antecedentes Anestesicos",
+      "default": ""
+     },
+     "medicamentos_previos": {
+      "type": "string",
+      "title": "Medicamentos Previos",
+      "default": ""
+     },
+     "analgesica_obstetrica": {
+      "type": "string",
+      "title": "Analgesica Obstetrica",
+      "default": ""
+     },
+     "otros": {
+      "type": "string",
+      "title": "Otros",
+      "default": ""
+     },
+     "premedicacion": {
+      "type": "string",
+      "title": "Premedicacion",
+      "default": ""
+     },
+     "ayuno": {
+      "type": "boolean",
+      "title": "Ayuno",
+      "default": false
+     },
+     "consentimiento": {
+      "type": "boolean",
+      "title": "Consentimiento",
+      "default": false
+     },
+     "asa": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Asa"
+     },
+     "raq": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Raq"
+     },
+     "labs": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "number"
+        }
+       ]
+      },
+      "type": "object",
+      "title": "Labs"
+     },
+     "notes": {
+      "type": "string",
+      "title": "Notes",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "title": "PreanestheticAssessmentDTO"
+   },
+   "ProviderDTO": {
+    "properties": {
+     "nombre": {
+      "type": "string",
+      "title": "Nombre",
+      "default": ""
+     },
+     "clave": {
+      "type": "string",
+      "title": "Clave",
+      "default": ""
+     },
+     "cedula": {
+      "type": "string",
+      "title": "Cedula",
+      "default": ""
+     },
+     "universidad": {
+      "type": "string",
+      "title": "Universidad",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "title": "ProviderDTO"
+   },
+   "RecoveryScoreDTO": {
+    "properties": {
+     "aldrete": {
+      "additionalProperties": {
+       "additionalProperties": {
+        "type": "integer"
+       },
+       "type": "object"
+      },
+      "type": "object",
+      "title": "Aldrete"
+     },
+     "otras": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "Otras"
+     },
+     "alta_a_piso": {
+      "type": "string",
+      "title": "Alta A Piso",
+      "default": ""
+     },
+     "medico_responsable": {
+      "type": "string",
+      "title": "Medico Responsable",
+      "default": ""
+     },
+     "totals": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "type": "object",
+      "title": "Totals"
+     }
+    },
+    "type": "object",
+    "title": "RecoveryScoreDTO"
+   },
+   "ResetPasswordRequest": {
+    "properties": {
+     "password": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 8,
+      "title": "Password"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "password"
+    ],
+    "title": "ResetPasswordRequest"
+   },
+   "SurgicalEventDTO": {
+    "properties": {
+     "marker": {
+      "type": "integer",
+      "title": "Marker"
+     },
+     "t": {
+      "type": "number",
+      "title": "T"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "required": [
+     "marker",
+     "t"
+    ],
+    "title": "SurgicalEventDTO"
+   },
+   "TransanestheticRecordDTO": {
+    "properties": {
+     "series": {
+      "items": {
+       "$ref": "#/components/schemas/VitalSeriesDTO"
+      },
+      "type": "array",
+      "title": "Series"
+     },
+     "events": {
+      "items": {
+       "$ref": "#/components/schemas/SurgicalEventDTO"
+      },
+      "type": "array",
+      "title": "Events"
+     },
+     "monitoring": {
+      "additionalProperties": {
+       "type": "boolean"
+      },
+      "type": "object",
+      "title": "Monitoring"
+     },
+     "basal": {
+      "$ref": "#/components/schemas/VitalSnapshotDTO"
+     },
+     "termination": {
+      "$ref": "#/components/schemas/VitalSnapshotDTO"
+     },
+     "complicaciones": {
+      "type": "string",
+      "title": "Complicaciones",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "title": "TransanestheticRecordDTO"
+   },
+   "UserActivityDTO": {
+    "properties": {
+     "user_id": {
+      "type": "string",
+      "title": "User Id"
+     },
+     "username": {
+      "type": "string",
+      "title": "Username"
+     },
+     "full_name": {
+      "type": "string",
+      "title": "Full Name"
+     },
+     "drafts": {
+      "type": "integer",
+      "title": "Drafts"
+     },
+     "finalized": {
+      "type": "integer",
+      "title": "Finalized"
+     },
+     "last_activity": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Activity"
+     }
+    },
+    "type": "object",
+    "required": [
+     "user_id",
+     "username",
+     "full_name",
+     "drafts",
+     "finalized"
+    ],
+    "title": "UserActivityDTO"
+   },
+   "UserDTO": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "username": {
+      "type": "string",
+      "title": "Username"
+     },
+     "full_name": {
+      "type": "string",
+      "title": "Full Name"
+     },
+     "clave": {
+      "type": "string",
+      "title": "Clave"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "anesthesiologist",
+       "admin"
+      ],
+      "title": "Role"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     },
+     "must_change_password": {
+      "type": "boolean",
+      "title": "Must Change Password"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Updated At"
+     },
+     "last_login_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Login At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "username",
+     "full_name",
+     "clave",
+     "role",
+     "is_active",
+     "must_change_password",
+     "created_at",
+     "updated_at"
+    ],
+    "title": "UserDTO"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   },
+   "VitalPointDTO": {
+    "properties": {
+     "t": {
+      "type": "number",
+      "title": "T"
+     },
+     "value": {
+      "type": "number",
+      "title": "Value"
+     }
+    },
+    "type": "object",
+    "required": [
+     "t",
+     "value"
+    ],
+    "title": "VitalPointDTO"
+   },
+   "VitalSeriesDTO": {
+    "properties": {
+     "lane": {
+      "type": "string",
+      "title": "Lane"
+     },
+     "points": {
+      "items": {
+       "$ref": "#/components/schemas/VitalPointDTO"
+      },
+      "type": "array",
+      "title": "Points"
+     }
+    },
+    "type": "object",
+    "required": [
+     "lane"
+    ],
+    "title": "VitalSeriesDTO"
+   },
+   "VitalSnapshotDTO": {
+    "properties": {
+     "fc": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fc"
+     },
+     "fr": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fr"
+     },
+     "ta_sys": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ta Sys"
+     },
+     "ta_dia": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ta Dia"
+     },
+     "spo2": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Spo2"
+     },
+     "pvc": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Pvc"
+     }
+    },
+    "type": "object",
+    "title": "VitalSnapshotDTO"
+   }
+  },
+  "securitySchemes": {
+   "HTTPBearer": {
+    "type": "http",
+    "description": "JWT from POST /api/v1/auth/login",
+    "scheme": "bearer"
+   }
+  }
+ }
+}

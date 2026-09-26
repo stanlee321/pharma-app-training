@@ -1,0 +1,607 @@
+/* Admin shell — same tokens as the clinical screens, wider content (~1100px). */
+.admin {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--grouped-bg);
+  --admin-max: 1100px;
+}
+.admin-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(249, 249, 249, 0.94);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--separator);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.admin-bar__inner {
+  max-width: var(--admin-max);
+  margin: 0 auto;
+  padding: var(--space-cell) var(--space-screen);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-cell) var(--space-section);
+}
+.admin-bar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-cell);
+  font-weight: 700;
+  font-size: var(--text-headline);
+  white-space: nowrap;
+}
+.admin-bar__logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--color-selection);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.admin-bar__tag {
+  font-weight: 600;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.admin-bar__account {
+  margin-left: auto;
+}
+.admin-nav {
+  display: flex;
+  gap: var(--space-tight);
+  padding: 2px;
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  overflow-x: auto;
+  max-width: 100%;
+}
+.admin-nav__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 7px;
+  color: var(--label);
+  text-decoration: none;
+  font-size: var(--text-subheadline);
+  white-space: nowrap;
+}
+.admin-nav__link--active {
+  background: var(--grouped-card);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.admin__main {
+  max-width: var(--admin-max);
+  margin: 0 auto;
+  padding: var(--space-section) var(--space-screen)
+    calc(env(safe-area-inset-bottom, 0px) + var(--space-section) * 2);
+}
+/* Phone: brand + account on the first line, the nav full-width on the second. */
+@media (max-width: 719px) {
+  .admin-nav {
+    order: 3;
+    flex: 1 1 100%;
+  }
+  .admin-nav__link {
+    flex: 1 0 auto;
+    justify-content: center;
+    padding: 0 10px;
+  }
+}
+
+/* ---- Page head, crumbs, notes ------------------------------------------------------------ */
+.admin-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-cell) var(--space-item);
+  justify-content: space-between;
+}
+.admin-head .large-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-head__action {
+  gap: 6px;
+  text-decoration: none;
+}
+.admin-crumb {
+  margin: 0 0 calc(-1 * var(--space-cell));
+  font-size: var(--text-subheadline);
+}
+.admin-crumb a {
+  color: var(--ios-blue);
+  text-decoration: none;
+}
+.admin-card-pad {
+  padding: var(--space-item) var(--space-screen);
+}
+.admin-card-note {
+  margin: 0;
+  padding: var(--space-item) var(--space-screen);
+  font-size: var(--text-subheadline);
+  color: var(--label-secondary);
+}
+.admin-user-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-cell);
+  margin: 0 0 var(--space-tight);
+}
+.admin-user-meta__name {
+  font-family: var(--font-mono);
+  font-size: var(--text-subheadline);
+  color: var(--label-secondary);
+}
+.admin-user-dates {
+  margin: 0 0 var(--space-section);
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+/* Refetch keeps the frame: previous render, dimmed, no layout jump. */
+.admin-refetching {
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+/* ---- Badges -------------------------------------------------------------------------------- */
+.admin-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-tight);
+}
+.admin-badge--admin {
+  background: rgba(0, 122, 255, 0.12);
+  color: var(--ios-blue-pressed);
+}
+.admin-badge--anesthesiologist,
+.admin-badge--self {
+  background: var(--fill);
+  color: var(--label);
+}
+.admin-badge--active {
+  background: rgba(52, 199, 89, 0.15);
+  color: var(--color-effect-strong);
+}
+.admin-badge--inactive {
+  background: rgba(255, 59, 48, 0.12);
+  color: #c4291f;
+}
+.admin-badge--pending {
+  background: rgba(251, 146, 60, 0.16);
+  color: var(--color-infusion-strong);
+}
+
+/* ---- Inline alerts ------------------------------------------------------------------------- */
+.admin-alert {
+  display: flex;
+  gap: var(--space-cell);
+  align-items: flex-start;
+  margin: 0 0 var(--space-item);
+  padding: 10px var(--space-screen);
+  border-radius: var(--radius-card);
+  background: var(--grouped-card);
+  font-size: var(--text-subheadline);
+  border: 1px solid var(--color-invalid);
+  color: var(--label);
+}
+.admin-alert > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-invalid);
+}
+.admin-alert--info {
+  border-color: var(--color-selection);
+}
+.admin-alert--info > svg {
+  color: var(--color-selection);
+}
+.admin-alert--success {
+  border-color: var(--color-effect);
+}
+.admin-alert--success > svg {
+  color: var(--color-effect-strong);
+}
+.admin-alert__text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-alert__p {
+  margin: 0;
+}
+.admin-alert__p + .admin-alert__p {
+  margin-top: var(--space-cell);
+}
+.section__card .admin-alert {
+  margin: var(--space-cell) var(--space-screen);
+}
+
+/* ---- Forms --------------------------------------------------------------------------------- */
+.admin-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-cell);
+  margin: calc(-1 * var(--space-cell)) 0 var(--space-section);
+}
+.admin-form-actions .btn-plain {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.admin-row-actions {
+  flex-wrap: wrap;
+  gap: var(--space-cell);
+  justify-content: flex-end;
+}
+.admin-row-actions .row__label {
+  flex: 1 1 14em;
+}
+.btn-plain--destructive {
+  color: var(--ios-red);
+}
+.password-row {
+  flex-wrap: wrap;
+}
+.password-row .row__input {
+  font-family: var(--font-mono);
+  min-width: 8em;
+}
+.password-row__actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+/* ---- Filters (one row above the content they scope) ----------------------------------------- */
+.admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-item);
+  align-items: flex-end;
+  margin-bottom: var(--space-section);
+}
+.admin-filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-tight);
+  flex: 0 1 12em;
+  min-width: 0;
+}
+.admin-filter--grow {
+  flex: 1 1 16em;
+}
+.admin-filter label {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.admin-filter input,
+.admin-filter select {
+  min-height: var(--tap-target);
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0 var(--space-item);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--grouped-card);
+  font: inherit;
+  font-size: var(--text-callout);
+  color: var(--label);
+}
+.admin-filter input:focus-visible,
+.admin-filter select:focus-visible {
+  outline: 2px solid var(--ios-blue);
+  outline-offset: 0;
+}
+
+/* ---- Tables -------------------------------------------------------------------------------- */
+.admin-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-subheadline);
+}
+.admin-table th,
+.admin-table td {
+  padding: 10px var(--space-screen);
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 0.5px solid var(--separator);
+}
+.admin-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.admin-table thead th {
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+  white-space: nowrap;
+}
+.admin-table tbody th {
+  font-weight: 400;
+}
+.admin-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.admin-table__link {
+  color: var(--ios-blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+.admin-table__link:hover {
+  text-decoration: underline;
+}
+.admin-table__sub {
+  display: block;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+.admin-table__row--muted .admin-table__link,
+.admin-table__row--muted td {
+  opacity: 0.7;
+}
+.admin-table--compact th,
+.admin-table--compact td {
+  padding: 6px var(--space-screen);
+}
+@media (max-width: 599px) {
+  .admin-table .hide-narrow {
+    display: none;
+  }
+  .admin-table th,
+  .admin-table td {
+    padding-inline: var(--space-item);
+  }
+}
+
+/* ---- Stat tiles ---------------------------------------------------------------------------- */
+.stat-tiles {
+  list-style: none;
+  margin: 0 0 var(--space-section);
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-item);
+}
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-tight);
+  padding: var(--space-item) var(--space-screen);
+  border-radius: var(--radius-card);
+  background: var(--grouped-card);
+}
+.stat-tile__label {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+.stat-tile__value {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--label);
+}
+
+/* ---- Cases-per-day chart --------------------------------------------------------------------- */
+.chart__frame {
+  position: relative;
+  width: 100%;
+  border-radius: var(--radius-control);
+}
+.chart__frame:focus-visible {
+  outline: 2px solid var(--ios-blue);
+  outline-offset: 2px;
+}
+.chart__svg {
+  display: block;
+  max-width: 100%;
+  overflow: visible;
+}
+.chart__grid {
+  stroke: var(--gray5);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.chart__tick {
+  fill: var(--label-secondary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.chart__value {
+  fill: var(--label);
+  font-size: 11px;
+  font-weight: 600;
+}
+.chart__bar {
+  fill: var(--color-selection);
+}
+.chart__bar--active {
+  fill: #1d5fd0;
+}
+.chart__hit {
+  fill: transparent;
+  cursor: default;
+}
+.chart__tooltip {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--grouped-card);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
+  white-space: nowrap;
+  z-index: 1;
+}
+.chart__tooltip--below {
+  /* Flipped under the bar cap when there is no room above it (see CasesPerDayChart). */
+  transform: translate(-50%, 8px);
+}
+.chart__tooltip-value {
+  font-size: var(--text-subheadline);
+  color: var(--label);
+}
+.chart__tooltip-label {
+  font-size: var(--text-caption);
+  color: var(--label-secondary);
+}
+.chart__empty {
+  position: absolute;
+  inset: 0 0 26px 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: var(--label-secondary);
+  font-size: var(--text-subheadline);
+  pointer-events: none;
+}
+.chart__table {
+  margin-top: var(--space-cell);
+  font-size: var(--text-subheadline);
+}
+.chart__table summary {
+  cursor: pointer;
+  color: var(--ios-blue);
+  min-height: var(--tap-target);
+  display: flex;
+  align-items: center;
+}
+
+/* ---- One-time secret ----------------------------------------------------------------------- */
+.secret-card {
+  margin-bottom: var(--space-section);
+  padding: var(--space-screen);
+  border-radius: var(--radius-card);
+  background: var(--grouped-card);
+  border: 1px solid var(--color-effect);
+}
+.secret-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-cell);
+  margin: 0 0 var(--space-cell);
+  font-size: var(--text-headline);
+  color: var(--color-effect-strong);
+}
+.secret-card__text {
+  margin: 0 0 var(--space-item);
+  font-size: var(--text-subheadline);
+}
+.secret-card__value-row {
+  display: flex;
+  gap: var(--space-cell);
+  align-items: center;
+}
+.secret-card__value {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap-target);
+  padding: 0 var(--space-item);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--label);
+}
+.secret-card__warn {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: var(--space-item) 0 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+.secret-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-cell);
+  margin-top: var(--space-screen);
+}
+.secret-card__actions a.btn-plain {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ---- Clinical section screens inside the admin shell (read-only case view) ------------------ */
+/* The shell already has the sticky bar and the page padding: the nested Page flows inline. */
+.admin .page {
+  min-height: 0;
+  padding: 0;
+}
+.admin .navbar {
+  position: static;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.admin .navbar__bar,
+.admin .page__inner {
+  padding-inline: 0;
+}
+
+/* ---- Pager ---------------------------------------------------------------------------------- */
+.admin-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-cell);
+  padding: var(--space-cell) var(--space-screen);
+  border-top: 0.5px solid var(--separator);
+  font-size: var(--text-subheadline);
+  color: var(--label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.admin-pager__buttons {
+  display: inline-flex;
+  gap: var(--space-tight);
+}
+.admin-pager .btn-plain:disabled {
+  color: var(--label-tertiary, var(--label-secondary));
+  opacity: 0.5;
+}
+.admin-filter input[aria-invalid='true'] {
+  outline: 2px solid var(--color-invalid);
+}
+.admin-filter__error {
+  font-size: var(--text-footnote);
+  color: var(--color-invalid);
+}
+.admin-filters__clear {
+  align-self: flex-end;
+  min-height: var(--tap-target);
+}
+.admin-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-footnote);
+  overflow-wrap: anywhere;
+}
+.admin-inline-link {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}

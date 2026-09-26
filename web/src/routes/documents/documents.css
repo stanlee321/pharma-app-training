@@ -1,0 +1,50 @@
+.doc-group + .doc-group {
+  border-top: 0.5px solid var(--separator);
+}
+.doc-row {
+  gap: var(--space-cell);
+}
+.doc-row__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.doc-row__title {
+  font-size: var(--text-callout);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.doc-row__meta {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.doc-row__fallback {
+  color: var(--color-infusion-strong);
+}
+.doc-group__older {
+  padding-left: var(--space-screen);
+}
+.doc-group__summary {
+  cursor: pointer;
+  font-size: var(--text-footnote);
+  color: var(--ios-blue);
+  min-height: 36px;
+}
+.finalize-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-cell);
+  padding: var(--space-item) var(--space-screen);
+}
+.finalize-confirm__text {
+  margin: 0;
+  font-size: var(--text-subheadline);
+}
+.finalize-confirm__actions {
+  display: flex;
+  gap: var(--space-cell);
+  flex-wrap: wrap;
+}

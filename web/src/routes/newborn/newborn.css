@@ -1,0 +1,27 @@
+.newborn {
+  padding-block: var(--space-tight);
+}
+.newborn__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-cell);
+  padding: var(--space-cell) var(--space-screen) 0;
+  color: var(--label-secondary);
+  font-size: var(--text-footnote);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.newborn__title {
+  flex: 1;
+  min-width: 0;
+}
+.newborn__apgar {
+  margin-left: auto;
+  min-height: 36px;
+  min-width: 64px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--fill);
+  padding: 0 8px;
+  text-align: center;
+}

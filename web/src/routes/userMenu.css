@@ -1,0 +1,73 @@
+.user-menu {
+  position: relative;
+}
+.user-menu__button {
+  gap: 6px;
+  padding: 0 14px 0 10px;
+  max-width: 45vw;
+}
+.user-menu__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--text-subheadline);
+}
+.user-menu__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  min-width: 220px;
+  max-width: calc(100vw - 2 * var(--space-screen));
+  background: var(--grouped-card);
+  border-radius: var(--radius-card);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+/* In a trailing slot the panel opens towards the left edge. */
+.navbar__trailing .user-menu__panel,
+.admin-bar .user-menu__panel {
+  left: auto;
+  right: 0;
+}
+.user-menu__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-item) var(--space-screen);
+  border-bottom: 0.5px solid var(--separator);
+}
+.user-menu__full {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.user-menu__meta {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  overflow-wrap: anywhere;
+}
+.user-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-cell);
+  width: 100%;
+  min-height: var(--tap-target);
+  padding: 0 var(--space-screen);
+  border: 0;
+  background: transparent;
+  color: var(--ios-blue);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.user-menu__item + .user-menu__item {
+  border-top: 0.5px solid var(--separator);
+}
+.user-menu__item:hover,
+.user-menu__item:focus-visible {
+  background: var(--fill);
+}
+.user-menu__item--danger {
+  color: var(--ios-red);
+}
