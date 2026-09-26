@@ -6,15 +6,16 @@ import { UserMenu } from '../UserMenu';
 import './admin.css';
 
 const NAV = [
-  { to: paths.admin.dashboard, label: 'Dashboard', end: true },
-  { to: paths.admin.cases, label: 'Cases', end: false },
-  { to: paths.admin.users, label: 'Users', end: false },
-  { to: paths.admin.documents, label: 'Documents', end: false },
+  { to: paths.admin.dashboard, label: 'Panel', end: true },
+  { to: paths.admin.patients, label: 'Pacientes', end: false },
+  { to: paths.admin.cases, label: 'Casos', end: false },
+  { to: paths.admin.users, label: 'Usuarios', end: false },
+  { to: paths.admin.documents, label: 'Documentos', end: false },
 ] as const;
 
 /**
  * Admin shell (`/admin/**`, admins only): top bar with the brand, the section nav
- * (Dashboard · Cases · Users · Documents) and the account menu; pages render in the outlet,
+ * (Panel · Pacientes · Casos · Usuarios · Documentos) and the account menu; pages render in the outlet,
  * max-width ~1100px. Same visual language as the clinical screens, desktop-friendly, and the nav
  * wraps under the bar on a phone.
  */
@@ -27,9 +28,9 @@ export function AdminLayout() {
             <span className="admin-bar__logo" aria-hidden="true">
               <Icon name="crossCase" size={20} />
             </span>
-            TivaTrainer <span className="admin-bar__tag">Admin</span>
+            TivaTrainer <span className="admin-bar__tag">Administración</span>
           </span>
-          <nav className="admin-nav" aria-label="Admin">
+          <nav className="admin-nav" aria-label="Administración">
             {NAV.map((n) => (
               <NavLink
                 key={n.to}

@@ -12,6 +12,12 @@ export function EditOnly({ children }: { children: ReactNode }) {
   return useReadOnly() ? null : <>{children}</>;
 }
 
+const BANNER_TEXT: Record<NonNullable<ReadOnlyState['reason']>, string> = {
+  finalized: 'Caso finalizado — solo lectura',
+  viewer: 'Vista de solo lectura',
+  foreign: 'Caso de otro anestesiólogo — solo lectura',
+};
+
 /** The visible lock banner at the top of every read-only case screen. */
 export function ReadOnlyBanner() {
   const { readOnly, reason } = useReadOnlyState();
@@ -19,7 +25,7 @@ export function ReadOnlyBanner() {
   return (
     <div className="banner banner--locked" role="status" data-testid="readonly-banner">
       <Icon name="lock" size={18} />
-      <span className="banner__text">{reason === 'finalized' ? 'Finalized — read-only' : 'Read-only view'}</span>
+      <span className="banner__text">{BANNER_TEXT[reason ?? 'viewer']}</span>
     </div>
   );
 }

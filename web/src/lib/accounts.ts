@@ -7,6 +7,7 @@
  * - full name ≤ 255, clave ≤ 64; password 8–128.
  */
 import { BackendError } from '../api/backend';
+import { serverMessage } from '../api/serverMessages';
 
 export const USERNAME_MAX = 64;
 export const FULL_NAME_MAX = 255;
@@ -22,25 +23,25 @@ const USERNAME_RE = /^[A-Za-z0-9][A-Za-z0-9._@-]*$/;
  */
 export const PASSWORD_MANAGER_OFF = { 'data-1p-ignore': 'true', 'data-lpignore': 'true' } as const;
 
-export const USERNAME_RULE = 'Letters, digits and . _ @ - only; must start with a letter or digit.';
+export const USERNAME_RULE = 'Solo letras, dígitos y . _ @ -; debe empezar con una letra o un dígito.';
 
 /** Client-side username check (null = OK). */
 export function usernameProblem(raw: string): string | null {
   const v = raw.trim();
-  if (!v) return 'Enter a username.';
-  if (v.length > USERNAME_MAX) return `At most ${USERNAME_MAX} characters.`;
+  if (!v) return 'Escriba un nombre de usuario.';
+  if (v.length > USERNAME_MAX) return `Como máximo ${USERNAME_MAX} caracteres.`;
   if (!USERNAME_RE.test(v)) return USERNAME_RULE;
   return null;
 }
 
 export function passwordProblem(v: string): string | null {
-  if (v.length < PASSWORD_MIN) return `At least ${PASSWORD_MIN} characters.`;
-  if (v.length > PASSWORD_MAX) return `At most ${PASSWORD_MAX} characters.`;
+  if (v.length < PASSWORD_MIN) return `Al menos ${PASSWORD_MIN} caracteres.`;
+  if (v.length > PASSWORD_MAX) return `Como máximo ${PASSWORD_MAX} caracteres.`;
   return null;
 }
 
 export function maxLengthProblem(v: string, max: number): string | null {
-  return v.trim().length > max ? `At most ${max} characters.` : null;
+  return v.trim().length > max ? `Como máximo ${max} caracteres.` : null;
 }
 
 // ---- temporary passwords ------------------------------------------------------------------
@@ -89,9 +90,9 @@ export const USERNAME_TAKEN_DETAIL = 'username already exists';
 /** Readable text for the user-guard 409s (self / last admin / owns cases); null if not a guard. */
 export function guardMessage(e: unknown): string | null {
   if (!(e instanceof BackendError) || e.status !== 409 || !e.detail) return null;
-  if (e.detail === SELF_GUARD_DETAIL) return 'You can’t delete, deactivate or demote your own account.';
+  if (e.detail === SELF_GUARD_DETAIL) return 'No puede eliminar, desactivar ni quitar el rol de administrador a su propia cuenta.';
   if (e.detail === LAST_ADMIN_DETAIL) {
-    return 'This is the last active admin, so it can’t be deleted, deactivated or demoted. Make another account an admin first.';
+    return 'Es el último administrador activo: no se puede eliminar, desactivar ni cambiar de rol. Primero haga administradora a otra cuenta.';
   }
   return null; // e.g. "user owns N case(s)…": the delete flow handles it (offers Deactivate)
 }
@@ -114,7 +115,7 @@ interface ValidationItem {
 export function fieldErrors(e: unknown): Partial<Record<AccountField, string>> {
   if (!(e instanceof BackendError)) return {};
   if (e.status === 409 && e.detail === USERNAME_TAKEN_DETAIL) {
-    return { username: 'This username is already taken.' };
+    return { username: 'Ese nombre de usuario ya está en uso.' };
   }
   if (e.status !== 422) return {};
   let items: ValidationItem[] = [];
@@ -128,10 +129,10 @@ export function fieldErrors(e: unknown): Partial<Record<AccountField, string>> {
   for (const it of items) {
     const field = Array.isArray(it.loc) ? it.loc[it.loc.length - 1] : undefined;
     if (typeof field !== 'string' || out[field as AccountField]) continue;
-    let msg = (it.msg ?? 'Invalid value.').replace(/^Value error, /, '');
+    let msg = it.msg ? serverMessage(it.msg) : 'Valor no válido.';
     if (it.type === 'string_pattern_mismatch' && field === 'username') msg = USERNAME_RULE;
     msg = msg.charAt(0).toUpperCase() + msg.slice(1);
-    out[field as AccountField] = msg.endsWith('.') ? msg : `${msg}.`;
+    out[field as AccountField] = /[.!?]$/.test(msg) ? msg : `${msg}.`;
   }
   return out;
 }

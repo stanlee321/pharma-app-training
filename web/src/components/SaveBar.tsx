@@ -1,4 +1,5 @@
 import type { CaseMeta } from '../state/caseStore';
+import { UI } from '../lib/wording';
 import { Icon } from './Icon';
 import { useReadOnlyState } from './readOnlyContext';
 import { saveStateOf, type SaveState } from './saveState';
@@ -10,17 +11,17 @@ export function SaveIndicator({ state, error }: { state: SaveState; error?: stri
     <span className={`save-indicator${cls}`} role="status" aria-live="polite">
       {state === 'saving' ? (
         <>
-          <span className="spinner" aria-hidden="true" /> Saving…
+          <span className="spinner" aria-hidden="true" /> Guardando…
         </>
       ) : state === 'error' ? (
         <>
-          <Icon name="warning" size={16} /> Save failed{error ? `: ${error}` : ''}
+          <Icon name="warning" size={16} /> No se pudo guardar{error ? `: ${error}` : ''}
         </>
       ) : state === 'dirty' ? (
-        'Unsaved changes'
+        'Cambios sin guardar'
       ) : state === 'saved' ? (
         <>
-          <Icon name="checkCircle" size={16} /> Saved
+          <Icon name="checkCircle" size={16} /> Guardado
         </>
       ) : null}
     </span>
@@ -28,13 +29,13 @@ export function SaveIndicator({ state, error }: { state: SaveState; error?: stri
 }
 
 /**
- * Sticky bottom bar: save indicator + Save button (Swift toolbar "Save"). In read-only mode the
+ * Sticky bottom bar: save indicator + "Guardar" button (Swift toolbar "Save"). In read-only mode the
  * indicator shows the lock and Save stays disabled.
  */
 export function SaveBar({
   meta,
   onSave,
-  label = 'Save',
+  label = UI.save,
 }: {
   meta: CaseMeta | undefined;
   onSave: () => void;
@@ -46,7 +47,7 @@ export function SaveBar({
     return (
       <div className="savebar">
         <span className="save-indicator" role="status">
-          <Icon name="lock" size={16} /> {ro.reason === 'finalized' ? 'Finalized — read-only' : 'Read-only'}
+          <Icon name="lock" size={16} /> {ro.reason === 'finalized' ? 'Finalizado — solo lectura' : 'Solo lectura'}
         </span>
         <button type="button" className="btn-primary btn-primary--compact" disabled>
           {label}
@@ -63,7 +64,7 @@ export function SaveBar({
         onClick={onSave}
         disabled={state === 'saving'}
       >
-        {state === 'error' ? 'Retry' : label}
+        {state === 'error' ? UI.retry : label}
       </button>
     </div>
   );

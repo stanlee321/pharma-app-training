@@ -21,7 +21,7 @@ export interface DrugTciChipSlotProps {
 export function DrugTciChipSlot({ modelId, patient, targetCp }: DrugTciChipSlotProps) {
   const tci = computeTCI(modelId, toEnginePatient(patient), ZERO_STATE, targetCp, 'plasma');
   if (!tci) return null;
-  const text = `TCI: ${tci.bolusMl.toFixed(1)} ml bolus · ${tci.infusionRateMlHr.toFixed(1)} ml/h`;
+  const text = `TCI: bolo ${tci.bolusMl.toFixed(1)} ml · ${tci.infusionRateMlHr.toFixed(1)} ml/h`;
   const caption = `@ ${targetCp.toFixed(1)}`;
   return (
     <div
@@ -30,7 +30,7 @@ export function DrugTciChipSlot({ modelId, patient, targetCp }: DrugTciChipSlotP
       data-model-id={modelId}
       data-target-cp={targetCp}
       role="group"
-      aria-label="Recommended TCI dose"
+      aria-label="Dosis TCI recomendada"
     >
       <Icon name="sparkles" size={16} />
       <span className="drug-tci-chip__text">{text}</span>

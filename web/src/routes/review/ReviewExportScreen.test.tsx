@@ -56,8 +56,8 @@ describe('ReviewExportScreen', () => {
   it('shows the Swift review summary', async () => {
     const c = demoCase();
     renderApp(`/cases/${c.id}/review`, restHarness([c]).backend);
-    expect(await screen.findByRole('heading', { name: 'Review & Export', level: 1 })).toBeInTheDocument();
-    for (const h of ['Paciente', 'Diagnóstico', 'Técnica anestésica', 'Aldrete (recovery)', 'Finalize', 'Documents']) {
+    expect(await screen.findByRole('heading', { name: 'Revisión y exportación', level: 1 })).toBeInTheDocument();
+    for (const h of ['Paciente', 'Diagnóstico', 'Técnica anestésica', 'Aldrete (recuperación)', 'Finalizar', 'Documentos']) {
       expect(screen.getByRole('heading', { name: h, level: 2 })).toBeInTheDocument();
     }
     expect(valueOf('Nombre')).toHaveTextContent('Paciente Demo (sintético)');
@@ -75,7 +75,7 @@ describe('ReviewExportScreen', () => {
     // Aldrete totals: every recorded time point in the form's order (Al salir before 20), missing = 0.
     expect(valueOf('20')).toHaveTextContent('1 / 10');
     expect(valueOf('Al salir')).toHaveTextContent('4 / 10');
-    const aldrete = screen.getByRole('heading', { name: 'Aldrete (recovery)', level: 2 }).closest('section')!;
+    const aldrete = screen.getByRole('heading', { name: 'Aldrete (recuperación)', level: 2 }).closest('section')!;
     expect([...aldrete.querySelectorAll('.row__label')].map((e) => e.textContent)).toEqual(['Al salir', '20']);
     // Form picker: the 4 form_ids with the Swift titles, Registro transanestésico by default.
     const picker = screen.getByLabelText('Formulario');
@@ -83,15 +83,15 @@ describe('ReviewExportScreen', () => {
     expect([...(picker as HTMLSelectElement).options].map((o) => [o.value, o.text])).toEqual([
       ['registro_transanestesico', 'Registro transanestésico'],
       ['nota_postanestesica', 'Nota postanestésica'],
-      ['imss_valoracion_preanestesica', 'IMSS · Valoración'],
-      ['imss_registro_anestesia', 'IMSS · Registro'],
+      ['imss_valoracion_preanestesica', 'IMSS · Valoración preanestésica'],
+      ['imss_registro_anestesia', 'IMSS · Registro de anestesia'],
     ]);
   });
 
-  it('shows "No Aldrete score recorded" when empty', async () => {
+  it('shows "Sin puntuación de Aldrete registrada" when empty', async () => {
     const c = newCase('Dr. Demo');
     renderApp(`/cases/${c.id}/review`, restHarness([c]).backend);
-    expect(await screen.findByText('No Aldrete score recorded')).toBeInTheDocument();
+    expect(await screen.findByText('Sin puntuación de Aldrete registrada')).toBeInTheDocument();
     expect(valueOf('ASA')).toHaveTextContent('—');
     expect(valueOf('Nombre')).toHaveTextContent('—');
   });
@@ -101,14 +101,14 @@ describe('ReviewExportScreen', () => {
     const h = restHarness([c]);
     const user = userEvent.setup();
     const view = renderApp(`/cases/${c.id}/review`, h.backend);
-    expect(await screen.findByText('No stored documents yet')).toBeInTheDocument();
+    expect(await screen.findByText('Aún no hay documentos guardados')).toBeInTheDocument();
     // A pending edit must be saved before the form is rendered.
     caseStore.getState().updateCase(c.id, (d) => {
       d.diagnostico_postop = 'Dx post demo';
     });
 
     await user.selectOptions(screen.getByLabelText('Formulario'), 'nota_postanestesica');
-    await user.click(screen.getByRole('button', { name: 'Generate & store' }));
+    await user.click(screen.getByRole('button', { name: 'Generar y guardar' }));
 
     const frame = await screen.findByTitle(/^Nota postanestésica · .* \(PDF\)$/);
     expect(frame.tagName).toBe('IFRAME');
@@ -129,15 +129,15 @@ describe('ReviewExportScreen', () => {
     const blob = (URL.createObjectURL as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Blob;
     expect(blob.type).toBe('application/pdf');
     expect(screen.getAllByTestId('document-row')).toHaveLength(1);
-    const dl = screen.getByRole('link', { name: 'Download PDF' });
+    const dl = screen.getByRole('link', { name: 'Descargar PDF' });
     expect(dl).toHaveAttribute('href', 'blob:test/1');
     expect(dl.getAttribute('download')).toMatch(new RegExp(`^nota_postanestesica_${c.id.slice(0, 8)}_\\d+\\.pdf$`));
     expect(screen.queryByRole('alert')).toBeNull();
 
     // A second generation replaces (and revokes) the first URL.
     await user.selectOptions(screen.getByLabelText('Formulario'), 'imss_registro_anestesia');
-    await user.click(screen.getByRole('button', { name: 'Generate & store' }));
-    expect(await screen.findByTitle(/^IMSS · Registro · .* \(PDF\)$/)).toHaveAttribute('src', 'blob:test/2');
+    await user.click(screen.getByRole('button', { name: 'Generar y guardar' }));
+    expect(await screen.findByTitle(/^IMSS · Registro de anestesia · .* \(PDF\)$/)).toHaveAttribute('src', 'blob:test/2');
     expect(revoked).toEqual(['blob:test/1']);
     expect(screen.getAllByTestId('document-row')).toHaveLength(2);
 
@@ -159,16 +159,16 @@ describe('ReviewExportScreen', () => {
     });
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/review`, h.backend);
-    await user.click(await screen.findByRole('button', { name: 'Generate & store' }));
+    await user.click(await screen.findByRole('button', { name: 'Generar y guardar' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Download failed: the server returned HTTP 500 — stored file failed its integrity check.',
+      'No se pudo descargar el PDF: el servidor respondió HTTP 500 — stored file failed its integrity check.',
     );
     mode = 'html';
-    await user.click(screen.getByRole('button', { name: /^View Registro transanestésico/ }));
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/text\/html, not a PDF/));
+    await user.click(screen.getByRole('button', { name: /^Ver Registro transanestésico/ }));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/text\/html, no un PDF/));
     expect(created).toHaveLength(0);
     mode = 'ok';
-    await user.click(screen.getByRole('button', { name: /^View Registro transanestésico/ }));
+    await user.click(screen.getByRole('button', { name: /^Ver Registro transanestésico/ }));
     expect(await screen.findByTitle(/^Registro transanestésico · .* \(PDF\)$/)).toBeInTheDocument();
     expect(screen.queryByRole('alert')).toBeNull();
   });
@@ -178,12 +178,12 @@ describe('ReviewExportScreen', () => {
     const h = restHarness([c]);
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/review`, h.backend);
-    await screen.findByText('No stored documents yet');
+    await screen.findByText('Aún no hay documentos guardados');
     h.fetch.mockImplementationOnce(async () => {
       throw new TypeError('Failed to fetch');
     });
-    await user.click(screen.getByRole('button', { name: 'Generate & store' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Generating the form failed: the server could not be reached/);
+    await user.click(screen.getByRole('button', { name: 'Generar y guardar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/No se pudo generar el formulario: no se pudo conectar con el servidor/);
   });
 
   it('explains that the offline in-memory store cannot store documents', async () => {
@@ -197,41 +197,41 @@ describe('ReviewExportScreen', () => {
       </MemoryRouter>,
     );
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Generate & store' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(/offline \(in-memory\) store/);
+    await user.click(await screen.findByRole('button', { name: 'Generar y guardar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/esta sesión trabaja sin conexión/);
     expect(storeCase(c.id).id).toBe(c.id);
   });
 });
 
-describe('Finalize', () => {
+describe('Finalizar', () => {
   it('in-page confirm → saves pending edits → finalizes → read-only everywhere + the 4 stored documents', async () => {
     const c = demoCase();
     const h = restHarness([c]);
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/review`, h.backend);
-    await screen.findByText('No stored documents yet');
+    await screen.findByText('Aún no hay documentos guardados');
     caseStore.getState().updateCase(c.id, (d) => {
       d.observaciones = 'nota final';
     });
 
     // Cancel sends nothing.
-    await user.click(screen.getByRole('button', { name: 'Finalize case…' }));
-    expect(screen.getByRole('group', { name: 'Confirm finalize' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Finalizar caso…' }));
+    expect(screen.getByRole('group', { name: 'Confirmar finalización' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(h.calls.some((x) => x.url.endsWith('/finalize'))).toBe(false);
 
-    await user.click(screen.getByRole('button', { name: 'Finalize case…' }));
-    await user.click(screen.getByRole('button', { name: 'Finalize and lock' }));
+    await user.click(screen.getByRole('button', { name: 'Finalizar caso…' }));
+    await user.click(screen.getByRole('button', { name: 'Finalizar y bloquear' }));
 
-    expect(await screen.findByTestId('readonly-banner')).toHaveTextContent('Finalized — read-only');
+    expect(await screen.findByTestId('readonly-banner')).toHaveTextContent('Caso finalizado — solo lectura');
     expect(h.puts).toHaveLength(1);
     expect(h.puts[0]!.body.observaciones).toBe('nota final');
     const order = h.calls.map((x) => `${x.method} ${x.url.replace(c.id, 'ID')}`);
     expect(order.indexOf('PUT /api/v1/cases/ID')).toBeLessThan(order.indexOf('POST /api/v1/cases/ID/finalize'));
     expect(storeCase(c.id).status).toBe('finalized');
-    expect(screen.getByText('Finalized', { selector: '.status-badge' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Finalize case…' })).toBeNull();
-    expect(screen.getByRole('heading', { name: 'Case status', level: 2 })).toBeInTheDocument();
+    expect(screen.getByText('Finalizado', { selector: '.status-badge' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Finalizar caso…' })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Estado del caso', level: 2 })).toBeInTheDocument();
     // The 4 stored forms, in the form order, and no delete for the owner of a finalized case.
     await waitFor(() => expect(screen.getAllByTestId('document-row')).toHaveLength(4));
     expect([...document.querySelectorAll('.doc-group')].map((g) => g.getAttribute('data-form-id'))).toEqual([
@@ -240,9 +240,9 @@ describe('Finalize', () => {
       'imss_valoracion_preanestesica',
       'imss_registro_anestesia',
     ]);
-    expect(screen.queryByRole('button', { name: /^Delete / })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Eliminar / })).toBeNull();
     // Save is disabled and edits are refused by the store.
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled();
     expect(caseStore.getState().updateCase(c.id, (d) => void (d.observaciones = 'x'))).toBe(false);
   });
 
@@ -253,12 +253,12 @@ describe('Finalize', () => {
     });
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/review`, h.backend);
-    await user.click(await screen.findByRole('button', { name: 'Finalize case…' }));
+    await user.click(await screen.findByRole('button', { name: 'Finalizar caso…' }));
     const gets = () => h.calls.filter((x) => x.method === 'GET' && x.url === `/api/v1/cases/${c.id}`).length;
     const before = gets();
-    await user.click(screen.getByRole('button', { name: 'Finalize and lock' }));
+    await user.click(screen.getByRole('button', { name: 'Finalizar y bloquear' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'The case changed while its forms were being stored, so nothing was locked.',
+      'El caso cambió mientras se guardaban sus formularios, así que no se bloqueó.',
     );
     expect(gets()).toBe(before + 1); // reloaded
     expect(storeCase(c.id).status).toBe('draft');
@@ -275,8 +275,8 @@ describe('Finalize', () => {
     });
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/review`, h.backend);
-    await user.click(await screen.findByRole('button', { name: 'Finalize case…' }));
-    await user.click(screen.getByRole('button', { name: 'Finalize and lock' }));
+    await user.click(await screen.findByRole('button', { name: 'Finalizar caso…' }));
+    await user.click(screen.getByRole('button', { name: 'Finalizar y bloquear' }));
     expect(await screen.findByTestId('readonly-banner')).toBeInTheDocument();
     expect(storeCase(c.id).status).toBe('finalized');
   });
@@ -286,15 +286,15 @@ describe('Finalize', () => {
     const h = restHarness([c]);
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/patient`, h.backend);
-    const reg = await screen.findByLabelText('Registro');
+    const cama = await screen.findByLabelText('Cama');
     h.server.set(c.id, { ...(h.server.get(c.id) as AnesthesiaCase), status: 'finalized' });
-    await user.type(reg, 'X');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(/This case has been finalized, so it is now read-only/);
+    await user.type(cama, 'X');
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Este caso se finalizó y ahora es de solo lectura/);
     expect(screen.getByTestId('readonly-banner')).toBeInTheDocument();
-    expect(screen.getByLabelText('Registro')).toBeDisabled();
-    expect(screen.getByLabelText('Registro')).toHaveValue('TEST-0001');
-    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(screen.getByLabelText('Cama')).toBeDisabled();
+    expect(screen.getByLabelText('Cama')).toHaveValue('');
+    await user.click(screen.getByRole('button', { name: 'Descartar' }));
     expect(screen.queryByRole('alert')).toBeNull();
   });
 });

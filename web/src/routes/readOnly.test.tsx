@@ -36,17 +36,17 @@ function fullCase(status: CaseStatus): AnesthesiaCase {
 /** Every case-scoped section screen. */
 const SCREENS: [name: string, path: (id: string) => string][] = [
   ['Encounter Hub', paths.hub],
-  ['Patient Data', paths.patient],
-  ['Preanesthetic', paths.preanesthetic],
-  ['Technique · General', (id) => paths.technique(id, 'general')],
+  ['Datos del paciente', paths.patient],
+  ['Valoración preanestésica', paths.preanesthetic],
+  ['Técnica anestésica · General', (id) => paths.technique(id, 'general')],
   ['Technique · Neuraxial', (id) => paths.technique(id, 'neuraxial')],
   ['Technique · Peripheral', (id) => paths.technique(id, 'peripheral')],
-  ['Monitoring', paths.monitoring],
-  ['Drug Ledger', paths.drugs],
-  ['Fluid Balance', paths.fluids],
-  ['Recovery', paths.recovery],
+  ['Registro transanestésico', paths.monitoring],
+  ['Fármacos administrados', paths.drugs],
+  ['Balance de líquidos', paths.fluids],
+  ['Recuperación (Aldrete)', paths.recovery],
   ['Newborn', paths.newborn],
-  ['Review & Export', paths.review],
+  ['Revisión y exportación', paths.review],
 ];
 
 const CONTROLS = 'input, select, textarea, button';
@@ -55,7 +55,7 @@ async function openForm(status: CaseStatus, path: (id: string) => string) {
   const c = fullCase(status);
   const h = restHarness([c]);
   renderApp(path(c.id), h.backend);
-  await screen.findByRole('button', { name: 'Save' });
+  await screen.findByRole('button', { name: 'Guardar' });
   const form = document.querySelector('fieldset.readonly-scope') as HTMLFieldSetElement;
   expect(form).not.toBeNull();
   return { c, h, form };
@@ -65,9 +65,9 @@ describe('finalized case: every section screen is read-only (one mechanism)', ()
   it.each(SCREENS)('%s', async (_name, path) => {
     const { c, h, form } = await openForm('finalized', path);
 
-    expect(screen.getByTestId('readonly-banner')).toHaveTextContent('Finalized — read-only');
-    expect(screen.getByText('Finalized', { selector: '.status-badge' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(screen.getByTestId('readonly-banner')).toHaveTextContent('Caso finalizado — solo lectura');
+    expect(screen.getByText('Finalizado', { selector: '.status-badge' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled();
 
     // Every control of the case form is disabled …
     const controls = [...form.querySelectorAll<HTMLElement>(CONTROLS)];
@@ -78,8 +78,8 @@ describe('finalized case: every section screen is read-only (one mechanism)', ()
       expect(el).toHaveProperty('disabled', true);
     }
     // No add / delete / migrate affordances.
-    expect(within(form).queryByRole('button', { name: /^(Add|Delete|Mover)/ })).toBeNull();
-    expect(screen.queryByText(/^Add (drug|newborn)$/)).toBeNull();
+    expect(within(form).queryByRole('button', { name: /^(Agregar|Eliminar|Mover)/ })).toBeNull();
+    expect(screen.queryByText(/^Agregar (fármaco|recién nacido)$/)).toBeNull();
 
     // Typing into the first text field changes nothing and sends nothing.
     const first = controls.find((e) => e instanceof HTMLInputElement && e.type === 'text') as HTMLInputElement | undefined;
@@ -98,7 +98,7 @@ describe('draft case: the same screens stay editable', () => {
   it.each(SCREENS)('%s', async (_name, path) => {
     const { form } = await openForm('draft', path);
     expect(screen.queryByTestId('readonly-banner')).toBeNull();
-    expect(screen.getByText('Draft', { selector: '.status-badge' })).toBeInTheDocument();
+    expect(screen.getByText('Borrador', { selector: '.status-badge' })).toBeInTheDocument();
     expect(form.disabled).toBe(false);
     const enabled = [...form.querySelectorAll<HTMLElement>(CONTROLS)].filter((e) => !(e as HTMLInputElement).disabled);
     if (path !== paths.review) expect(enabled.length).toBeGreaterThan(0);

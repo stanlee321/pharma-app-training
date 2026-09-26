@@ -63,6 +63,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/patients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Patients */
+        get: operations["list_patients_api_v1_patients_get"];
+        put?: never;
+        /** Create Patient */
+        post: operations["create_patient_api_v1_patients_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patients/{patient_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Patient */
+        get: operations["get_patient_api_v1_patients__patient_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Patient */
+        delete: operations["delete_patient_api_v1_patients__patient_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Patient */
+        patch: operations["update_patient_api_v1_patients__patient_id__patch"];
+        trace?: never;
+    };
     "/api/v1/cases": {
         parameters: {
             query?: never;
@@ -73,7 +110,11 @@ export interface paths {
         /** List Cases */
         get: operations["list_cases_api_v1_cases_get"];
         put?: never;
-        /** Create Case */
+        /**
+         * Create Case
+         * @description New draft case for a patient (``patient_id`` required; 404 unknown patient). The
+         *     patient's identity and the last case's profile values are copied in.
+         */
         post: operations["create_case_api_v1_cases_post"];
         delete?: never;
         options?: never;
@@ -95,6 +136,8 @@ export interface paths {
          * @description Full-aggregate create-or-replace (client-owned id). Used by the app's RestCaseStore save.
          *     Server-owned fields (status, updated_at, finalized_at, user_id) and ``id`` in the body are
          *     ignored; an upper-case path id addresses the same case as its lower-case form.
+         *     Create: ``patient_id`` is required (422 without, 404 unknown). Replace: ``patient_id`` is
+         *     ignored (a case never changes patient); 403 on another user's case, 409 if finalized.
          */
         put: operations["upsert_case_api_v1_cases__case_id__put"];
         post?: never;
@@ -385,7 +428,7 @@ export interface paths {
         /**
          * Finalize Case
          * @description Lock the case (draft -> finalized) and store all four forms as its snapshot.
-         *     403 admin, 404 not the owner's, 409 already finalized.
+         *     403 admin or not the owner, 404 missing, 409 already finalized.
          */
         post: operations["finalize_case_api_v1_cases__case_id__finalize_post"];
         delete?: never;
@@ -540,6 +583,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/patients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin List Patients */
+        get: operations["admin_list_patients_api_v1_admin_patients_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/patients/{patient_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Admin Delete Patient
+         * @description 409 while the patient still has cases.
+         */
+        delete: operations["admin_delete_patient_api_v1_admin_patients__patient_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/documents": {
         parameters: {
             query?: never;
@@ -653,6 +733,8 @@ export interface components {
         };
         /** AdminStatsDTO */
         AdminStatsDTO: {
+            /** Patients Total */
+            patients_total: number;
             /** Cases Total */
             cases_total: number;
             cases_by_status: components["schemas"]["CasesByStatusDTO"];
@@ -735,6 +817,8 @@ export interface components {
             finalized_at?: string | null;
             /** User Id */
             user_id?: string | null;
+            /** Patient Id */
+            patient_id?: string | null;
             /** Fecha */
             fecha?: string | null;
             /**
@@ -851,6 +935,8 @@ export interface components {
              * @default
              */
             owner: string;
+            /** Patient Id */
+            patient_id?: string | null;
             /** Fecha */
             fecha?: string | null;
             /**
@@ -1028,6 +1114,17 @@ export interface components {
             user_id?: string | null;
             /** Owner Name */
             owner_name?: string | null;
+            /**
+             * Registro
+             * @default
+             */
+            registro: string;
+            /** Patient Id */
+            patient_id?: string | null;
+            /** Patient Nombre */
+            patient_nombre?: string | null;
+            /** Patient Registro */
+            patient_registro?: string | null;
         };
         /** CasesByStatusDTO */
         CasesByStatusDTO: {
@@ -1056,6 +1153,12 @@ export interface components {
              * @default
              */
             owner: string;
+            /**
+             * Patient Id
+             * Format: uuid
+             * @description The patient (historia clínica) of the new case.
+             */
+            patient_id: string;
         };
         /** DailyCountDTO */
         DailyCountDTO: {
@@ -1378,6 +1481,202 @@ export interface components {
             /** Estado General */
             estado_general?: string | null;
         };
+        /**
+         * PatientCaseSummaryDTO
+         * @description One case of a patient. ``numero`` is 1-based by ``created_at`` (then id) within the
+         *     patient. ``can_edit``: the caller owns it, it is a draft, and the caller is not an admin.
+         */
+        PatientCaseSummaryDTO: {
+            /** Id */
+            id: string;
+            /** Numero */
+            numero: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Fecha */
+            fecha?: string | null;
+            /**
+             * Diagnostico Preop
+             * @default
+             */
+            diagnostico_preop: string;
+            /**
+             * Status
+             * @default draft
+             * @enum {string}
+             */
+            status: "draft" | "finalized";
+            /** User Id */
+            user_id?: string | null;
+            /** Author Name */
+            author_name?: string | null;
+            /**
+             * Can Edit
+             * @default false
+             */
+            can_edit: boolean;
+        };
+        /**
+         * PatientConflictDTO
+         * @description 409 body of POST /patients and PATCH /patients/{id} on a duplicate registro.
+         */
+        PatientConflictDTO: {
+            /**
+             * Detail
+             * @default patient exists
+             * @constant
+             */
+            detail: "patient exists";
+            /** Patient Id */
+            patient_id: string;
+        };
+        /**
+         * PatientCreate
+         * @description New patient. ``registro`` (expediente) is required and unique (trimmed,
+         *     case-insensitive): a duplicate is a 409 carrying the existing ``patient_id``. Text is
+         *     trimmed. Unknown fields are rejected (422).
+         */
+        PatientCreate: {
+            /** Registro */
+            registro: string;
+            /** Nombre */
+            nombre: string;
+            /**
+             * Sexo
+             * @default
+             * @enum {string}
+             */
+            sexo: "male" | "female" | "";
+            /** Fecha Nacimiento */
+            fecha_nacimiento?: string | null;
+            /**
+             * Grupo Sanguineo
+             * @default
+             */
+            grupo_sanguineo: string;
+            /**
+             * Rh
+             * @default
+             */
+            rh: string;
+        };
+        /**
+         * PatientDTO
+         * @description A patient (shared hospital-wide). ``edad`` is derived (whole years today, UTC) from
+         *     ``fecha_nacimiento``; ``cases_count`` counts every case of the patient (all authors).
+         *     ``registro`` is null only for legacy patients grouped from cases without one.
+         */
+        PatientDTO: {
+            /** Id */
+            id: string;
+            /** Registro */
+            registro?: string | null;
+            /** Nombre */
+            nombre: string;
+            /**
+             * Sexo
+             * @default
+             * @enum {string}
+             */
+            sexo: "male" | "female" | "";
+            /** Fecha Nacimiento */
+            fecha_nacimiento?: string | null;
+            /**
+             * Grupo Sanguineo
+             * @default
+             */
+            grupo_sanguineo: string;
+            /**
+             * Rh
+             * @default
+             */
+            rh: string;
+            /** Created By */
+            created_by?: string | null;
+            /** Updated By */
+            updated_by?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Edad */
+            edad?: number | null;
+            /**
+             * Cases Count
+             * @default 0
+             */
+            cases_count: number;
+        };
+        /** PatientDetailDTO */
+        PatientDetailDTO: {
+            /** Id */
+            id: string;
+            /** Registro */
+            registro?: string | null;
+            /** Nombre */
+            nombre: string;
+            /**
+             * Sexo
+             * @default
+             * @enum {string}
+             */
+            sexo: "male" | "female" | "";
+            /** Fecha Nacimiento */
+            fecha_nacimiento?: string | null;
+            /**
+             * Grupo Sanguineo
+             * @default
+             */
+            grupo_sanguineo: string;
+            /**
+             * Rh
+             * @default
+             */
+            rh: string;
+            /** Created By */
+            created_by?: string | null;
+            /** Updated By */
+            updated_by?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Edad */
+            edad?: number | null;
+            /**
+             * Cases Count
+             * @default 0
+             */
+            cases_count: number;
+            /** Cases */
+            cases?: components["schemas"]["PatientCaseSummaryDTO"][];
+        };
+        /** PatientPage */
+        PatientPage: {
+            /** Items */
+            items: components["schemas"]["PatientDTO"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
         /** PatientProfileDTO */
         PatientProfileDTO: {
             /**
@@ -1453,6 +1752,26 @@ export interface components {
             vsc_25?: number | null;
             /** Vsc 15 */
             vsc_15?: number | null;
+        };
+        /**
+         * PatientUpdate
+         * @description Partial update: only the keys sent are applied. ``null`` is rejected except for
+         *     ``fecha_nacimiento`` (clears it). ``registro``/``nombre`` cannot be blank. Unknown fields
+         *     are rejected (422).
+         */
+        PatientUpdate: {
+            /** Registro */
+            registro?: string | null;
+            /** Nombre */
+            nombre?: string | null;
+            /** Sexo */
+            sexo?: ("male" | "female" | "") | null;
+            /** Fecha Nacimiento */
+            fecha_nacimiento?: string | null;
+            /** Grupo Sanguineo */
+            grupo_sanguineo?: string | null;
+            /** Rh */
+            rh?: string | null;
         };
         /** PreanestheticAssessmentDTO */
         PreanestheticAssessmentDTO: {
@@ -1907,6 +2226,349 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_patients_api_v1_patients_get: {
+        parameters: {
+            query?: {
+                /** @description substring of nombre or registro */
+                q?: string | null;
+                /** @description page size (1-200) */
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientPage"];
+                };
+            };
+            /** @description Not authenticated (missing/invalid/expired/revoked token) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Forbidden (role, inactive account, or password change required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Not found (or not visible to the caller) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Conflict (state or uniqueness guard) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_patient_api_v1_patients_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatientCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientDTO"];
+                };
+            };
+            /** @description Not authenticated (missing/invalid/expired/revoked token) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Forbidden (role, inactive account, or password change required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Not found (or not visible to the caller) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description A patient with this registro already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientConflictDTO"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_patient_api_v1_patients__patient_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientDetailDTO"];
+                };
+            };
+            /** @description Not authenticated (missing/invalid/expired/revoked token) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Forbidden (role, inactive account, or password change required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Not found (or not visible to the caller) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Conflict (state or uniqueness guard) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_patient_api_v1_patients__patient_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated (missing/invalid/expired/revoked token) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Forbidden (role, inactive account, or password change required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Not found (or not visible to the caller) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Conflict (state or uniqueness guard) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_patient_api_v1_patients__patient_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatientUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientDTO"];
+                };
+            };
+            /** @description Not authenticated (missing/invalid/expired/revoked token) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Forbidden (role, inactive account, or password change required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Not found (or not visible to the caller) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description A patient with this registro already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientConflictDTO"];
                 };
             };
             /** @description Validation Error */
@@ -4589,7 +5251,8 @@ export interface operations {
             query?: {
                 status?: ("draft" | "finalized") | null;
                 user_id?: string | null;
-                /** @description substring of patient name/registro, diagnosis, procedure, owner, case id, owner username/full name */
+                patient_id?: string | null;
+                /** @description substring of patient name/registro (case snapshot or patient), diagnosis, procedure, owner, case id, owner username/full name */
                 q?: string | null;
                 /** @description created on/after (UTC day) */
                 date_from?: string | null;
@@ -4812,6 +5475,142 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AnesthesiaCaseDTO"];
                 };
+            };
+            /** @description Not authenticated (missing/invalid/expired/revoked token) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Forbidden (role, inactive account, or password change required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Not found (or not visible to the caller) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Conflict (state or uniqueness guard) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_patients_api_v1_admin_patients_get: {
+        parameters: {
+            query?: {
+                /** @description substring of nombre or registro */
+                q?: string | null;
+                /** @description page size (1-200) */
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientPage"];
+                };
+            };
+            /** @description Not authenticated (missing/invalid/expired/revoked token) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Forbidden (role, inactive account, or password change required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Not found (or not visible to the caller) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Conflict (state or uniqueness guard) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDTO"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_delete_patient_api_v1_admin_patients__patient_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not authenticated (missing/invalid/expired/revoked token) */
             401: {

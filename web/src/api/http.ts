@@ -152,10 +152,14 @@ export class HttpClient {
         ...(signal ? { signal } : {}),
       });
     } catch (e) {
-      if (signal?.aborted) throw new BackendError('network', 'Request cancelled: the session ended.');
+      if (signal?.aborted) throw new BackendError('network', 'Solicitud cancelada: la sesión terminó.');
+      // the browser's (English) reason stays on `cause` for debugging, never in the message
       throw new BackendError(
         'network',
-        `Could not reach the server (${e instanceof Error ? e.message : String(e)}).`,
+        'No se pudo conectar con el servidor. Verifique su conexión.',
+        null,
+        '',
+        { cause: e },
       );
     }
     if (res.ok) return res;
@@ -183,7 +187,7 @@ export class HttpClient {
     try {
       return (await res.json()) as T;
     } catch {
-      throw new BackendError('invalidResponse', 'Malformed response from backend.');
+      throw new BackendError('invalidResponse', 'Respuesta del servidor mal formada.');
     }
   }
 

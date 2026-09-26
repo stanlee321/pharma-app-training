@@ -605,3 +605,36 @@
   display: inline-flex;
   align-items: center;
 }
+
+/* ---- Patient filter chip (/admin/cases?patient_id=) ----------------------------------------- */
+.admin-filter-chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-cell) var(--space-item);
+  margin: 0 0 var(--space-item);
+  padding: 10px var(--space-screen);
+  border-radius: var(--radius-card);
+  background: var(--grouped-card);
+  font-size: var(--text-subheadline);
+  color: var(--label);
+  overflow-wrap: anywhere;
+}
+.admin-filter-chip a {
+  color: var(--ios-blue);
+  text-decoration: none;
+}
+
+/* ---- Stat tiles that open their list ---------------------------------------------------------- */
+.stat-tile__link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-tight);
+  color: inherit;
+  text-decoration: none;
+}
+.stat-tile__link:hover .stat-tile__label,
+.stat-tile__link:focus-visible .stat-tile__label {
+  color: var(--ios-blue);
+}

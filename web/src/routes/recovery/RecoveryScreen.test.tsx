@@ -13,7 +13,7 @@ describe('RecoveryScreen', () => {
     const h = restHarness([c]);
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/recovery`, h.backend);
-    expect(await screen.findByRole('heading', { name: 'Recovery', level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Recuperación (Aldrete)', level: 1 })).toBeInTheDocument();
     expect(screen.getByTestId('aldrete-total-Al salir')).toHaveTextContent('—');
 
     // Partial column → "—".
@@ -37,16 +37,16 @@ describe('RecoveryScreen', () => {
     // Steppers start at the Swift fallbacks; a step writes the key.
     expect(screen.getByLabelText('Ramsay')).toHaveValue('2');
     expect(screen.getByLabelText('ENA')).toHaveValue('0');
-    await user.click(screen.getByRole('button', { name: 'Increase Ramsay' }));
-    await user.click(screen.getByRole('button', { name: 'Increase ENA' }));
-    await user.click(screen.getByRole('button', { name: 'Increase ENA' }));
+    await user.click(screen.getByRole('button', { name: 'Aumentar Ramsay' }));
+    await user.click(screen.getByRole('button', { name: 'Aumentar ENA' }));
+    await user.click(screen.getByRole('button', { name: 'Aumentar ENA' }));
     // Keys are the ones the backend crosswalk reads (Ramsay/Bromage/ENA), not Swift's lowercase.
     expect(storeCase(c.id).recovery.otras).toEqual({ Ramsay: 3, ENA: 2 });
 
     await user.type(screen.getByLabelText('Alta a su piso'), 'URPA');
     await user.type(screen.getByLabelText('Médico responsable'), 'Dr. Ejemplo');
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(h.puts).toHaveLength(1));
     expect(h.puts[0]!.body.recovery).toMatchObject({
       aldrete: { Actividad: { 'Al salir': 2 }, Respiración: { '20': 0 } },
@@ -66,9 +66,9 @@ describe('RecoveryScreen', () => {
     expect(within(cell('Conciencia', '60')).getByRole('radio', { name: '1' })).toBeChecked();
     expect(within(cell('Conciencia', '90')).getByRole('radio', { name: '1' })).not.toBeChecked();
     expect(screen.getByLabelText('Bromage')).toHaveValue('3');
-    expect(screen.getByRole('button', { name: 'Increase Bromage' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Aumentar Bromage' })).toBeDisabled();
     // Legacy lowercase (Swift) key is migrated to the crosswalk key on write.
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Decrease Bromage' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Disminuir Bromage' }));
     expect(storeCase(c.id).recovery.otras).toEqual({ Bromage: 2 });
   });
 });

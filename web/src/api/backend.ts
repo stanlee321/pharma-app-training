@@ -1,3 +1,4 @@
+import { serverMessage } from './serverMessages';
 import type { AnesthesiaCase, DocumentDTO, FormId } from './types';
 
 /**
@@ -67,8 +68,14 @@ export class BackendError extends Error {
   /** `ErrorDTO.detail` when the server sent one (e.g. "case is finalized"). */
   readonly detail: string | null;
 
-  constructor(kind: BackendErrorKind, message: string, status: number | null = null, body = '') {
-    super(message);
+  constructor(
+    kind: BackendErrorKind,
+    message: string,
+    status: number | null = null,
+    body = '',
+    options?: { cause?: unknown },
+  ) {
+    super(message, options);
     this.name = 'BackendError';
     this.kind = kind;
     this.status = status;
@@ -76,20 +83,26 @@ export class BackendError extends Error {
     this.detail = parseErrorDetail(body);
   }
 
+  /**
+   * A non-2xx response. With an `ErrorDTO` the message is its translated detail; any other body
+   * (an nginx/ngrok HTML page, a proxy's plain text) is never shown — it stays in `body`.
+   */
   static http(status: number, body: string): BackendError {
     const detail = parseErrorDetail(body);
     return new BackendError(
       status === 404 ? 'notFound' : 'http',
-      detail ? `HTTP ${status}: ${detail}` : `Backend returned HTTP ${status}${body ? `: ${body}` : ''}`,
+      detail
+        ? `HTTP ${status}: ${serverMessage(detail)}`
+        : `El servidor no está disponible (HTTP ${status}). Inténtelo de nuevo.`,
       status,
       body,
     );
   }
 }
 
-/** Human-readable message for any thrown value (the server's `detail` when there is one). */
+/** Human-readable (Spanish) message for any thrown value (the server's `detail`, translated, when there is one). */
 export function errorMessage(e: unknown): string {
-  if (e instanceof BackendError && e.detail) return e.detail;
+  if (e instanceof BackendError && e.detail) return serverMessage(e.detail);
   if (e instanceof Error) return e.message;
   return String(e);
 }

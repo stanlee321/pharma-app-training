@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { newCase } from '../../api/factory';
 import { renderApp, restHarness, storeCase } from '../../test/restHarness';
 
-const nb = (n: number) => screen.getByRole('group', { name: `Newborn ${n}` });
+const nb = (n: number) => screen.getByRole('group', { name: `Recién nacido ${n}` });
 
 describe('NewbornScreen', () => {
   it('adds, edits, deletes newborn records and saves them snake_case', async () => {
@@ -12,11 +12,11 @@ describe('NewbornScreen', () => {
     const h = restHarness([c]);
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/newborn`, h.backend);
-    expect(await screen.findByRole('heading', { name: 'Newborns', level: 1 })).toBeInTheDocument();
-    expect(screen.getByText('No newborn records')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Recién nacido', level: 1 })).toBeInTheDocument();
+    expect(screen.getByText('Sin registros de recién nacido')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Add newborn record' }));
-    await user.click(screen.getByRole('button', { name: 'Add newborn record' }));
+    await user.click(screen.getByRole('button', { name: 'Agregar registro de recién nacido' }));
+    await user.click(screen.getByRole('button', { name: 'Agregar registro de recién nacido' }));
     expect(storeCase(c.id).newborns).toHaveLength(2);
 
     const first = nb(1);
@@ -47,12 +47,12 @@ describe('NewbornScreen', () => {
     });
     expect(b).toMatchObject({ sexo: '', apgar1: null });
 
-    await user.click(within(nb(1)).getByRole('button', { name: 'Delete Newborn 1' }));
-    await user.click(within(nb(1)).getByRole('button', { name: 'Delete' }));
+    await user.click(within(nb(1)).getByRole('button', { name: 'Eliminar Recién nacido 1' }));
+    await user.click(within(nb(1)).getByRole('button', { name: 'Eliminar' }));
     expect(storeCase(c.id).newborns).toHaveLength(1);
     expect(storeCase(c.id).newborns[0]!.id).toBe(b!.id);
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(h.puts).toHaveLength(1));
     const sent = h.puts[0]!.body.newborns as Record<string, unknown>[];
     expect(sent).toHaveLength(1);
@@ -76,7 +76,7 @@ describe('NewbornScreen', () => {
       },
     ];
     renderApp(`/cases/${c.id}/newborn`, restHarness([c]).backend);
-    const first = await screen.findByRole('group', { name: 'Newborn 1' });
+    const first = await screen.findByRole('group', { name: 'Recién nacido 1' });
     expect(within(first).getByRole('button', { name: 'M' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(first).getByLabelText('Peso')).toHaveValue('3100');
     expect(within(first).getByLabelText("Apgar 1'")).toHaveValue('7');

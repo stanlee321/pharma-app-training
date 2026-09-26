@@ -12,8 +12,8 @@ describe('newCase / normalizeCase', () => {
     expect(c.patient.profile).toEqual({ weight: 70, height: 170, age: 40, gender: 'male', dilution: 10 });
     expect(c.drugs).toEqual([]);
     expect(c.asa).toBeNull();
-    expect(caseTitle(c)).toBe('Untitled case');
-    expect(caseSubtitle(c)).toBe('No diagnosis');
+    expect(caseTitle(c)).toBe('Caso sin nombre');
+    expect(caseSubtitle(c)).toBe('Sin diagnóstico');
   });
 
   it('normalizeCase fills missing nested fields', () => {

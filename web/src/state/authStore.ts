@@ -17,7 +17,8 @@ import {
   type DraftEntry,
 } from '../lib/storage';
 import { forgetCasesSearch } from '../routes/admin/paging';
-import { caseStore, type DraftRestoreReport, type SessionDraft } from './caseStore';
+import { caseStore, setCaseViewer, type DraftRestoreReport, type SessionDraft } from './caseStore';
+import { patientStore } from './patientStore';
 
 export { DRAFT_TTL_MS };
 
@@ -192,6 +193,7 @@ function endLocalSession(): void {
   expiryTimer = null;
   abortSessionRequests();
   caseStore.getState().reset();
+  patientStore.getState().reset();
   forgetCasesSearch();
 }
 
@@ -215,7 +217,7 @@ export const useAuthStore = create<AuthState>()((set, get) => {
       // mistyped (or planted) URL never receives a later session's Bearer token.
       const candidate = serverUrl === undefined ? undefined : serverUrl.trim() || DEFAULT_BASE_URL;
       const res = await get().api.login(username.trim(), password, candidate);
-      if (isExpired(res.expires_at)) throw new Error('The server issued an already-expired session.');
+      if (isExpired(res.expires_at)) throw new Error('El servidor emitió una sesión ya expirada.');
       if (candidate !== undefined) {
         writeString(StorageKeys.baseUrl, candidate);
         set({ serverUrl: candidate });
@@ -226,6 +228,7 @@ export const useAuthStore = create<AuthState>()((set, get) => {
       if (prevUserId !== res.user.id) {
         abortSessionRequests();
         caseStore.getState().reset();
+        patientStore.getState().reset();
         forgetCasesSearch();
       }
       persist(res.access_token, res.expires_at, res.user);
@@ -273,7 +276,7 @@ export const useAuthStore = create<AuthState>()((set, get) => {
 
     async changePassword(currentPassword, newPassword) {
       const user = get().user;
-      if (!user) throw new Error('Not signed in.');
+      if (!user) throw new Error('No ha iniciado sesión.');
       await get().api.changePassword(currentPassword, newPassword);
       // 204: every older token (ours included) is now revoked → log in again.
       set({ reauthenticating: true });
@@ -304,6 +307,9 @@ export const useAuthStore = create<AuthState>()((set, get) => {
     },
   };
 });
+
+// The case store marks cases owned by someone else read-only (shared hospital-wide reads).
+setCaseViewer(() => useAuthStore.getState().user?.id ?? null);
 
 // Wire the shared HTTP layer to this store (the HTTP module never imports it).
 setAuthHooks({
@@ -404,13 +410,14 @@ export function startSessionTimer(): void {
 
 /** Where a signed-in user lands. */
 export function landingPath(user: Pick<UserDTO, 'role'>): string {
-  return user.role === 'admin' ? '/admin' : '/cases';
+  return user.role === 'admin' ? '/admin' : '/pacientes';
 }
 
 /** Whether `path` belongs to the area of `role` (to honour a remembered "from" path). */
 export function pathAllowedFor(role: UserRole, path: string): boolean {
   const isAdminPath = path === '/admin' || path.startsWith('/admin/');
-  const isCasePath = path === '/cases' || path.startsWith('/cases/');
+  const isCasePath =
+    path === '/cases' || path.startsWith('/cases/') || path === '/pacientes' || path.startsWith('/pacientes/');
   return role === 'admin' ? isAdminPath : isCasePath;
 }
 

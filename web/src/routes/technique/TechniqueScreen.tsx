@@ -1,3 +1,4 @@
+import { SECTION_TITLES } from '../../lib/wording';
 import { Navigate, useParams } from 'react-router-dom';
 import {
   isTechniqueZone,
@@ -40,7 +41,7 @@ export function TechniqueScreen() {
   const { paths } = useCaseScope();
   if (!isTechniqueZone(zone)) return <Navigate to={paths.technique(id, 'general')} replace />;
   return (
-    <CaseScreen key={zone} title={`Technique · ${TECHNIQUE_ZONE_TITLES[zone]}`}>
+    <CaseScreen key={zone} title={`${SECTION_TITLES.technique} · ${TECHNIQUE_ZONE_TITLES[zone]}`}>
       {(c, update) => <ZoneForm zone={zone} c={c} update={update} />}
     </CaseScreen>
   );

@@ -52,7 +52,7 @@ describe('JSONB key order never drives what is rendered', () => {
   it('Review: Aldrete totals in the form time-point order', async () => {
     const c = shuffledCase();
     renderApp(paths.review(c.id), restHarness([c]).backend);
-    const section = (await screen.findByRole('heading', { name: 'Aldrete (recovery)', level: 2 })).closest('section')!;
+    const section = (await screen.findByRole('heading', { name: 'Aldrete (recuperación)', level: 2 })).closest('section')!;
     expect(texts(section.querySelectorAll('.row__label'))).toEqual([...ALDRETE_TIME_POINTS]);
     expect(texts(section.querySelectorAll('.review-row__value'))).toEqual(['10 / 10', '10 / 10', '9 / 10', '10 / 10', '10 / 10', '10 / 10']);
   });
@@ -88,7 +88,7 @@ describe('JSONB key order never drives what is rendered', () => {
   it('Preanesthetic: labs in the form order with their own values', async () => {
     const c = shuffledCase();
     renderApp(paths.preanesthetic(c.id), restHarness([c]).backend);
-    const section = (await screen.findByRole('heading', { name: 'Labs', level: 2 })).closest('section')!;
+    const section = (await screen.findByRole('heading', { name: 'Laboratorios', level: 2 })).closest('section')!;
     expect(texts(section.querySelectorAll('label'))).toEqual(['Urea', 'Creatinina', 'Glucosa', 'Hb', 'Hto']);
     expect([...section.querySelectorAll('input')].map((i) => i.value)).toEqual(['30', '0.9', '95', '13', '40']);
   });

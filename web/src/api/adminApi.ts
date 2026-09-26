@@ -10,6 +10,8 @@ import type {
   AnesthesiaCaseDTO,
   CaseStatus,
   FormId,
+  PatientDetailDTO,
+  PatientPage,
   UserDTO,
   UserRole,
 } from './types';
@@ -26,9 +28,18 @@ export interface UserFilters {
 export interface CaseFilters {
   status?: CaseStatus | '';
   user_id?: string;
+  /** One patient's cases (must be a UUID, else the server 422s). */
+  patient_id?: string;
   q?: string;
   date_from?: string;
   date_to?: string;
+  limit?: number;
+  offset?: number;
+}
+
+/** Search + paging of `GET /admin/patients` (`q` = substring of nombre or registro). */
+export interface PatientFilters {
+  q?: string;
   limit?: number;
   offset?: number;
 }
@@ -89,6 +100,7 @@ export class AdminApi {
       query: {
         status: f.status,
         user_id: f.user_id,
+        patient_id: f.patient_id?.trim() || undefined,
         q: f.q?.trim(),
         date_from: f.date_from,
         date_to: f.date_to,
@@ -111,6 +123,23 @@ export class AdminApi {
   /** finalized → draft (documents kept); a draft → 409 "case is not finalized". */
   async reopenCase(id: string): Promise<AnesthesiaCase> {
     return normalizeCase(await this.http.json<AnesthesiaCaseDTO>('POST', ['admin', 'cases', id, 'reopen']));
+  }
+
+  /** Every patient (shared hospital-wide), by name, with `cases_count`; `total` before paging. */
+  listPatients(f: PatientFilters = {}): Promise<PatientPage> {
+    return this.http.json<PatientPage>('GET', ['admin', 'patients'], {
+      query: { q: f.q?.trim() || undefined, limit: f.limit, offset: f.offset },
+    });
+  }
+
+  /** One patient with every case (any author), numbered; `GET /patients/{id}` (any user reads). */
+  getPatient(id: string): Promise<PatientDetailDTO> {
+    return this.http.json<PatientDetailDTO>('GET', ['patients', id]);
+  }
+
+  /** 204; 409 "patient has cases; delete them first" while the patient still has cases. */
+  deletePatient(id: string): Promise<void> {
+    return this.http.send('DELETE', ['admin', 'patients', id]);
   }
 
   /** Every stored document, newest first. */

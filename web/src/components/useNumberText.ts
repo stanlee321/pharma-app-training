@@ -15,10 +15,10 @@ export interface NumberLimits {
 /** Validation message for a parsed number, or null when it may be committed. */
 export function numberProblem(n: number | null, { min, max, integer }: NumberLimits): string | null {
   if (n === null) return null;
-  if (Number.isNaN(n)) return 'Not a number';
-  if (integer && !Number.isInteger(n)) return 'Whole number required';
-  if (min !== undefined && n < min) return `Min ${min}`;
-  if (max !== undefined && n > max) return `Max ${max}`;
+  if (Number.isNaN(n)) return 'No es un número';
+  if (integer && !Number.isInteger(n)) return 'Debe ser un número entero';
+  if (min !== undefined && n < min) return `Mínimo ${min}`;
+  if (max !== undefined && n > max) return `Máximo ${max}`;
   return null;
 }
 

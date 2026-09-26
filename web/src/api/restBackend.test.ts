@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BackendError } from './backend';
+import { BackendError, errorMessage } from './backend';
 import { newCase } from './factory';
 import { RestBackend } from './restBackend';
 
@@ -133,6 +133,27 @@ describe('RestBackend', () => {
     expect(err).toBeInstanceOf(BackendError);
     expect((err as BackendError).kind).toBe('network');
     expect((err as BackendError).status).toBeNull();
+    // Spanish only: the browser's English reason is kept on `cause`, never in the message
+    expect((err as BackendError).message).toBe('No se pudo conectar con el servidor. Verifique su conexión.');
+    expect((err as BackendError).message).not.toMatch(/Failed to fetch/);
+    expect(errorMessage(err)).toBe('No se pudo conectar con el servidor. Verifique su conexión.');
+    expect((err as BackendError).cause).toBeInstanceOf(TypeError);
+  });
+
+  it('a non-ErrorDTO body (proxy HTML page) → Spanish message, raw body kept only in `body`', async () => {
+    const html = '<html><head><title>502 Bad Gateway</title></head><body>nginx</body></html>';
+    const f = mockFetch(() => new Response(html, { status: 502, headers: { 'Content-Type': 'text/html' } }));
+    const err = await new RestBackend({ baseUrl: () => '/api/v1', token: () => TOKEN, fetch: f })
+      .list()
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(BackendError);
+    const be = err as BackendError;
+    expect(be.status).toBe(502);
+    expect(be.detail).toBeNull();
+    expect(be.message).toBe('El servidor no está disponible (HTTP 502). Inténtelo de nuevo.');
+    expect(errorMessage(be)).toBe(be.message);
+    expect(be.message).not.toMatch(/html|nginx|Bad Gateway/i);
+    expect(be.body).toBe(html);
   });
 
   it('reads the base URL from localStorage by default', async () => {

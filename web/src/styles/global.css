@@ -248,6 +248,15 @@ a {
 .row:focus-within {
   background: rgba(0, 122, 255, 0.04);
 }
+.info-row__value {
+  flex: 1 1 8ch;
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.info-row__value--empty {
+  color: var(--label-tertiary);
+}
 .row__unit {
   font-size: var(--text-caption);
   color: var(--label-tertiary);

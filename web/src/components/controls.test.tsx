@@ -20,7 +20,7 @@ describe('StepperRow', () => {
   it('steps on press and accelerates while held, clamped to range', () => {
     vi.useFakeTimers();
     render(<Stepper />);
-    const plus = screen.getByRole('button', { name: 'Increase Peso' });
+    const plus = screen.getByRole('button', { name: 'Aumentar Peso' });
     const value = screen.getByLabelText('Peso');
     fireEvent.pointerDown(plus, { button: 0 });
     expect(value).toHaveValue('71');
@@ -33,7 +33,7 @@ describe('StepperRow', () => {
 
   it('keyboard click steps once', () => {
     render(<Stepper />);
-    fireEvent.click(screen.getByRole('button', { name: 'Decrease Peso' }), { detail: 0 });
+    fireEvent.click(screen.getByRole('button', { name: 'Disminuir Peso' }), { detail: 0 });
     expect(screen.getByLabelText('Peso')).toHaveValue('69');
   });
 
@@ -136,10 +136,10 @@ describe('read-only context (consumed by every shared control)', () => {
         <CheckRow label="Check" checked onChange={onChange} />
         <CheckboxValueRow label="CBV" unit="mg" checked onCheckedChange={onChange} value={2} onValueChange={onChange} />
         <GridNumberCell label="Celda" value={3} onChange={onChange} />
-        <ConfirmDeleteButton label="Delete row" onDelete={onChange} />
-        <AddRowButton label="Add row" onAdd={onChange} />
+        <ConfirmDeleteButton label="Eliminar fila" onDelete={onChange} />
+        <AddRowButton label="Agregar fila" onAdd={onChange} />
         <EditOnly>
-          <button type="button">Migrate</button>
+          <button type="button">Migrar</button>
         </EditOnly>
         <SaveBar meta={undefined} onSave={onChange} />
       </>
@@ -149,12 +149,12 @@ describe('read-only context (consumed by every shared control)', () => {
     for (const el of view.container.querySelectorAll<HTMLInputElement>('input, textarea, select')) {
       expect(el.disabled).toBe(true);
     }
-    for (const name of ['A', 'B', 'Increase Paso', 'Decrease Paso']) {
+    for (const name of ['A', 'B', 'Aumentar Paso', 'Disminuir Paso']) {
       expect(screen.getByRole('button', { name })).toHaveProperty('disabled', true);
     }
-    expect(screen.queryByRole('button', { name: /Delete row|Add row|Migrate/ })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
-    expect(screen.getByTestId('readonly-banner')).toHaveTextContent('Read-only view');
+    expect(screen.queryByRole('button', { name: /Eliminar fila|Agregar fila|Migrar/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled();
+    expect(screen.getByTestId('readonly-banner')).toHaveTextContent('Vista de solo lectura');
     fireEvent.click(screen.getByRole('button', { name: 'B' }));
     expect(onChange).not.toHaveBeenCalled();
 
@@ -162,9 +162,9 @@ describe('read-only context (consumed by every shared control)', () => {
     view.unmount();
     render(all);
     expect(screen.getByLabelText('Texto')).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Add row' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Delete row' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Migrate' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Agregar fila' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Eliminar fila' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Migrar' })).toBeInTheDocument();
     expect(screen.queryByTestId('readonly-banner')).toBeNull();
   });
 });

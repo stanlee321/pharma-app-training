@@ -1,3 +1,4 @@
+import { UI } from '../../lib/wording';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { adminApi } from '../../api/adminApi';
@@ -96,19 +97,19 @@ export function AdminNewUserPage() {
   if (created) {
     return (
       <>
-        <h1 className="large-title">New user</h1>
+        <h1 className="large-title">Nuevo usuario</h1>
         <OneTimeSecret
-          title="Account created"
+          title="Cuenta creada"
           username={created.user.username}
           password={created.password}
-          doneLabel="Done"
+          doneLabel={UI.done}
           onDone={() => navigate(paths.admin.users)}
         >
           <Link className="btn-plain" to={paths.admin.user(created.user.id)}>
-            Open account
+            Abrir cuenta
           </Link>
           <button type="button" className="btn-plain" onClick={reset}>
-            Create another
+            Crear otra
           </button>
         </OneTimeSecret>
       </>
@@ -118,14 +119,14 @@ export function AdminNewUserPage() {
   return (
     <>
       <p className="admin-crumb">
-        <Link to={paths.admin.users}>‹ Users</Link>
+        <Link to={paths.admin.users}>‹ Usuarios</Link>
       </p>
-      <h1 className="large-title">New user</h1>
-      <form noValidate onSubmit={(e) => void submit(e)} aria-label="New user">
+      <h1 className="large-title">Nuevo usuario</h1>
+      <form noValidate onSubmit={(e) => void submit(e)} aria-label="Nuevo usuario">
         {formError ? <InlineAlert>{formError}</InlineAlert> : null}
-        <Section header="Account" footer="Usernames are stored in lower case and must be unique.">
+        <Section header="Cuenta" footer="Los nombres de usuario se guardan en minúsculas y deben ser únicos.">
           <TextRow
-            label="Username"
+            label="Usuario"
             value={username}
             onChange={setUsername}
             noAutoCorrect
@@ -134,10 +135,10 @@ export function AdminNewUserPage() {
             error={errors.username}
             hint={USERNAME_RULE}
           />
-          <TextRow label="Full name" value={fullName} onChange={setFullName} error={errors.full_name} />
+          <TextRow label="Nombre completo" value={fullName} onChange={setFullName} error={errors.full_name} />
           <TextRow label="Clave" value={clave} onChange={setClave} noAutoCorrect error={errors.clave} />
           <div className="row">
-            <SegmentedControl label="Role" showLabel options={ROLE_OPTIONS} value={role} onChange={setRole} />
+            <SegmentedControl label="Rol" showLabel options={ROLE_OPTIONS} value={role} onChange={setRole} />
           </div>
           {errors.role ? (
             <div className="row__hint" role="alert">
@@ -145,15 +146,15 @@ export function AdminNewUserPage() {
             </div>
           ) : null}
         </Section>
-        <Section header="Temporary password" footer="8–128 characters. They must change it at first sign-in.">
-          <PasswordField label="Password" value={password} onChange={setPassword} error={errors.password} />
+        <Section header="Contraseña temporal" footer="De 8 a 128 caracteres. Deberá cambiarla en su primer inicio de sesión.">
+          <PasswordField label="Contraseña" value={password} onChange={setPassword} error={errors.password} />
         </Section>
         <div className="admin-form-actions">
           <Link className="btn-plain" to={paths.admin.users}>
-            Cancel
+            {UI.cancel}
           </Link>
           <button type="submit" className="btn-primary btn-primary--compact" disabled={busy}>
-            {busy ? 'Creating…' : 'Create account'}
+            {busy ? 'Creando…' : 'Crear cuenta'}
           </button>
         </div>
       </form>

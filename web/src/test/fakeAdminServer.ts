@@ -1,6 +1,16 @@
 import { vi } from 'vitest';
 import { fakeUser } from '../api/authApi';
-import { FORM_IDS, type AdminDocumentDTO, type AdminStatsDTO, type AnesthesiaCase, type CaseSummaryDTO, type FormId, type UserDTO } from '../api/types';
+import {
+  FORM_IDS,
+  type AdminDocumentDTO,
+  type AdminStatsDTO,
+  type AnesthesiaCase,
+  type CaseSummaryDTO,
+  type FormId,
+  type PatientDetailDTO,
+  type PatientDTO,
+  type UserDTO,
+} from '../api/types';
 import { LAST_ADMIN_DETAIL, SELF_GUARD_DETAIL, USERNAME_TAKEN_DETAIL } from '../lib/accounts';
 import { TEST_TOKEN } from './auth';
 
@@ -19,6 +29,11 @@ import { TEST_TOKEN } from './auth';
  * - Documents (`documents` seed): GET /admin/documents (case_id must be a UUID, else 422; form
  *   filter; paging), GET/POST /cases/{id}/documents, GET /documents/{id}/file (synthetic PDF),
  *   DELETE /documents/{id}.
+ * - Patients (`patients` seed): GET /admin/patients (q over nombre/registro, by name, paging;
+ *   `cases_count` from the case seed), GET /patients/{id} (+ its cases, numbered by created_at),
+ *   DELETE /admin/patients/{id} (409 "patient has cases; delete them first"). /admin/cases rows
+ *   carry patient_id / patient_nombre / patient_registro and filter by `?patient_id=` (UUID, else
+ *   422).
  * Synthetic accounts only.
  */
 export interface AdminCall {
@@ -48,7 +63,10 @@ export function fakeAdminServer(opts: {
   cases?: AnesthesiaCase[];
   /** Stored documents (with admin-only `storage_path`). */
   documents?: AdminDocumentDTO[];
+  /** Synthetic patients (cases link to them through `patient_id`). */
+  patients?: PatientDTO[];
 }) {
+  const patients = new Map<string, PatientDTO>((opts.patients ?? []).map((p) => [p.id, { ...p }]));
   const cases = new Map<string, AnesthesiaCase>((opts.cases ?? []).map((c) => [c.id, JSON.parse(JSON.stringify(c))]));
   const documents = new Map<string, AdminDocumentDTO>((opts.documents ?? []).map((d) => [d.id, { ...d }]));
   let docSeq = 0;
@@ -199,10 +217,15 @@ export function fakeAdminServer(opts: {
       if (from && to && from > to) return detail(422, 'date_from must be on or before date_to');
       const status = sp.get('status');
       const uid = sp.get('user_id');
+      const pid = sp.get('patient_id');
+      if (pid && !/^[0-9a-f-]{36}$/i.test(pid)) {
+        return json({ detail: [{ type: 'uuid_parsing', loc: ['query', 'patient_id'], msg: 'Input should be a valid UUID' }] }, 422);
+      }
       const q = (sp.get('q') ?? '').toLowerCase();
       const rows: CaseSummaryDTO[] = [...cases.values()]
         .filter((c) => !status || c.status === status)
         .filter((c) => !uid || c.user_id === uid)
+        .filter((c) => !pid || c.patient_id === pid)
         .filter((c) => !from || c.created_at.slice(0, 10) >= from)
         .filter((c) => !to || c.created_at.slice(0, 10) <= to)
         .filter(
@@ -216,6 +239,7 @@ export function fakeAdminServer(opts: {
           id: c.id,
           owner: c.owner,
           nombre: c.patient.nombre,
+          registro: c.patient.registro,
           diagnostico_preop: c.diagnostico_preop,
           created_at: c.created_at,
           status: c.status,
@@ -223,8 +247,56 @@ export function fakeAdminServer(opts: {
           finalized_at: c.finalized_at ?? null,
           user_id: c.user_id ?? null,
           owner_name: ownerName(c.user_id),
+          patient_id: c.patient_id ?? null,
+          patient_nombre: c.patient_id ? (patients.get(c.patient_id)?.nombre ?? null) : null,
+          patient_registro: c.patient_id ? (patients.get(c.patient_id)?.registro ?? null) : null,
         }));
       return pageOf(rows);
+    }
+
+    const casesOf = (pid: string) =>
+      [...cases.values()]
+        .filter((c) => c.patient_id === pid)
+        .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+    const withCount = (p: PatientDTO): PatientDTO => ({ ...p, cases_count: casesOf(p.id).length });
+
+    if (method === 'GET' && path === '/admin/patients') {
+      const q = (sp.get('q') ?? '').trim().toLowerCase();
+      const rows = [...patients.values()]
+        .filter((p) => !q || [p.nombre, p.registro ?? ''].some((x) => x.toLowerCase().includes(q)))
+        .sort((a, b) => a.nombre.toLowerCase().localeCompare(b.nombre.toLowerCase()))
+        .map(withCount);
+      return pageOf(rows);
+    }
+
+    const onePatient = /^\/(admin\/)?patients\/([^/]+)$/.exec(path);
+    if (onePatient) {
+      const p = patients.get(decodeURIComponent(onePatient[2]!));
+      const isAdminPath = !!onePatient[1];
+      if (method === 'GET' && !isAdminPath) {
+        if (!p) return detail(404, 'Patient not found');
+        const detailDto: PatientDetailDTO = {
+          ...withCount(p),
+          cases: casesOf(p.id).map((c, i) => ({
+            id: c.id,
+            numero: i + 1,
+            created_at: c.created_at,
+            fecha: c.fecha ?? null,
+            diagnostico_preop: c.diagnostico_preop,
+            status: c.status,
+            user_id: c.user_id ?? null,
+            author_name: ownerName(c.user_id),
+            can_edit: false,
+          })),
+        };
+        return json(detailDto);
+      }
+      if (method === 'DELETE' && isAdminPath) {
+        if (!p) return detail(404, 'Patient not found');
+        if (casesOf(p.id).length) return detail(409, 'patient has cases; delete them first');
+        patients.delete(p.id);
+        return new Response(null, { status: 204 });
+      }
     }
 
     const reopen = /^\/admin\/cases\/([^/]+)\/reopen$/.exec(path);
@@ -317,6 +389,7 @@ export function fakeAdminServer(opts: {
     passwords,
     cases,
     documents,
+    patients,
     /** Force `METHOD /path` (without /api/v1) to answer with `respond()`. */
     override(key: string, respond: () => Response | Promise<Response>) {
       overrides.set(key, respond);
@@ -353,6 +426,7 @@ export function statsFixture(
   });
   const total = cases_per_day.reduce((s, d) => s + d.count, 0);
   return {
+    patients_total: 0,
     cases_total: total,
     cases_by_status: { draft: total, finalized: 0 },
     cases_per_day,

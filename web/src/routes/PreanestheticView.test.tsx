@@ -11,7 +11,7 @@ describe('PreanestheticView', () => {
     c.pre_assessment.raq = 4;
     c.pre_assessment.labs = { urea: 32, glucosa: '98' };
     renderApp(`/cases/${c.id}/preanesthetic`, restHarness([c]).backend);
-    expect(await screen.findByRole('heading', { name: 'Preanesthetic', level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Valoración preanestésica', level: 1 })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'II' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '4' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByLabelText('Urea')).toHaveValue('32');
@@ -34,7 +34,7 @@ describe('PreanestheticView', () => {
     await user.click(screen.getByRole('button', { name: '2' }));
     await user.type(screen.getByLabelText('Urea'), '30');
     await user.type(screen.getByLabelText('Creatinina'), '0.9');
-    await user.type(screen.getByLabelText('Notes'), 'Midazolam (ejemplo)');
+    await user.type(screen.getByLabelText('Notas'), 'Midazolam (ejemplo)');
 
     const pa = storeCase(c.id).pre_assessment;
     // Forms export `cuello`; `via_aerea` is mirrored for Swift-written records.
@@ -47,7 +47,7 @@ describe('PreanestheticView', () => {
     expect(storeCase(c.id).pre_assessment.asa).toBeNull();
     expect(storeCase(c.id).pre_assessment.labs).toEqual({ creatinina: 0.9 });
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(h.puts).toHaveLength(1));
     expect(h.puts[0]!.body.pre_assessment).toMatchObject({
       alergia: 'Ninguna conocida',

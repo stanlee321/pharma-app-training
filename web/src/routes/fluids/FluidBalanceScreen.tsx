@@ -1,3 +1,4 @@
+import { SECTION_TITLES } from '../../lib/wording';
 import type { AnesthesiaCase } from '../../api/types';
 import { ChoiceChips } from '../../components/Choice';
 import { GridNumberCell } from '../../components/GridNumberCell';
@@ -25,7 +26,7 @@ import { CaseScreen, type CaseUpdate } from '../CaseScreen';
  * canonical control_fluidos rows (see state/fluidBalance.ts), not Swift's.
  */
 export function FluidBalanceScreen() {
-  return <CaseScreen title="Balance hídrico">{(c, update) => <FluidForm c={c} update={update} />}</CaseScreen>;
+  return <CaseScreen title={SECTION_TITLES.fluids}>{(c, update) => <FluidForm c={c} update={update} />}</CaseScreen>;
 }
 
 function FluidForm({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {

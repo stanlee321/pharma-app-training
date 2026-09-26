@@ -53,14 +53,18 @@ export type AdminUserUpdate = S['AdminUserUpdate'];
 export type FormInfoDTO = S['FormInfoDTO'];
 export type FormSchemaDTO = S['FormSchemaDTO'];
 
-/** Human labels for the account roles. */
-export const ROLE_LABELS: Record<UserRole, string> = {
-  anesthesiologist: 'Anesthesiologist',
-  admin: 'Admin',
-};
+// --- patients (historias clínicas) ---------------------------------------------------------
+export type PatientDTO = S['PatientDTO'];
+export type PatientDetailDTO = S['PatientDetailDTO'];
+export type PatientCaseSummaryDTO = S['PatientCaseSummaryDTO'];
+export type PatientPage = S['PatientPage'];
+export type PatientCreate = S['PatientCreate'];
+export type PatientUpdate = S['PatientUpdate'];
+export type PatientConflictDTO = S['PatientConflictDTO'];
+export type Sexo = PatientDTO['sexo'];
 
-/** Human labels for the case lifecycle states. */
-export const STATUS_LABELS: Record<CaseStatus, string> = { draft: 'Draft', finalized: 'Finalized' };
+// Spanish labels (sexo, roles, lifecycle states, technique zones) live in lib/wording.ts.
+export { ROLE_LABELS, SEXO_LABELS, STATUS_LABELS, TECHNIQUE_ZONE_TITLES } from '../lib/wording';
 
 // --- complete client-side shapes ----------------------------------------------------------
 export type PatientProfile = Req<PatientProfileDTO>;
@@ -122,11 +126,6 @@ export type AnesthesiaCase = Omit<Req<AnesthesiaCaseDTO>, NestedKeys> & {
 /** Technique modality zones (Swift TechniqueZone). */
 export const TECHNIQUE_ZONES = ['general', 'neuraxial', 'peripheral'] as const;
 export type TechniqueZone = (typeof TECHNIQUE_ZONES)[number];
-export const TECHNIQUE_ZONE_TITLES: Record<TechniqueZone, string> = {
-  general: 'General',
-  neuraxial: 'Regional Neuraxial',
-  peripheral: 'Peripheral Block',
-};
 export function isTechniqueZone(s: string | undefined): s is TechniqueZone {
   return !!s && (TECHNIQUE_ZONES as readonly string[]).includes(s);
 }

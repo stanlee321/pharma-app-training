@@ -1,3 +1,4 @@
+import { UI } from '../lib/wording';
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
@@ -32,7 +33,7 @@ export function ChangePasswordView() {
     e.preventDefault();
     if (busy) return;
     if (!current) {
-      setError('Enter your current password.');
+      setError('Escriba su contraseña actual.');
       return;
     }
     const problem = newPasswordProblem(current, next, confirm);
@@ -71,12 +72,12 @@ export function ChangePasswordView() {
             <Icon name="lock" size={40} />
           </span>
           <h1 className="login__title" id="change-password-title">
-            Change password
+            {UI.changePassword}
           </h1>
           <p className="login__subtitle">
             {forced
-              ? `Welcome, ${displayName(user)}. Choose a new password to continue.`
-              : `Signed in as ${user.username}.`}
+              ? `Bienvenido(a), ${displayName(user)}. Elija una contraseña nueva para continuar.`
+              : `Sesión iniciada como ${user.username}.`}
           </p>
         </div>
 
@@ -89,43 +90,43 @@ export function ChangePasswordView() {
 
         <div className="login__card">
           <TextRow
-            label={forced ? 'Temporary password' : 'Current password'}
+            label={forced ? 'Contraseña temporal' : 'Contraseña actual'}
             type="password"
             value={current}
             onChange={setCurrent}
-            placeholder="Required"
+            placeholder="Obligatoria"
             autoComplete="current-password"
           />
           <TextRow
-            label="New password"
+            label="Contraseña nueva"
             type="password"
             value={next}
             onChange={setNext}
-            placeholder="8–128 characters"
+            placeholder="De 8 a 128 caracteres"
             autoComplete="new-password"
           />
           <TextRow
-            label="Confirm new password"
+            label="Confirme la contraseña nueva"
             type="password"
             value={confirm}
             onChange={setConfirm}
-            placeholder="Repeat it"
+            placeholder="Repítala"
             autoComplete="new-password"
           />
         </div>
-        <p className="login__hint">You will stay signed in with the new password.</p>
+        <p className="login__hint">Seguirá con la sesión iniciada con la contraseña nueva.</p>
 
         <div className="login__actions">
           <button type="submit" className="btn-primary" disabled={busy}>
-            {busy ? 'Changing…' : 'Change password'}
+            {busy ? 'Cambiando…' : UI.changePassword}
           </button>
           {forced ? (
             <button type="button" className="btn-plain" onClick={onSignOut}>
-              Sign Out
+              {UI.signOut}
             </button>
           ) : (
             <button type="button" className="btn-plain" onClick={() => navigate(landingPath(user))}>
-              Cancel
+              {UI.cancel}
             </button>
           )}
         </div>

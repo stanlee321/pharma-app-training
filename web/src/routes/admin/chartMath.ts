@@ -1,3 +1,5 @@
+import { plural } from '../../lib/wording';
+
 /** Pure helpers of the cases-per-day chart (kept apart so the component file only exports components). */
 
 export interface DayCount {
@@ -26,12 +28,12 @@ export function normalizeDays(days: readonly DayCount[]): DayCount[] {
   return out;
 }
 
-/** "Sep 25" (the day is a UTC calendar day: format it in UTC so no time zone shifts it). */
+/** "25 sep" (the day is a UTC calendar day: format it in UTC so no time zone shifts it). */
 export function shortDay(iso: string): string {
-  return new Date(utcDay(iso)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return new Date(utcDay(iso)).toLocaleDateString('es-MX', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 export function longDay(iso: string): string {
-  return new Date(utcDay(iso)).toLocaleDateString('en-US', {
+  return new Date(utcDay(iso)).toLocaleDateString('es-MX', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -39,7 +41,7 @@ export function longDay(iso: string): string {
     timeZone: 'UTC',
   });
 }
-export const casesLabel = (n: number) => `${n} ${n === 1 ? 'case' : 'cases'}`;
+export const casesLabel = (n: number) => plural(n, 'caso', 'casos');
 
 /** Clean integer axis: a 1/2/5×10ⁿ step giving at most 4 intervals above 0. */
 export function niceAxis(max: number): { top: number; step: number } {

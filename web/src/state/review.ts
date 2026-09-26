@@ -3,6 +3,7 @@
  * PharmaApp/Views/Review/ReviewExportScreen.swift.
  */
 import { BackendError, errorMessage, parseErrorDetail } from '../api/backend';
+import { serverMessage, translateDetail } from '../api/serverMessages';
 import type { AnesthesiaCase, FormId, RecoveryScore } from '../api/types';
 import { ALDRETE_TIME_POINTS } from './recovery';
 
@@ -10,8 +11,8 @@ import { ALDRETE_TIME_POINTS } from './recovery';
 export const FORM_OPTIONS: readonly { id: FormId; title: string }[] = [
   { id: 'registro_transanestesico', title: 'Registro transanestésico' },
   { id: 'nota_postanestesica', title: 'Nota postanestésica' },
-  { id: 'imss_valoracion_preanestesica', title: 'IMSS · Valoración' },
-  { id: 'imss_registro_anestesia', title: 'IMSS · Registro' },
+  { id: 'imss_valoracion_preanestesica', title: 'IMSS · Valoración preanestésica' },
+  { id: 'imss_registro_anestesia', title: 'IMSS · Registro de anestesia' },
 ];
 
 /** Swift default selection (`.nota21`). */
@@ -63,18 +64,18 @@ export function aldreteTotals(r: RecoveryScore): { point: string; total: number 
 /** The server's `ErrorDTO.detail` from an error body, else the trimmed (capped) text. */
 function bodyDetail(body: string): string {
   const d = parseErrorDetail(body);
-  if (d) return d;
+  if (d) return translateDetail(d) ?? d;
   const t = body.trim();
   return t.length > 200 ? `${t.slice(0, 200)}…` : t;
 }
 
 /**
  * A readable export error (Swift showed "Export failed: <localizedDescription>").
- * `online` is `navigator.onLine` at the time of failure; `action` names what failed
- * (e.g. "Generating the form", "Download").
+ * `online` is `navigator.onLine` at the time of failure; `action` is the Spanish lead naming what
+ * failed (e.g. "No se pudo generar el formulario"), followed by ": <reason>".
  */
-export function exportErrorMessage(e: unknown, online = true, action = 'Export'): string {
-  return errorText(e, online).replace(/^Export failed/, `${action} failed`);
+export function exportErrorMessage(e: unknown, online = true, action = 'No se pudo exportar'): string {
+  return `${action}: ${errorText(e, online)}`;
 }
 
 function errorText(e: unknown, online: boolean): string {
@@ -84,33 +85,33 @@ function errorText(e: unknown, online: boolean): string {
     switch (e.kind) {
       case 'network':
         return online
-          ? 'Export failed: the server could not be reached. Check that the backend is running and the Server setting on the login screen.'
-          : 'Export failed: you appear to be offline. Reconnect and try again.';
+          ? 'no se pudo conectar con el servidor. Verifique que el servidor esté en marcha y el ajuste «Servidor» de la pantalla de inicio de sesión.'
+          : 'parece que no hay conexión. Vuelva a conectarse e inténtelo de nuevo.';
       case 'unsupported':
-        return 'Export failed: filled forms are rendered by the server, and this session uses the offline (in-memory) store.';
+        return 'los formularios los genera el servidor y esta sesión trabaja sin conexión (almacenamiento local).';
       case 'notFound':
-        return 'Export failed: the server does not know this case or form (HTTP 404).';
+        return 'el servidor no conoce este caso o formulario (HTTP 404).';
       case 'http': {
         const d = bodyDetail(e.body);
-        return `Export failed: the server returned HTTP ${e.status ?? '?'}${d ? ` — ${d}` : ''}.`;
+        return `el servidor respondió HTTP ${e.status ?? '?'}${d ? ` — ${d}` : ''}.`;
       }
       case 'invalidResponse':
-        return `Export failed: unexpected response from the server (${e.message}).`;
+        return `respuesta inesperada del servidor (${e.message}).`;
     }
   }
   const msg = e instanceof Error ? e.message : String(e);
-  if (!online) return `Export failed: you appear to be offline. ${msg}`;
-  return `Export failed: ${msg}`;
+  if (!online) return `parece que no hay conexión. ${msg}`;
+  return msg;
 }
 
 /** A readable finalize failure (409s explained, else the server's detail). */
 export function finalizeErrorMessage(e: unknown): string {
   if (e instanceof BackendError && e.status === 409) {
     if (e.detail === 'case changed during finalize; retry') {
-      return 'The case changed while its forms were being stored, so nothing was locked. The case was reloaded; review it and finalize again.';
+      return 'El caso cambió mientras se guardaban sus formularios, así que no se bloqueó. Se recargó el caso; revíselo y vuelva a finalizarlo.';
     }
-    if (e.detail === 'case is finalized') return 'This case is already finalized. The locked version was reloaded.';
-    return `Finalize refused: ${e.detail ?? 'conflict'}. The case was reloaded.`;
+    if (e.detail === 'case is finalized') return 'Este caso ya está finalizado. Se recargó la versión bloqueada.';
+    return `No se pudo finalizar: ${e.detail ? serverMessage(e.detail) : 'conflicto.'} Se recargó el caso.`;
   }
-  return `Finalize failed: ${errorMessage(e)}`;
+  return `No se pudo finalizar: ${errorMessage(e)}`;
 }

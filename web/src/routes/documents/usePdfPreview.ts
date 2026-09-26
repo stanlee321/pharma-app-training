@@ -60,7 +60,7 @@ export function usePdfPreview(load: (docId: string) => Promise<Blob>) {
         size: pdf.size,
       });
     } catch (e) {
-      if (mounted.current && seq === seqRef.current) setError(exportErrorMessage(e, online(), 'Download'));
+      if (mounted.current && seq === seqRef.current) setError(exportErrorMessage(e, online(), 'No se pudo descargar el PDF'));
     } finally {
       if (mounted.current && seq === seqRef.current) setOpening(null);
     }

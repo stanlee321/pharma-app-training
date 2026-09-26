@@ -75,15 +75,15 @@ describe('DocumentsPanel', () => {
     const { docs } = setup('draft', 'anesthesiologist');
     await waitFor(() => expect(screen.getAllByTestId('document-row')).toHaveLength(4));
     const groups = [...document.querySelectorAll<HTMLElement>('.doc-group')];
-    expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual(['Registro transanestésico', 'IMSS · Registro']);
+    expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual(['Registro transanestésico', 'IMSS · Registro de anestesia']);
     const first = groups[0]!;
     // Latest row first (outside <details>), flagged as a fallback.
     const latest = first.querySelector(':scope > [data-testid="document-row"]')!;
     expect(latest.getAttribute('data-doc-id')).toBe(docs[2]!.id);
-    expect(latest).toHaveTextContent('summary fallback');
+    expect(latest).toHaveTextContent('resumen de respaldo');
     const older = first.querySelector('details')!;
     expect(older.open).toBe(false);
-    expect(within(first).getByText('Older versions (2)')).toBeInTheDocument();
+    expect(within(first).getByText('Versiones anteriores (2)')).toBeInTheDocument();
     expect([...older.querySelectorAll('[data-testid="document-row"]')].map((r) => r.getAttribute('data-doc-id'))).toEqual([
       docs[3]!.id,
       docs[1]!.id,
@@ -94,15 +94,15 @@ describe('DocumentsPanel', () => {
     const { h, docs, view } = setup('finalized', 'anesthesiologist');
     const user = userEvent.setup();
     await waitFor(() => expect(screen.getAllByTestId('document-row')).toHaveLength(4));
-    const viewButtons = screen.getAllByRole('button', { name: /^View / });
+    const viewButtons = screen.getAllByRole('button', { name: /^Ver / });
 
     await user.click(viewButtons[0]!);
     const frame = await screen.findByTitle(/\(PDF\)$/);
     expect(frame).toHaveAttribute('src', 'blob:test/1');
     expect(h.calls.at(-1)).toEqual({ method: 'GET', url: `/api/v1/documents/${docs[2]!.id}/file` });
-    expect(screen.getByRole('link', { name: 'Download PDF' })).toHaveAttribute('href', 'blob:test/1');
+    expect(screen.getByRole('link', { name: 'Descargar PDF' })).toHaveAttribute('href', 'blob:test/1');
 
-    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await user.click(screen.getByRole('button', { name: 'Cerrar' }));
     expect(screen.queryByTitle(/\(PDF\)$/)).toBeNull();
     expect(revoked).toEqual(['blob:test/1']);
 
@@ -117,12 +117,12 @@ describe('DocumentsPanel', () => {
     const { h, docs } = setup('draft', 'anesthesiologist');
     const user = userEvent.setup();
     await waitFor(() => expect(screen.getAllByTestId('document-row')).toHaveLength(4));
-    await user.click(screen.getAllByRole('button', { name: /^View / })[0]!);
+    await user.click(screen.getAllByRole('button', { name: /^Ver / })[0]!);
     await screen.findByTitle(/\(PDF\)$/);
 
-    const del = screen.getAllByRole('button', { name: /^Delete Registro transanestésico/ })[0]!;
+    const del = screen.getAllByRole('button', { name: /^Eliminar Registro transanestésico/ })[0]!;
     await user.click(del);
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Eliminar' }));
     await waitFor(() => expect(screen.getAllByTestId('document-row')).toHaveLength(3));
     expect(h.calls.some((c) => c.method === 'DELETE' && c.url === `/api/v1/documents/${docs[2]!.id}`)).toBe(true);
     expect(screen.queryByTitle(/\(PDF\)$/)).toBeNull();
@@ -132,19 +132,19 @@ describe('DocumentsPanel', () => {
   it('owner of a finalized case: no delete', async () => {
     setup('finalized', 'anesthesiologist');
     await waitFor(() => expect(screen.getAllByTestId('document-row')).toHaveLength(4));
-    expect(screen.queryByRole('button', { name: /^Delete / })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Eliminar / })).toBeNull();
     // Generating a new version is still allowed.
-    expect(screen.getByRole('button', { name: 'Generate & store' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Generar y guardar' })).toBeEnabled();
   });
 
   it('admin of a finalized case: may delete', async () => {
     const { h } = setup('finalized', 'admin');
     const user = userEvent.setup();
     await waitFor(() => expect(screen.getAllByTestId('document-row')).toHaveLength(4));
-    const dels = screen.getAllByRole('button', { name: /^Delete / });
+    const dels = screen.getAllByRole('button', { name: /^Eliminar / });
     expect(dels).toHaveLength(4);
     await user.click(dels[3]!);
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Eliminar' }));
     await waitFor(() => expect(screen.getAllByTestId('document-row')).toHaveLength(3));
     expect(h.calls.filter((c) => c.method === 'DELETE')).toHaveLength(1);
   });
@@ -155,9 +155,9 @@ describe('DocumentsPanel', () => {
     await waitFor(() => expect(screen.getAllByTestId('document-row')).toHaveLength(4));
     // The case was finalized meanwhile (server side).
     for (const [id, c] of h.server) h.server.set(id, { ...(c as object), status: 'finalized' });
-    await user.click(screen.getAllByRole('button', { name: /^Delete / })[0]!);
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Delete failed: the server returned HTTP 409 — case is finalized.');
+    await user.click(screen.getAllByRole('button', { name: /^Eliminar / })[0]!);
+    await user.click(screen.getByRole('button', { name: 'Eliminar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo eliminar el documento: el servidor respondió HTTP 409 — El caso está finalizado y es de solo lectura..');
     expect(screen.getAllByTestId('document-row')).toHaveLength(4);
   });
 });

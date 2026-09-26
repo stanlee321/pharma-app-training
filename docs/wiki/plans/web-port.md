@@ -32,7 +32,10 @@ models' parameter equations + `computeTCI` are ported.
 
 ## Routes
 
-`/login`, `/cases`, `/cases/:id`, `/cases/:id/{patient,preanesthetic,technique/:zone,monitoring,drugs,fluids,recovery,newborn,review}`.
+`/login`, `/pacientes` (Historias clínicas; `/cases` redirects here), `/pacientes/nuevo`,
+`/pacientes/:id`, `/cases/:id`, `/cases/:id/{patient,preanesthetic,technique/:zone,monitoring,drugs,fluids,recovery,newborn,review}`.
+The encounter list was replaced by the patient list and the patient screen ([[patients-historias]],
+increment 2).
 
 ## Build (via `/delegate-build`, one workflow)
 
@@ -211,6 +214,13 @@ fails without it:
   (`storage_backend` and the nullable `storage_path` were already in).
 
 Gates: typecheck, lint, Vitest (34 files / 303 tests) and build pass. Nothing was checked live.
+
+### Historias clínicas + Spanish-only UI (2026-09-25)
+
+See [[patients-historias]]. The UI is Spanish only (no i18n framework): shared wording in
+`src/lib/wording.ts`, server `detail` translation in `src/api/serverMessages.ts`, es-MX dates and
+numbers, and a guard test (`src/test/spanishUi.test.tsx`) that fails on English UI strings in the
+source or on rendered screens.
 
 **Still open:**
 - Run `alembic upgrade head` and restart the backend, then check that `GET /admin/documents`

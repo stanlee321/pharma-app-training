@@ -1,7 +1,8 @@
 # TivaTrainer — web
 
 Vite + React 18 + TypeScript (strict) port of the TivaTrainer **clinical form spine**
-(Login → Encounters → Encounter Hub → section screens → Review/Export). See
+(Login → Historias clínicas (patients) → Paciente → Encounter Hub → section screens →
+Review/Export). See
 `docs/wiki/plans/web-port.md` for scope and the increment plan.
 
 Stack: react-router-dom v6, zustand, plain CSS (tokens in `src/styles/tokens.css`), Vitest +
@@ -39,11 +40,11 @@ shown once, that must be changed at first login.
 
 | Role | Lands on | Can |
 |---|---|---|
-| `anesthesiologist` | `/cases` | Own cases only: create, edit, finalize (locks the case and stores the 4 forms), generate / view documents, delete documents and cases while a draft |
+| `anesthesiologist` | `/pacientes` | Every patient and every case (shared hospital-wide). Create / edit patients. Own cases: create, edit, finalize (locks the case and stores the 4 forms), generate / view documents, delete documents and cases while a draft. Others' cases: read-only (view documents) |
 | `admin` | `/admin` | Read every case (read-only), generate / view / delete any document, delete any case, reopen a finalized case, manage accounts. Never edits case content |
 
-An anesthesiologist opening `/admin/**` is sent to `/cases`; an admin opening `/cases/**` is sent
-to `/admin`. The role always comes from the account (the login screen has no role picker).
+An anesthesiologist opening `/admin/**` is sent to `/pacientes`; an admin opening `/cases/**` or
+`/pacientes/**` is sent to `/admin`. The role always comes from the account (the login screen has no role picker).
 
 ### Server URL, proxy and env
 
@@ -66,8 +67,10 @@ anesthesiologist. Export is not available in that mode.
 - **Admin area** at `/admin` (Dashboard · Cases · Users · Documents): stats + 30-day chart,
   account management, a filterable case list with a read-only case view (Reopen, Delete,
   documents) and the document index with authenticated downloads (see "Admin").
-- Encounter list (create / delete) and the Encounter Hub with per-section completion; every
-  list row and every case screen's nav bar shows a **Draft / Finalized** badge.
+- **Historias clínicas** (see "Patients"): the patient list with search, new patient (duplicate
+  registro → open the existing one), the patient screen (identity + edit, the patient's cases
+  "Caso N" by every author, "+" new case), then the Encounter Hub with per-section completion;
+  every case row and every case screen's nav bar shows a **Draft / Finalized** badge.
 - **Case lifecycle** (see "Finalize, read-only and documents"): Finalize on Review & Export
   (in-page confirmation), finalized cases read-only everywhere, a per-case Documents panel.
 - Clinical sections ported from the Swift views: Patient Data (with derived IMC / peso ideal /
@@ -122,6 +125,56 @@ first. `mockPKEngine.test.ts` checks every model against the hand-calculated val
 test header for the reference's gaps). A mutation check confirmed it catches the pre-2026-09-16
 Schnider bug (V3 10× too small, no V2 age term).
 
+## Patients (historias clínicas)
+
+Plan: `docs/wiki/plans/patients-historias.md`. Patients are shared hospital-wide; the identity
+(nombre, registro, sexo, fecha de nacimiento, grupo, Rh) lives on the patient, per-encounter values
+stay on the case, and the server keeps every draft's identity snapshot equal to its patient.
+
+- `api/patientApi.ts`: `PatientApi` port — `RestPatientApi` (`GET/POST /patients`,
+  `GET/PATCH /patients/{id}` through the one HTTP layer) and `InMemoryPatientApi` (offline mode,
+  reads the patient's cases from the in-memory case backend). `existingPatientId(e)` reads the
+  409 `{detail: "patient exists", patient_id}`.
+- `state/patientStore.ts` (zustand): the list (`search(q)`, a stale answer is dropped), per-patient
+  detail (`loadPatient`), `createPatient` / `updatePatient` → `{kind: 'saved' | 'exists'}`.
+  Session isolation like the case store (epoch; reset on sign-out / account change). A patient
+  edit marks that patient's clean loaded case copies unloaded (`caseStore.invalidatePatient`),
+  since the server re-copied their identity.
+- Screens (`routes/patients/`): `/pacientes` (search kept in `?q=`, debounced), `/pacientes/nuevo`,
+  `/pacientes/:id` (`?editar=1` opens the form; the form PATCHes only the changed keys).
+  "+" on the patient screen = `caseStore.createCase(owner, patient)` → `newCaseForPatient`
+  (`patient_id` + identity) → the Hub. The Hub's back link goes to the case's patient.
+- Case Patient Data: identity read-only with **Editar paciente**; peso, talla, edad, dilución,
+  cama, Hb, Hto editable. A patient whose sexo is unknown (`''`, legacy) shows "Sin especificar"
+  plus a warning (the PK models would compute as male); new/edited patients must have a sexo.
+- A new case copies the patient's `edad` into `profile.age`; the server's seeded biometrics are
+  kept even if the user edits before the create PUT answers (`adoptCreateSeeds`).
+- **Others' cases are read-only**: the case store marks a case read via `GET /cases/{id}` whose
+  `user_id` is not the signed-in user (`setCaseViewer`, registered by the auth store) as
+  `meta.foreign`; `updateCase` / `save` refuse it, so no PUT can be sent. `CaseScreen` feeds it to
+  the one read-only mechanism (banner "Caso de otro anestesiólogo — solo lectura"); Review hides
+  Finalize, Generate and document delete for it.
+- Tests: `routes/patients/patients.test.tsx`, `state/patientStore.test.ts`; `restHarness` fakes
+  the `/patients` routes (409 on a duplicate registro, `can_edit`, numbering, identity copied into
+  drafts, `patient_id` required to create a case).
+
+## Language (Spanish only)
+
+The whole UI is Spanish; there is no i18n framework.
+- `src/lib/wording.ts`: the shared wording — status / role / sex labels, technique zones, the case
+  section titles (paper-form vocabulary), common buttons and states (`UI`), and es-MX helpers
+  (`formatCount`, `plural`, `edadLabel`). Screen-specific text stays in its screen.
+- `src/api/serverMessages.ts`: the backend's `ErrorDTO.detail` strings are English and part of the
+  API contract (the client compares against them). They are translated only for display:
+  `errorMessage(e)` → `serverMessage(detail)`; unknown ones read "El servidor respondió: …".
+  Validator messages (`<field> cannot be blank`, `fields cannot be null: …`, username/password
+  length, the `gw-` prefix) are translated too, raw or wrapped as pydantic's "Value error, …";
+  wire field names go through `FIELD_ES`. `api/serverMessages.test.ts` pins them.
+- Dates: `lib/datetime.ts` formats es-MX (`formatDateTime`, `formatTime`, `formatDateEs`).
+- Guard: `src/test/spanishUi.test.tsx` scans every non-test source file (TypeScript AST) and a set
+  of rendered screens for common English UI words; add new server-contract strings to its
+  allowlist (via `KNOWN_SERVER_DETAILS`) rather than showing them.
+
 ## Finalize, read-only and documents
 
 - **Finalize** (owner, draft; Review & Export): "Finalize case…" opens an in-page confirmation
@@ -162,7 +215,9 @@ Admins land on `/admin` (`routes/admin/`, shell in `AdminLayout.tsx`, content ma
 1100px, the nav wraps under the bar on a phone). All calls go through `api/adminApi.ts` (the one
 authenticated HTTP layer).
 
-- **Dashboard** (`AdminDashboardPage.tsx`): `GET /admin/stats` → stat tiles, the 30-day
+- **Nav:** Panel · Pacientes · Casos · Usuarios · Documentos (Spanish, like the whole admin area).
+- **Dashboard** (`AdminDashboardPage.tsx`): `GET /admin/stats` → stat tiles (Pacientes from
+  `patients_total`, Casos, Borradores, Finalizados, Documentos; each tile links to its list), the 30-day
   `CasesPerDayChart` (hand-built SVG; pure helpers in `chartMath.ts`; hover / ←→ Home End
   tooltip, table view) and the per-anesthesiologist table linking to `/admin/cases?user_id=…`.
   `cases_by_status` is read by key; the day series is re-sorted and zero-filled client-side.
@@ -171,9 +226,23 @@ authenticated HTTP layer).
   messages are mapped onto fields (`fieldErrors`) or the guard text (`guardMessage`).
   Temporary passwords (`generateTempPassword`, CSPRNG, 3×4 unambiguous chars) are shown **once**
   by `OneTimeSecret`: only in page state, never in the URL, storage or a store.
-- **Cases** (`AdminCasesPage.tsx`): `GET /admin/cases`, newest first, 25 per page. Every filter
-  is in the URL — `?status=&user_id=&q=&date_from=&date_to=&page=` — so the dashboard's
-  per-anesthesiologist links, Back and reload keep them; changing a filter resets the page.
+- **Patients** (`AdminPatientsPage.tsx`, `AdminPatientPage.tsx`):
+  - `/admin/patients` is `GET /admin/patients` by name, 25 per page, with `?q=` (nombre or
+    registro, debounced) and `?page=` in the URL.
+  - Each row shows registro, edad and sexo, and the number of cases, which links to
+    `/admin/cases?patient_id=…`.
+  - `/admin/patients/:id` reads `GET /patients/{id}` and is read-only. Anesthesiologists maintain
+    the identity. The page lists every case, each opening the admin case view.
+  - **Eliminar paciente** is offered only while the patient has no cases, with an in-page
+    confirmation, then `DELETE /admin/patients/{id}`. If the server answers 409 because a case
+    appeared, the error shows in Spanish and the page reloads.
+- **Cases** (`AdminCasesPage.tsx`): `GET /admin/cases`, newest first, 25 per page.
+  - Every filter is in the URL: `?status=&user_id=&patient_id=&q=&date_from=&date_to=&page=`.
+    The dashboard's per-anesthesiologist links, Back and reload keep them; changing a filter
+    resets the page.
+  - Each row shows the patient (`patient_nombre` + registro) and a "Solo este paciente" link.
+  - A `?patient_id=` filter shows a chip naming the patient, with **Quitar filtro de paciente**.
+    A malformed id is explained locally and not sent.
   The text search is debounced (`useUrlText`, which also re-syncs the box when the URL changes
   elsewhere); a reversed date range is explained locally and not sent (the server would 422);
   a page past the end offers the first page. Dates are inclusive UTC days of creation.
@@ -181,8 +250,9 @@ authenticated HTTP layer).
   screens are reused unchanged. `CaseScopeContext` (`state/caseScope.ts`, `ADMIN_SCOPE`) points
   their links at `/admin/cases/{id}/…` and makes `useCase` load with `GET /admin/cases/{id}`;
   the store keeps that copy `viewOnly` (`updateCase` / `save` refuse it). The increment-2
-  `ReadOnlyProvider` (reason "viewer") disables every control and shows "Read-only view" (a
-  finalized case shows "Finalized — read-only"). The Hub adds the admin's actions outside the
+  `ReadOnlyProvider` (reason "viewer") disables every control and shows a read-only banner (a
+  finalized case shows the finalized banner). The case facts include **Paciente**, linking to
+  the admin patient page. The Hub adds the admin's actions outside the
   disabled form: case facts, **Reopen** (finalized only, in-page confirm → `POST
   /admin/cases/{id}/reopen`, documents kept), the `DocumentsPanel` (generate / view / delete),
   and **Delete case** (in-page confirm → `DELETE /admin/cases/{id}`, then back to the same
@@ -193,14 +263,16 @@ authenticated HTTP layer).
   case id is flagged on the field and not sent (the server 422s non-UUIDs). **Open** fetches the
   PDF through the authenticated layer (`usePdfPreview` + `PdfPreview`, shared with the per-case
   panel) into a blob URL shown inline with Download; revoked on replace, close and unmount.
-  The storage location is shown to admins (`storageLabel`: file path, or "Stored in the
-  database" for the `db` backend).
+  The storage location is shown to admins (`storageLabel`: the file path, or a note that it is
+  stored in the database for the `db` backend).
 - Tests: `src/test/fakeAdminServer.ts` fakes `/admin/users`, `/admin/stats`, `/admin/cases`
-  (filters, paging, reopen, delete), `/admin/documents`, the per-case document routes and the
+  (filters incl. `patient_id`, paging, reopen, delete, patient fields), `/admin/patients` +
+  `GET /patients/{id}` + `DELETE /admin/patients/{id}` (409 with cases), `/admin/documents`, the per-case document routes and the
   file download, with the backend's validation and guard rules (an admin's writes on `/cases`
   → 403); `statsFixture(end, counts)` builds a zero-filled 30-day fixture. Suites:
   `AdminDashboard`, `AdminUsers`, `AdminCases` (filters ↔ URL, paging, read-only view, reopen,
-  delete, documents panel) and `AdminDocuments`.
+  delete, documents panel), `AdminPatients` (list, search ↔ URL, patient page, delete guard and
+  confirm, 409 race, case filter by patient, dashboard tile) and `AdminDocuments`.
 
 ### Session drafts (restore rules)
 
@@ -244,6 +316,10 @@ document groups (`FORM_OPTIONS`). `routes/jsonbOrder.test.tsx` feeds reversed ke
   clients, and the PDF `vitals_grid` lanes can't be filled from the web app yet. This gap is
   accepted for now and scheduled as a follow-up.
 - The TCI recommendation is not persisted (there is no DTO field for it).
+- Patients: admins cannot edit or merge patients (the identity is maintained by anesthesiologists
+  on `/pacientes/:id`); legacy patients with an unknown sex compute as male until edited (warned,
+  not blocked). The iOS app cannot create cases against this backend yet (422 without
+  `patient_id`) — see `docs/wiki/plans/patients-historias.md` "Status".
 
 ## Scripts
 
@@ -277,12 +353,14 @@ snake_case exactly as in the backend DTOs, and the backend DTOs win over the Swi
 
 ```
 src/
-  api/        schema.d.ts (generated) · types.ts · factory.ts (newCase/normalizeCase)
+  api/        schema.d.ts (generated) · types.ts · factory.ts (newCase/newCaseForPatient/normalizeCase)
+              patientApi.ts (PatientApi port: RestPatientApi / InMemoryPatientApi)
               backend.ts (CaseBackend port + BackendError/ErrorDTO detail) · http.ts (the one
               authenticated HTTP layer) · authApi.ts · restBackend.ts · inMemoryBackend.ts
               provider.ts (CaseStoreProvider.useREST, makeBackend/makeAuthApi)
   state/      authStore.ts (session, expiry, guards' state) · authMessages.ts ·
               caseStore.ts (MockCaseStore port) · useCase.ts · caseScope.ts (owner / admin scope)
+              patientStore.ts · patientForm.ts (identity form values / validation / bodies)
               useSaveOnLeave.ts · completion.ts (hasData helpers from CaseCompletion.swift)
               techniqueFields.ts (technique values-blob keys + per-zone completion, General fallback)
               monitoring.ts · drugLedger.ts · fluidBalance.ts · recovery.ts · newborns.ts ·
@@ -301,7 +379,8 @@ src/
   routes/     AppRoutes · paths · RequireAuth (+ LandingRedirect) · LoginView ·
               ChangePasswordView · UserMenu · admin/ (AdminLayout, Dashboard + chart, Users,
               Cases, Case view, Documents, Pager/paging, useQuery, useUrlText, adminUi) ·
-              EncounterListView · CaseScreen ·
+              patients/ (PatientListView, PatientNewView, PatientView, PatientForm) ·
+              RestoredDraftsBanner · CaseScreen ·
               EncounterHubView · PatientDataScreen · PreanestheticView ·
               technique/TechniqueScreen (+ TciChipSlot) · monitoring/MonitoringScreen
               (+ VitalsMiniChart) · drugs/DrugLedgerScreen (+ DrugTciChipSlot) ·

@@ -138,7 +138,7 @@ describe('a demoted admin', () => {
         <AppRoutes />
       </MemoryRouter>,
     );
-    expect(await screen.findByRole('heading', { name: 'Encounters', level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Historias clínicas', level: 1 })).toBeInTheDocument();
   });
 
   it('a 403 "admin only" for an anesthesiologist does not re-read anything', async () => {

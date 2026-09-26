@@ -1,3 +1,4 @@
+import { formatCount } from '../../lib/wording';
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { casesLabel, longDay, niceAxis, normalizeDays, shortDay, TOOLTIP_H, type DayCount } from './chartMath';
 
@@ -64,11 +65,11 @@ export function CasesPerDayChart({ days }: { days: readonly DayCount[] }) {
 
   const summary =
     n === 0
-      ? 'No data.'
-      : `${casesLabel(total)} from ${shortDay(series[0]!.date)} to ${shortDay(series[n - 1]!.date)}` +
+      ? 'Sin datos.'
+      : `${casesLabel(total)} del ${shortDay(series[0]!.date)} al ${shortDay(series[n - 1]!.date)}` +
         (peakIndex >= 0
-          ? `; busiest day ${shortDay(series[peakIndex]!.date)} with ${casesLabel(max)}.`
-          : '; no cases in this period.');
+          ? `; día con más casos: ${shortDay(series[peakIndex]!.date)}, con ${casesLabel(max)}.`
+          : '; sin casos en este periodo.');
 
   const move = (i: number) => {
     const next = Math.max(0, Math.min(n - 1, i));
@@ -112,14 +113,14 @@ export function CasesPerDayChart({ days }: { days: readonly DayCount[] }) {
         onPointerLeave={() => setActive(null)}
       >
         <svg className="chart__svg" width={width} height={HEIGHT} role="img" aria-labelledby={`${titleId} ${descId}`}>
-          <title id={titleId}>Cases per day</title>
+          <title id={titleId}>Casos por día</title>
           <desc id={descId}>{summary}</desc>
           <g aria-hidden="true">
             {ticks.map((v) => (
               <g key={v}>
                 <line className="chart__grid" x1={M.left} x2={M.left + plotW} y1={y(v)} y2={y(v)} />
                 <text className="chart__tick" x={M.left - 6} y={y(v)} dy="0.32em" textAnchor="end">
-                  {v.toLocaleString('en-US')}
+                  {formatCount(v)}
                 </text>
               </g>
             ))}
@@ -161,7 +162,7 @@ export function CasesPerDayChart({ days }: { days: readonly DayCount[] }) {
                 y={y(max) - 6}
                 textAnchor="middle"
               >
-                {max.toLocaleString('en-US')}
+                {formatCount(max)}
               </text>
             ) : null}
           </g>
@@ -180,21 +181,21 @@ export function CasesPerDayChart({ days }: { days: readonly DayCount[] }) {
             <span className="chart__tooltip-label">{longDay(tip.date)}</span>
           </div>
         ) : null}
-        {max === 0 && n > 0 ? <p className="chart__empty">No cases in the last {n} days.</p> : null}
+        {max === 0 && n > 0 ? <p className="chart__empty">Sin casos en los últimos {n} días.</p> : null}
       </div>
       <span className="visually-hidden" aria-live="polite">
         {announce}
       </span>
       <details className="chart__table">
-        <summary>Show as table</summary>
+        <summary>Ver como tabla</summary>
         <div className="admin-table-scroll">
           <table className="admin-table admin-table--compact">
-            <caption className="visually-hidden">Cases per day (UTC)</caption>
+            <caption className="visually-hidden">Casos por día (UTC)</caption>
             <thead>
               <tr>
-                <th scope="col">Day (UTC)</th>
+                <th scope="col">Día (UTC)</th>
                 <th scope="col" className="num">
-                  Cases
+                  Casos
                 </th>
               </tr>
             </thead>
@@ -202,7 +203,7 @@ export function CasesPerDayChart({ days }: { days: readonly DayCount[] }) {
               {series.map((d) => (
                 <tr key={d.date}>
                   <th scope="row">{longDay(d.date)}</th>
-                  <td className="num">{d.count}</td>
+                  <td className="num">{formatCount(d.count)}</td>
                 </tr>
               ))}
             </tbody>

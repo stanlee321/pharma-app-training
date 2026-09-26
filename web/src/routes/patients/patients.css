@@ -1,0 +1,44 @@
+/* Historias clínicas: patient list / patient screen / patient form (rows reuse encounters.css). */
+.patient-header {
+  margin: calc(-1 * var(--space-cell)) var(--space-screen) var(--space-item);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-tight) var(--space-item);
+  font-size: var(--text-subheadline);
+  color: var(--label-secondary);
+}
+.patient-header__warn {
+  color: var(--color-invalid);
+  font-weight: 600;
+}
+.patient-edit {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+}
+.patient-case__tag {
+  flex: 0 0 auto;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  color: var(--label-secondary);
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+.patient-case__error {
+  font-size: var(--text-footnote);
+  color: var(--color-invalid);
+}
+.patient-form__segmented {
+  display: block;
+  padding-block: var(--space-cell);
+}
+.patient-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-cell);
+  padding: 0 var(--space-screen) var(--space-section);
+}

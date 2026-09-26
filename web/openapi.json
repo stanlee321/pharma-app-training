@@ -233,6 +233,475 @@
     ]
    }
   },
+  "/api/v1/patients": {
+   "get": {
+    "tags": [
+     "patients"
+    ],
+    "summary": "List Patients",
+    "operationId": "list_patients_api_v1_patients_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "maxLength": 200
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "substring of nombre or registro",
+       "title": "Q"
+      },
+      "description": "substring of nombre or registro"
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "description": "page size (1-200)",
+       "default": 50,
+       "title": "Limit"
+      },
+      "description": "page size (1-200)"
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "default": 0,
+       "title": "Offset"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PatientPage"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "patients"
+    ],
+    "summary": "Create Patient",
+    "operationId": "create_patient_api_v1_patients_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PatientCreate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PatientDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "A patient with this registro already exists",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PatientConflictDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/patients/{patient_id}": {
+   "get": {
+    "tags": [
+     "patients"
+    ],
+    "summary": "Get Patient",
+    "operationId": "get_patient_api_v1_patients__patient_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "patient_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Patient Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PatientDetailDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "patch": {
+    "tags": [
+     "patients"
+    ],
+    "summary": "Update Patient",
+    "operationId": "update_patient_api_v1_patients__patient_id__patch",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "patient_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Patient Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PatientUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PatientDTO"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "A patient with this registro already exists",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PatientConflictDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "patients"
+    ],
+    "summary": "Delete Patient",
+    "operationId": "delete_patient_api_v1_patients__patient_id__delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "patient_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Patient Id"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/cases": {
    "get": {
     "tags": [
@@ -307,6 +776,7 @@
      "cases"
     ],
     "summary": "Create Case",
+    "description": "New draft case for a patient (``patient_id`` required; 404 unknown patient). The\npatient's identity and the last case's profile values are copied in.",
     "operationId": "create_case_api_v1_cases_post",
     "requestBody": {
      "content": {
@@ -575,7 +1045,7 @@
      "cases"
     ],
     "summary": "Upsert Case",
-    "description": "Full-aggregate create-or-replace (client-owned id). Used by the app's RestCaseStore save.\nServer-owned fields (status, updated_at, finalized_at, user_id) and ``id`` in the body are\nignored; an upper-case path id addresses the same case as its lower-case form.",
+    "description": "Full-aggregate create-or-replace (client-owned id). Used by the app's RestCaseStore save.\nServer-owned fields (status, updated_at, finalized_at, user_id) and ``id`` in the body are\nignored; an upper-case path id addresses the same case as its lower-case form.\nCreate: ``patient_id`` is required (422 without, 404 unknown). Replace: ``patient_id`` is\nignored (a case never changes patient); 403 on another user's case, 409 if finalized.",
     "operationId": "upsert_case_api_v1_cases__case_id__put",
     "security": [
      {
@@ -2997,7 +3467,7 @@
      "documents"
     ],
     "summary": "Finalize Case",
-    "description": "Lock the case (draft -> finalized) and store all four forms as its snapshot.\n403 admin, 404 not the owner's, 409 already finalized.",
+    "description": "Lock the case (draft -> finalized) and store all four forms as its snapshot.\n403 admin or not the owner, 404 missing, 409 already finalized.",
     "operationId": "finalize_case_api_v1_cases__case_id__finalize_post",
     "security": [
      {
@@ -3876,6 +4346,23 @@
       }
      },
      {
+      "name": "patient_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Patient Id"
+      }
+     },
+     {
       "name": "q",
       "in": "query",
       "required": false,
@@ -3889,10 +4376,10 @@
          "type": "null"
         }
        ],
-       "description": "substring of patient name/registro, diagnosis, procedure, owner, case id, owner username/full name",
+       "description": "substring of patient name/registro (case snapshot or patient), diagnosis, procedure, owner, case id, owner username/full name",
        "title": "Q"
       },
-      "description": "substring of patient name/registro, diagnosis, procedure, owner, case id, owner username/full name"
+      "description": "substring of patient name/registro (case snapshot or patient), diagnosis, procedure, owner, case id, owner username/full name"
      },
      {
       "name": "date_from",
@@ -4224,6 +4711,210 @@
         }
        }
       }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/patients": {
+   "get": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin List Patients",
+    "operationId": "admin_list_patients_api_v1_admin_patients_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "maxLength": 200
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "substring of nombre or registro",
+       "title": "Q"
+      },
+      "description": "substring of nombre or registro"
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "description": "page size (1-200)",
+       "default": 50,
+       "title": "Limit"
+      },
+      "description": "page size (1-200)"
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "default": 0,
+       "title": "Offset"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PatientPage"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "Not authenticated (missing/invalid/expired/revoked token)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "Forbidden (role, inactive account, or password change required)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not found (or not visible to the caller)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Conflict (state or uniqueness guard)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorDTO"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/patients/{patient_id}": {
+   "delete": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "Admin Delete Patient",
+    "description": "409 while the patient still has cases.",
+    "operationId": "admin_delete_patient_api_v1_admin_patients__patient_id__delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "patient_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Patient Id"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
      },
      "401": {
       "description": "Not authenticated (missing/invalid/expired/revoked token)",
@@ -4657,6 +5348,10 @@
    },
    "AdminStatsDTO": {
     "properties": {
+     "patients_total": {
+      "type": "integer",
+      "title": "Patients Total"
+     },
      "cases_total": {
       "type": "integer",
       "title": "Cases Total"
@@ -4685,6 +5380,7 @@
     },
     "type": "object",
     "required": [
+     "patients_total",
      "cases_total",
      "cases_by_status",
      "cases_per_day",
@@ -4857,6 +5553,18 @@
        }
       ],
       "title": "User Id"
+     },
+     "patient_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Patient Id"
      },
      "fecha": {
       "anyOf": [
@@ -5039,6 +5747,18 @@
       "type": "string",
       "title": "Owner",
       "default": ""
+     },
+     "patient_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Patient Id"
      },
      "fecha": {
       "anyOf": [
@@ -5485,6 +6205,44 @@
        }
       ],
       "title": "Owner Name"
+     },
+     "registro": {
+      "type": "string",
+      "title": "Registro",
+      "default": ""
+     },
+     "patient_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Patient Id"
+     },
+     "patient_nombre": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Patient Nombre"
+     },
+     "patient_registro": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Patient Registro"
      }
     },
     "type": "object",
@@ -5541,9 +6299,18 @@
       "type": "string",
       "title": "Owner",
       "default": ""
+     },
+     "patient_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Patient Id",
+      "description": "The patient (historia cl\u00ednica) of the new case."
      }
     },
     "type": "object",
+    "required": [
+     "patient_id"
+    ],
     "title": "CreateCaseRequest"
    },
    "DailyCountDTO": {
@@ -6467,6 +7234,423 @@
     "type": "object",
     "title": "NewbornRecordPatch"
    },
+   "PatientCaseSummaryDTO": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "numero": {
+      "type": "integer",
+      "title": "Numero"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "fecha": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fecha"
+     },
+     "diagnostico_preop": {
+      "type": "string",
+      "title": "Diagnostico Preop",
+      "default": ""
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "draft",
+       "finalized"
+      ],
+      "title": "Status",
+      "default": "draft"
+     },
+     "user_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "User Id"
+     },
+     "author_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Author Name"
+     },
+     "can_edit": {
+      "type": "boolean",
+      "title": "Can Edit",
+      "default": false
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "numero",
+     "created_at"
+    ],
+    "title": "PatientCaseSummaryDTO",
+    "description": "One case of a patient. ``numero`` is 1-based by ``created_at`` (then id) within the\npatient. ``can_edit``: the caller owns it, it is a draft, and the caller is not an admin."
+   },
+   "PatientConflictDTO": {
+    "properties": {
+     "detail": {
+      "type": "string",
+      "const": "patient exists",
+      "title": "Detail",
+      "default": "patient exists"
+     },
+     "patient_id": {
+      "type": "string",
+      "title": "Patient Id"
+     }
+    },
+    "type": "object",
+    "required": [
+     "patient_id"
+    ],
+    "title": "PatientConflictDTO",
+    "description": "409 body of POST /patients and PATCH /patients/{id} on a duplicate registro."
+   },
+   "PatientCreate": {
+    "properties": {
+     "registro": {
+      "type": "string",
+      "maxLength": 255,
+      "minLength": 1,
+      "title": "Registro"
+     },
+     "nombre": {
+      "type": "string",
+      "maxLength": 255,
+      "minLength": 1,
+      "title": "Nombre"
+     },
+     "sexo": {
+      "type": "string",
+      "enum": [
+       "male",
+       "female",
+       ""
+      ],
+      "title": "Sexo",
+      "default": ""
+     },
+     "fecha_nacimiento": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fecha Nacimiento"
+     },
+     "grupo_sanguineo": {
+      "type": "string",
+      "maxLength": 16,
+      "title": "Grupo Sanguineo",
+      "default": ""
+     },
+     "rh": {
+      "type": "string",
+      "maxLength": 16,
+      "title": "Rh",
+      "default": ""
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "registro",
+     "nombre"
+    ],
+    "title": "PatientCreate",
+    "description": "New patient. ``registro`` (expediente) is required and unique (trimmed,\ncase-insensitive): a duplicate is a 409 carrying the existing ``patient_id``. Text is\ntrimmed. Unknown fields are rejected (422)."
+   },
+   "PatientDTO": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "registro": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Registro"
+     },
+     "nombre": {
+      "type": "string",
+      "title": "Nombre"
+     },
+     "sexo": {
+      "type": "string",
+      "enum": [
+       "male",
+       "female",
+       ""
+      ],
+      "title": "Sexo",
+      "default": ""
+     },
+     "fecha_nacimiento": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fecha Nacimiento"
+     },
+     "grupo_sanguineo": {
+      "type": "string",
+      "title": "Grupo Sanguineo",
+      "default": ""
+     },
+     "rh": {
+      "type": "string",
+      "title": "Rh",
+      "default": ""
+     },
+     "created_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created By"
+     },
+     "updated_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated By"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Updated At"
+     },
+     "edad": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Edad"
+     },
+     "cases_count": {
+      "type": "integer",
+      "title": "Cases Count",
+      "default": 0
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "nombre",
+     "created_at",
+     "updated_at"
+    ],
+    "title": "PatientDTO",
+    "description": "A patient (shared hospital-wide). ``edad`` is derived (whole years today, UTC) from\n``fecha_nacimiento``; ``cases_count`` counts every case of the patient (all authors).\n``registro`` is null only for legacy patients grouped from cases without one."
+   },
+   "PatientDetailDTO": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "registro": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Registro"
+     },
+     "nombre": {
+      "type": "string",
+      "title": "Nombre"
+     },
+     "sexo": {
+      "type": "string",
+      "enum": [
+       "male",
+       "female",
+       ""
+      ],
+      "title": "Sexo",
+      "default": ""
+     },
+     "fecha_nacimiento": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fecha Nacimiento"
+     },
+     "grupo_sanguineo": {
+      "type": "string",
+      "title": "Grupo Sanguineo",
+      "default": ""
+     },
+     "rh": {
+      "type": "string",
+      "title": "Rh",
+      "default": ""
+     },
+     "created_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created By"
+     },
+     "updated_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated By"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Updated At"
+     },
+     "edad": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Edad"
+     },
+     "cases_count": {
+      "type": "integer",
+      "title": "Cases Count",
+      "default": 0
+     },
+     "cases": {
+      "items": {
+       "$ref": "#/components/schemas/PatientCaseSummaryDTO"
+      },
+      "type": "array",
+      "title": "Cases"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "nombre",
+     "created_at",
+     "updated_at"
+    ],
+    "title": "PatientDetailDTO"
+   },
+   "PatientPage": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/PatientDTO"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "limit": {
+      "type": "integer",
+      "title": "Limit"
+     },
+     "offset": {
+      "type": "integer",
+      "title": "Offset"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "limit",
+     "offset"
+    ],
+    "title": "PatientPage"
+   },
    "PatientProfileDTO": {
     "properties": {
      "weight": {
@@ -6613,6 +7797,92 @@
     },
     "type": "object",
     "title": "PatientRecordDTO"
+   },
+   "PatientUpdate": {
+    "properties": {
+     "registro": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 255,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Registro"
+     },
+     "nombre": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 255,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Nombre"
+     },
+     "sexo": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "male",
+         "female",
+         ""
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sexo"
+     },
+     "fecha_nacimiento": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fecha Nacimiento"
+     },
+     "grupo_sanguineo": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 16
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Grupo Sanguineo"
+     },
+     "rh": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 16
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rh"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "title": "PatientUpdate",
+    "description": "Partial update: only the keys sent are applied. ``null`` is rejected except for\n``fecha_nacimiento`` (clears it). ``registro``/``nombre`` cannot be blank. Unknown fields\nare rejected (422)."
    },
    "PreanestheticAssessmentDTO": {
     "properties": {

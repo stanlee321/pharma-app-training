@@ -53,43 +53,43 @@ afterEach(() => vi.unstubAllGlobals());
 describe('Admin dashboard', () => {
   it('renders the stat tiles from the fixture (status counts read by key, not order)', async () => {
     setup(STATS);
-    const tiles = await screen.findByRole('list', { name: 'Totals' });
+    const tiles = await screen.findByRole('list', { name: 'Totales' });
     const items = within(tiles)
       .getAllByRole('listitem')
       .map((li) => li.textContent);
-    expect(items).toEqual(['Cases8', 'Drafts5', 'Finalized3', 'Documents12.3K']);
+    expect(items.map((t) => t?.replace(/\s/g, ''))).toEqual(['Pacientes0', 'Casos8', 'Borradores5', 'Finalizados3', 'Documentos12.3k']);
   });
 
   it('draws one column per non-zero day and keeps zero-filled days in the table view', async () => {
     setup(STATS);
-    await screen.findByRole('list', { name: 'Totals' });
+    await screen.findByRole('list', { name: 'Totales' });
     const bars = screen.getAllByTestId('chart-bar');
     expect(bars.map((b) => b.getAttribute('data-date'))).toEqual(['2026-09-01', '2026-09-20', '2026-09-25']);
     // Accessible summary.
-    const svg = screen.getByRole('img', { name: /Cases per day/ });
-    expect(svg).toHaveAccessibleName('Cases per day 8 cases from Aug 27 to Sep 25; busiest day Sep 20 with 5 cases.');
+    const svg = screen.getByRole('img', { name: /Casos por día/ });
+    expect(svg).toHaveAccessibleName('Casos por día 8 casos del 27 ago al 25 sep; día con más casos: 20 sep, con 5 casos.');
     // The table view carries all 30 days, zero days included, in date order.
-    const table = screen.getByRole('table', { name: 'Cases per day (UTC)' });
+    const table = screen.getByRole('table', { name: 'Casos por día (UTC)' });
     const rows = within(table).getAllByRole('row').slice(1);
     expect(rows).toHaveLength(30);
-    expect(rows[0]).toHaveTextContent('Thu, Aug 27, 2026' + '0');
-    expect(rows[5]).toHaveTextContent('Tue, Sep 1, 2026' + '2');
-    expect(rows[29]).toHaveTextContent('Fri, Sep 25, 2026' + '1');
+    expect(rows[0]).toHaveTextContent('jue, 27 de ago de 2026' + '0');
+    expect(rows[5]).toHaveTextContent('mar, 1 de sep de 2026' + '2');
+    expect(rows[29]).toHaveTextContent('vie, 25 de sep de 2026' + '1');
     expect(rows.filter((r) => r.textContent?.endsWith('0'))).toHaveLength(27);
     // Peak labelled on its cap; weekly x labels anchored on today.
     expect(screen.getByText('5', { selector: '.chart__value' })).toBeInTheDocument();
-    expect(screen.getByText('Sep 25', { selector: '.chart__tick' })).toBeInTheDocument();
-    expect(screen.getByText('Sep 18', { selector: '.chart__tick' })).toBeInTheDocument();
+    expect(screen.getByText('25 sep', { selector: '.chart__tick' })).toBeInTheDocument();
+    expect(screen.getByText('18 sep', { selector: '.chart__tick' })).toBeInTheDocument();
   });
 
   it('hover and keyboard show a tooltip for the day (value first)', async () => {
     const { user } = setup(STATS);
-    await screen.findByRole('list', { name: 'Totals' });
+    await screen.findByRole('list', { name: 'Totales' });
     const hits = document.querySelectorAll('.chart__hit');
     expect(hits).toHaveLength(30);
     fireEvent.pointerMove(hits[24]!); // 2026-09-20
     const tip = document.querySelector('.chart__tooltip')!;
-    expect(tip).toHaveTextContent('5 casesSun, Sep 20, 2026');
+    expect(tip).toHaveTextContent('5 casosdom, 20 de sep de 2026');
     // The peak day has no room above its cap (the card clips overflow): the tooltip flips below,
     // anchored on the cap, so it is neither cut off nor covering the peak label.
     expect(tip).toHaveClass('chart__tooltip--below');
@@ -105,39 +105,39 @@ describe('Admin dashboard', () => {
     expect(parseFloat(low.style.top) - TOOLTIP_H).toBeGreaterThanOrEqual(0);
 
     // Keyboard: focus the chart → latest day; ← moves back; announced politely.
-    fireEvent.pointerLeave(screen.getByRole('group', { name: 'Cases per day' }));
-    const frame = screen.getByRole('group', { name: 'Cases per day' });
+    fireEvent.pointerLeave(screen.getByRole('group', { name: 'Casos por día' }));
+    const frame = screen.getByRole('group', { name: 'Casos por día' });
     expect(frame).toHaveAttribute('tabindex', '0');
     act(() => frame.focus());
-    expect(document.querySelector('.chart__tooltip')).toHaveTextContent('1 caseFri, Sep 25, 2026');
+    expect(document.querySelector('.chart__tooltip')).toHaveTextContent('1 casovie, 25 de sep de 2026');
     await user.keyboard('{ArrowLeft}');
-    expect(document.querySelector('.chart__tooltip')).toHaveTextContent('0 casesThu, Sep 24, 2026');
-    expect(screen.getByText('Thu, Sep 24, 2026: 0 cases')).toBeInTheDocument();
+    expect(document.querySelector('.chart__tooltip')).toHaveTextContent('0 casosjue, 24 de sep de 2026');
+    expect(screen.getByText('jue, 24 de sep de 2026: 0 casos')).toBeInTheDocument();
     await user.keyboard('{Home}');
-    expect(document.querySelector('.chart__tooltip')).toHaveTextContent('Aug 27, 2026');
+    expect(document.querySelector('.chart__tooltip')).toHaveTextContent('27 de ago de 2026');
   });
 
   it('per-anesthesiologist table links to the case list filtered by owner', async () => {
     setup(STATS);
-    const link = await screen.findByRole('link', { name: /^Dra\. Ana Sintetica\s*— view cases$/ });
+    const link = await screen.findByRole('link', { name: /^Dra\. Ana Sintetica\s*— ver casos$/ });
     expect(link).toHaveAttribute('href', '/admin/cases?user_id=u-1');
     const row = link.closest('tr')!;
     expect(
       within(row)
         .getAllByRole('cell')
         .map((c) => c.textContent),
-    ).toEqual(['4', '3', expect.stringMatching(/^2026-09-25 /)]);
+    ).toEqual(['4', '3', expect.stringMatching(/^25\/09\/2026, /)]);
     // No full name → the username; no activity → a dash.
-    const beto = screen.getByRole('link', { name: /^wf-beto\s*— view cases$/ }).closest('tr')!;
+    const beto = screen.getByRole('link', { name: /^wf-beto\s*— ver casos$/ }).closest('tr')!;
     expect(within(beto).getAllByRole('cell').at(-1)).toHaveTextContent('—');
   });
 
   it('empty state: no cases and no anesthesiologists', async () => {
     setup(statsFixture('2026-09-25', {}));
-    expect(await screen.findByText('No cases in the last 30 days.')).toBeInTheDocument();
+    expect(await screen.findByText('Sin casos en los últimos 30 días.')).toBeInTheDocument();
     expect(screen.queryAllByTestId('chart-bar')).toHaveLength(0);
-    expect(screen.getByText('No anesthesiologists yet')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Create an account' })).toHaveAttribute('href', '/admin/users/new');
+    expect(screen.getByText('Aún no hay anestesiólogos')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Cree una cuenta' })).toHaveAttribute('href', '/admin/users/new');
   });
 
   it('loading then error state with Retry', async () => {
@@ -147,12 +147,12 @@ describe('Admin dashboard', () => {
         ? new Response(JSON.stringify({ detail: 'stats unavailable' }), { status: 500 })
         : new Response(JSON.stringify(STATS), { status: 200 }),
     );
-    expect(screen.getByText('Loading dashboard…')).toBeInTheDocument();
-    expect(await screen.findByText('Couldn’t load the dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Cargando el panel…')).toBeInTheDocument();
+    expect(await screen.findByText('No se pudo cargar el panel')).toBeInTheDocument();
     expect(screen.getByText(/stats unavailable/)).toBeInTheDocument();
     fail = false;
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(await screen.findByRole('list', { name: 'Totals' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByRole('list', { name: 'Totales' })).toBeInTheDocument();
   });
 });
 
@@ -179,6 +179,6 @@ describe('chart helpers', () => {
   });
 
   it('shortDay formats the UTC calendar day in UTC', () => {
-    expect(shortDay('2026-09-01')).toBe('Sep 1');
+    expect(shortDay('2026-09-01')).toBe('1 sep');
   });
 });

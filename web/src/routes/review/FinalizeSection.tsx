@@ -1,9 +1,10 @@
+import { STATUS_LABELS, UI } from '../../lib/wording';
 import { useEffect, useRef, useState } from 'react';
 import type { AnesthesiaCase } from '../../api/types';
 import { Icon } from '../../components/Icon';
 import { Section } from '../../components/Section';
 import { formatDateTime } from '../../lib/datetime';
-import { caseStore } from '../../state/caseStore';
+import { caseStore, useCaseStore } from '../../state/caseStore';
 import { finalizeErrorMessage } from '../../state/review';
 
 /**
@@ -16,6 +17,8 @@ export function FinalizeSection({ c, onFinalized }: { c: AnesthesiaCase; onFinal
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
+  // Another anesthesiologist's case: only its owner may finalize it.
+  const foreign = useCaseStore((s) => s.meta[c.id]?.foreign ?? false);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -25,16 +28,18 @@ export function FinalizeSection({ c, onFinalized }: { c: AnesthesiaCase; onFinal
 
   if (c.status === 'finalized') {
     return (
-      <Section header="Case status">
+      <Section header="Estado del caso">
         <div className="row review-row">
           <span className="row__label">
-            <Icon name="lock" size={14} /> Finalized
+            <Icon name="lock" size={14} /> {STATUS_LABELS.finalized}
           </span>
           <span className="review-row__value">{formatDateTime(c.finalized_at)}</span>
         </div>
       </Section>
     );
   }
+
+  if (foreign) return null;
 
   const finalize = async () => {
     setBusy(true);
@@ -53,13 +58,13 @@ export function FinalizeSection({ c, onFinalized }: { c: AnesthesiaCase; onFinal
 
   return (
     <Section
-      header="Finalize"
-      footer="Finalizing locks the case: every section becomes read-only and the four filled forms are stored with it. Only an admin can reopen it."
+      header="Finalizar"
+      footer="Finalizar bloquea el caso: todas las secciones pasan a solo lectura y se guardan con él los cuatro formularios llenos. Solo un administrador puede reabrirlo."
     >
       {confirming ? (
-        <div className="finalize-confirm" role="group" aria-label="Confirm finalize">
+        <div className="finalize-confirm" role="group" aria-label="Confirmar finalización">
           <p className="finalize-confirm__text">
-            Finalize this case? Unsaved changes are saved first. After this the case can no longer be edited.
+            ¿Finalizar este caso? Primero se guardan los cambios pendientes. Después ya no podrá editarse.
           </p>
           <div className="finalize-confirm__actions">
             <button
@@ -69,10 +74,10 @@ export function FinalizeSection({ c, onFinalized }: { c: AnesthesiaCase; onFinal
               disabled={busy}
               aria-busy={busy}
             >
-              {busy ? 'Finalizing…' : 'Finalize and lock'}
+              {busy ? 'Finalizando…' : 'Finalizar y bloquear'}
             </button>
             <button type="button" className="btn-plain" onClick={() => setConfirming(false)} disabled={busy}>
-              Cancel
+              {UI.cancel}
             </button>
           </div>
         </div>
@@ -87,7 +92,7 @@ export function FinalizeSection({ c, onFinalized }: { c: AnesthesiaCase; onFinal
             }}
           >
             <Icon name="lock" size={18} />
-            <span>Finalize case…</span>
+            <span>Finalizar caso…</span>
           </button>
         </div>
       )}

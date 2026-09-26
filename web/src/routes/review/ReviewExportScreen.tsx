@@ -1,3 +1,4 @@
+import { edadLabel, formatCount, SECTION_TITLES } from '../../lib/wording';
 import { useState } from 'react';
 import type { AnesthesiaCase } from '../../api/types';
 import { Section } from '../../components/Section';
@@ -24,7 +25,7 @@ export function ReviewExportScreen() {
   const [reloadKey, setReloadKey] = useState(0);
   return (
     <CaseScreen
-      title="Review & Export"
+      title={SECTION_TITLES.review}
       aside={(c) => (
         <>
           {role === 'admin' ? null : <FinalizeSection c={c} onFinalized={() => setReloadKey((k) => k + 1)} />}
@@ -47,7 +48,7 @@ function ReviewForm({ c }: { c: AnesthesiaCase }) {
       <Section header="Paciente">
         <SummaryRow label="Nombre" value={display(c.patient.nombre)} />
         <SummaryRow label="Registro" value={display(c.patient.registro)} />
-        <SummaryRow label="Edad" value={`${Math.trunc(p.age)} años`} />
+        <SummaryRow label="Edad" value={edadLabel(Math.trunc(p.age))} />
         <SummaryRow label="Sexo" value={isFemale(p.gender) ? 'F' : 'M'} />
         <SummaryRow label="Peso / Talla" value={`${p.weight.toFixed(0)} kg · ${p.height.toFixed(0)} cm`} />
         <SummaryRow label="IMC" value={imc(p).toFixed(1)} />
@@ -62,12 +63,12 @@ function ReviewForm({ c }: { c: AnesthesiaCase }) {
 
       <Section header="Técnica anestésica">
         <SummaryRow label="Modalidad" value={display(c.technique.modality)} />
-        <SummaryRow label="Fármacos registrados" value={String(c.drugs.length)} />
+        <SummaryRow label="Fármacos registrados" value={formatCount(c.drugs.length)} />
       </Section>
 
-      <Section header="Aldrete (recovery)">
+      <Section header="Aldrete (recuperación)">
         {totals.length === 0 ? (
-          <div className="row review-empty">No Aldrete score recorded</div>
+          <div className="row review-empty">Sin puntuación de Aldrete registrada</div>
         ) : (
           totals.map((col) => <SummaryRow key={col.point} label={col.point} value={`${col.total} / 10`} />)
         )}

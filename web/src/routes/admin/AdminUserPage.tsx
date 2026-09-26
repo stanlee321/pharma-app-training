@@ -1,3 +1,4 @@
+import { plural, UI } from '../../lib/wording';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { adminApi } from '../../api/adminApi';
@@ -41,21 +42,21 @@ export function AdminUserPage() {
   const user = q.data;
 
   if (!user) {
-    const notFound = q.status === 'error' && q.error != null && /not found/i.test(q.error);
+    const notFound = q.status === 'error' && q.error != null && /no encontrad/i.test(q.error);
     return (
       <>
         <Crumb />
-        <h1 className="large-title">Account</h1>
+        <h1 className="large-title">Cuenta</h1>
         <section className="section">
           <div className="section__card">
             {q.status === 'error' ? (
               <LoadError
-                title={notFound ? 'Account not found' : 'Couldn’t load the account'}
+                title={notFound ? 'Cuenta no encontrada' : 'No se pudo cargar la cuenta'}
                 error={q.error}
                 onRetry={q.reload}
               />
             ) : (
-              <LoadingRow label="Loading account…" />
+              <LoadingRow label="Cargando la cuenta…" />
             )}
           </div>
         </section>
@@ -75,11 +76,11 @@ export function AdminUserPage() {
         <span className="admin-badges">
           <RoleBadge role={user.role} />
           <AccountBadges user={user} />
-          {isSelf ? <span className="status-badge admin-badge--self">You</span> : null}
+          {isSelf ? <span className="status-badge admin-badge--self">Usted</span> : null}
         </span>
       </p>
       <p className="admin-user-dates">
-        Created {formatDateTime(user.created_at)} · Last sign-in {formatDateTime(user.last_login_at)}
+        Creada {formatDateTime(user.created_at)} · Último acceso {formatDateTime(user.last_login_at)}
       </p>
 
       <EditAccount
@@ -92,10 +93,10 @@ export function AdminUserPage() {
         }}
       />
       {isSelf ? (
-        <Section header="Your own account">
+        <Section header="Su propia cuenta">
           <p className="admin-card-note">
-            You can’t demote, deactivate, reset or delete your own account here. Use <strong>Change password</strong> in
-            the account menu to change your password.
+            Aquí no puede cambiar el rol, desactivar, restablecer ni eliminar su propia cuenta. Use{' '}
+            <strong>{UI.changePassword}</strong> en el menú de la cuenta para cambiar su contraseña.
           </p>
         </Section>
       ) : (
@@ -111,7 +112,7 @@ export function AdminUserPage() {
 function Crumb() {
   return (
     <p className="admin-crumb">
-      <Link to={paths.admin.users}>‹ Users</Link>
+      <Link to={paths.admin.users}>‹ Usuarios</Link>
     </p>
   );
 }
@@ -156,7 +157,7 @@ function EditAccount({ user, isSelf, onSaved }: { user: UserDTO; isSelf: boolean
     setBusy(true);
     try {
       const saved = await adminApi.updateUser(user.id, patch);
-      setResult({ tone: 'success', text: 'Changes saved.' });
+      setResult({ tone: 'success', text: 'Cambios guardados.' });
       onSaved(saved);
     } catch (err) {
       const guard = guardMessage(err);
@@ -169,29 +170,29 @@ function EditAccount({ user, isSelf, onSaved }: { user: UserDTO; isSelf: boolean
   };
 
   return (
-    <form noValidate onSubmit={(e) => void submit(e)} aria-label="Edit account">
+    <form noValidate onSubmit={(e) => void submit(e)} aria-label="Editar cuenta">
       <Section
-        header="Account"
-        footer={isSelf ? 'Your own role and active status can’t be changed (another admin must do it).' : undefined}
+        header="Cuenta"
+        footer={isSelf ? 'No puede cambiar su propio rol ni su estado activo (debe hacerlo otro administrador).' : undefined}
       >
-        <TextRow label="Full name" value={fullName} onChange={setFullName} error={errors.full_name} />
+        <TextRow label="Nombre completo" value={fullName} onChange={setFullName} error={errors.full_name} />
         <TextRow label="Clave" value={clave} onChange={setClave} noAutoCorrect error={errors.clave} />
         <div className="row">
           {isSelf ? (
             <>
-              <span className="row__label">Role</span>
+              <span className="row__label">Rol</span>
               <RoleBadge role={user.role} />
             </>
           ) : (
-            <SegmentedControl label="Role" showLabel options={ROLE_OPTIONS} value={role} onChange={setRole} />
+            <SegmentedControl label="Rol" showLabel options={ROLE_OPTIONS} value={role} onChange={setRole} />
           )}
         </div>
-        <ToggleRow label="Active (can sign in)" checked={active} onChange={setActive} disabled={isSelf} />
+        <ToggleRow label="Activa (puede iniciar sesión)" checked={active} onChange={setActive} disabled={isSelf} />
       </Section>
       {result ? <InlineAlert tone={result.tone}>{result.text}</InlineAlert> : null}
       <div className="admin-form-actions">
         <button type="submit" className="btn-primary btn-primary--compact" disabled={!changed || busy}>
-          {busy ? 'Saving…' : 'Save changes'}
+          {busy ? UI.saving : UI.saveChanges}
         </button>
       </div>
     </form>
@@ -242,32 +243,32 @@ function ResetPassword({ user, onReset }: { user: UserDTO; onReset: () => void }
 
   if (issued) {
     return (
-      <OneTimeSecret title="Password reset" username={user.username} password={issued} onDone={() => setIssued(null)} />
+      <OneTimeSecret title="Contraseña restablecida" username={user.username} password={issued} onDone={() => setIssued(null)} />
     );
   }
 
   return (
     <Section
-      header="Password"
-      footer="Resetting signs them out everywhere; they must choose a new password at their next sign-in."
+      header="Contraseña"
+      footer="Al restablecerla se cierran todas sus sesiones; deberá elegir una contraseña nueva en su próximo inicio de sesión."
     >
       {open ? (
-        <form noValidate onSubmit={(e) => void submit(e)} aria-label="Reset password">
-          <PasswordField label="New temporary password" value={password} onChange={setPassword} error={error} />
+        <form noValidate onSubmit={(e) => void submit(e)} aria-label="Restablecer contraseña">
+          <PasswordField label="Contraseña temporal nueva" value={password} onChange={setPassword} error={error} />
           <div className="row admin-row-actions">
             <button type="button" className="btn-plain" onClick={() => setOpen(false)}>
-              Cancel
+              {UI.cancel}
             </button>
             <button type="submit" className="btn-primary btn-primary--compact" disabled={busy}>
-              {busy ? 'Resetting…' : 'Reset password'}
+              {busy ? 'Restableciendo…' : 'Restablecer contraseña'}
             </button>
           </div>
         </form>
       ) : (
         <div className="row admin-row-actions">
-          <span className="row__label">Issue a new temporary password</span>
+          <span className="row__label">Emitir una contraseña temporal nueva</span>
           <button type="button" className="btn-plain" onClick={start}>
-            Reset password…
+            Restablecer contraseña…
           </button>
         </div>
       )}
@@ -291,7 +292,7 @@ function DeleteAccount({ user, onChanged }: { user: UserDTO; onChanged: (u: User
     setError(null);
     try {
       await adminApi.deleteUser(user.id);
-      navigate(paths.admin.users, { state: { notice: `Account ${user.username} deleted.` } satisfies UsersNotice });
+      navigate(paths.admin.users, { state: { notice: `Se eliminó la cuenta ${user.username}.` } satisfies UsersNotice });
     } catch (e) {
       setConfirming(false);
       if (ownsCases(e)) {
@@ -310,7 +311,7 @@ function DeleteAccount({ user, onChanged }: { user: UserDTO; onChanged: (u: User
     try {
       const saved = await adminApi.updateUser(user.id, { is_active: false });
       setOwns(null);
-      setDone(`${saved.username} was deactivated: they can no longer sign in, and their cases are kept.`);
+      setDone(`Se desactivó ${saved.username}: ya no puede iniciar sesión y sus casos se conservan.`);
       onChanged(saved);
     } catch (e) {
       setError(guardMessage(e) ?? errorMessage(e));
@@ -321,43 +322,43 @@ function DeleteAccount({ user, onChanged }: { user: UserDTO; onChanged: (u: User
 
   const count = owns ? /owns (\d+)/.exec(owns)?.[1] : undefined;
   return (
-    <Section header="Delete account">
+    <Section header="Eliminar cuenta">
       {done ? <InlineAlert tone="success">{done}</InlineAlert> : null}
       {error ? <InlineAlert>{error}</InlineAlert> : null}
       {owns ? (
         <InlineAlert tone="info">
           <p className="admin-alert__p">
-            {user.username} owns {count ? `${count} ${count === '1' ? 'case' : 'cases'}` : 'cases'}, so the account
-            can’t be deleted (their clinical records must be kept).
+            {user.username} tiene {count ? plural(Number(count), 'caso', 'casos') : 'casos'}, así que la cuenta no
+            puede eliminarse (sus registros clínicos deben conservarse).
             {user.is_active
-              ? ' Deactivate it instead: they can no longer sign in, and their cases stay available.'
-              : ' The account is already inactive.'}
+              ? ' Desactívela en su lugar: ya no podrá iniciar sesión y sus casos seguirán disponibles.'
+              : ' La cuenta ya está inactiva.'}
           </p>
           {user.is_active ? (
             <p className="admin-alert__p">
               <button type="button" className="btn-destructive" disabled={busy} onClick={() => void deactivate()}>
-                Deactivate instead
+                Desactivar en su lugar
               </button>{' '}
               <button type="button" className="btn-plain" onClick={() => setOwns(null)}>
-                Cancel
+                {UI.cancel}
               </button>
             </p>
           ) : null}
         </InlineAlert>
       ) : null}
       {confirming ? (
-        <div className="row admin-row-actions" role="group" aria-label={`Confirm deleting ${user.username}`}>
-          <span className="row__label">Delete {user.username} permanently? This can’t be undone.</span>
+        <div className="row admin-row-actions" role="group" aria-label={`Confirmar eliminación de ${user.username}`}>
+          <span className="row__label">¿Eliminar definitivamente {user.username}? No se puede deshacer.</span>
           <button type="button" className="btn-plain" onClick={() => setConfirming(false)} disabled={busy}>
-            Cancel
+            {UI.cancel}
           </button>
           <button type="button" className="btn-destructive" onClick={() => void doDelete()} disabled={busy}>
-            {busy ? 'Deleting…' : 'Delete'}
+            {busy ? UI.deleting : UI.delete}
           </button>
         </div>
       ) : (
         <div className="row admin-row-actions">
-          <span className="row__label">Only accounts that own no cases can be deleted.</span>
+          <span className="row__label">Solo pueden eliminarse las cuentas sin casos.</span>
           <button
             type="button"
             className="btn-plain btn-plain--destructive"
@@ -367,7 +368,7 @@ function DeleteAccount({ user, onChanged }: { user: UserDTO; onChanged: (u: User
               setOwns(null);
             }}
           >
-            Delete account…
+            Eliminar cuenta…
           </button>
         </div>
       )}

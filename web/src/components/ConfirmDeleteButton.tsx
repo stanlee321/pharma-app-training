@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { UI } from '../lib/wording';
 import { Icon } from './Icon';
 import { useReadOnly } from './readOnlyContext';
 
 /**
- * Trash button with an inline "Delete / Cancel" confirmation — the web stand-in for SwiftUI's
+ * Trash button with an inline "Eliminar / Cancelar" confirmation — the web stand-in for SwiftUI's
  * swipe-to-delete / EditButton `.onDelete` on collection rows (same idiom as the Encounter list).
- * `label` is the accessible name of the trash button (e.g. "Delete drug A"). Hidden in read-only
+ * `label` is the accessible name of the trash button (e.g. "Eliminar fármaco A"). Hidden in read-only
  * mode (a finalized case has no deletable rows).
  */
 export function ConfirmDeleteButton({ label, onDelete }: { label: string; onDelete: () => void }) {
@@ -16,10 +17,10 @@ export function ConfirmDeleteButton({ label, onDelete }: { label: string; onDele
     return (
       <span className="confirm-delete" role="group" aria-label={label}>
         <button type="button" className="btn-destructive" onClick={onDelete}>
-          Delete
+          {UI.delete}
         </button>
         <button type="button" className="btn-plain" onClick={() => setConfirming(false)}>
-          Cancel
+          {UI.cancel}
         </button>
       </span>
     );

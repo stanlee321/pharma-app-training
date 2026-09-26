@@ -4,7 +4,7 @@ import { BackendError } from '../api/backend';
 import { cloneCase, newCase } from '../api/factory';
 import { demoCase, InMemoryBackend } from '../api/inMemoryBackend';
 import type { AnesthesiaCase, DocumentDTO } from '../api/types';
-import { createCaseStore, SessionChangedError } from './caseStore';
+import { createCaseStore, SessionChangedError, setCaseViewer } from './caseStore';
 import { exportErrorMessage } from './review';
 
 /** A controllable promise, to observe optimistic state before the backend answers. */
@@ -55,6 +55,63 @@ describe('case store', () => {
     expect(store.getState().getCase(c.id)!.patient.imc).toBe(24.2);
     expect(store.getState().meta[c.id]!.pendingCreate).toBe(false);
     expect(store.getState().isDirty(c.id)).toBe(false);
+  });
+
+  it('a new case for a patient seeds age from edad and keeps the server seeds across an edit made before the create PUT answers', async () => {
+    const put = deferred<AnesthesiaCase>();
+    const bodies: AnesthesiaCase[] = [];
+    const backend = fakeBackend();
+    backend.save = vi.fn((x: AnesthesiaCase) => {
+      bodies.push(cloneCase(x));
+      return bodies.length === 1 ? put.promise : Promise.resolve(cloneCase(x));
+    });
+    const store = createCaseStore(backend);
+    const patient = { id: 'p-1', nombre: 'Ana Sintética', registro: 'SYN-A', sexo: 'female' as const, grupo_sanguineo: 'O', rh: '+', edad: 36 };
+
+    const c = store.getState().createCase('Dr. Demo', patient);
+    // Seeded locally from the patient: the Hub never shows the default age.
+    expect(c.patient.profile.age).toBe(36);
+    expect(bodies[0]!.patient.profile).toMatchObject({ age: 36, gender: 'female' });
+
+    // An edit lands before the create PUT answers…
+    store.getState().updateCase(c.id, (d) => {
+      d.patient.cama = '12';
+    });
+    // …and the server seeded the previous case's biometrics.
+    const seeded = cloneCase(bodies[0]!);
+    seeded.patient.profile = { ...seeded.patient.profile, weight: 82, height: 176, dilution: 20 };
+    put.resolve(seeded);
+    await vi.waitFor(() => expect(store.getState().meta[c.id]!.pendingCreate).toBe(false));
+
+    const local = store.getState().getCase(c.id)!;
+    expect(local.patient.cama).toBe('12');
+    expect(local.patient.profile).toMatchObject({ weight: 82, height: 176, age: 36, dilution: 20 });
+    expect(await store.getState().save(c.id)).toBe(true);
+    expect(bodies[1]!.patient.cama).toBe('12');
+    expect(bodies[1]!.patient.profile).toMatchObject({ weight: 82, height: 176, age: 36, gender: 'female', dilution: 20 });
+  });
+
+  it('a create ack never overrides a biometric the user changed meanwhile', async () => {
+    const put = deferred<AnesthesiaCase>();
+    const backend = fakeBackend();
+    let first = true;
+    backend.save = vi.fn((x: AnesthesiaCase) => {
+      if (first) {
+        first = false;
+        return put.promise;
+      }
+      return Promise.resolve(cloneCase(x));
+    });
+    const store = createCaseStore(backend);
+    const c = store.getState().createCase('o', { id: 'p-2', nombre: 'B', registro: 'R', sexo: 'male', grupo_sanguineo: '', rh: '' });
+    store.getState().updateCase(c.id, (d) => {
+      d.patient.profile.weight = 64;
+    });
+    const seeded = cloneCase(c);
+    seeded.patient.profile = { ...seeded.patient.profile, weight: 90, height: 181 };
+    put.resolve(seeded);
+    await vi.waitFor(() => expect(store.getState().meta[c.id]!.pendingCreate).toBe(false));
+    expect(store.getState().getCase(c.id)!.patient.profile).toMatchObject({ weight: 64, height: 181 });
   });
 
   it('save keeps local edits made while the PUT was in flight', async () => {
@@ -207,9 +264,50 @@ describe('case store', () => {
     const c = store.getState().createCase('o');
     await vi.waitFor(() => expect(store.getState().meta[c.id]!.saving).toBe(false));
     order.length = 0;
+    // nothing unsaved → no PUT
+    await store.getState().exportForm(c.id, 'nota_postanestesica');
+    expect(order).toEqual(['export:nota_postanestesica']);
+    order.length = 0;
+    store.getState().updateCase(c.id, (d) => {
+      d.sala = 'Q2';
+    });
     const blob = await store.getState().exportForm(c.id, 'nota_postanestesica');
     expect(blob.size).toBe(4);
     expect(order).toEqual(['save', 'export:nota_postanestesica']);
+  });
+
+  it("exportForm of a colleague's finalized case exports without a pre-save", async () => {
+    setCaseViewer(() => 'u-me');
+    try {
+      const c = newCase('Dr. Colega');
+      c.user_id = 'u-colega';
+      c.status = 'finalized';
+      const save = vi.fn(async () => {
+        throw BackendError.http(403, '{"detail":"case belongs to another anesthesiologist"}');
+      });
+      const exportForm = vi.fn(async () => new Blob(['%PDF']));
+      const store = createCaseStore(fakeBackend({ load: async () => cloneCase(c), save, exportForm }));
+      const blob = await store.getState().exportForm(c.id, 'nota_postanestesica');
+      expect(blob.size).toBe(4);
+      expect(store.getState().meta[c.id]!.foreign).toBe(true);
+      expect(save).not.toHaveBeenCalled();
+      expect(exportForm).toHaveBeenCalledWith(c.id, 'nota_postanestesica');
+    } finally {
+      setCaseViewer(() => null);
+    }
+  });
+
+  it('exportForm of an own finalized case never PUTs (the server would 409)', async () => {
+    const c = newCase('Dr. Demo');
+    c.status = 'finalized';
+    const save = vi.fn(async () => {
+      throw BackendError.http(409, '{"detail":"case is finalized"}');
+    });
+    const exportForm = vi.fn(async () => new Blob(['%PDF']));
+    const store = createCaseStore(fakeBackend({ load: async () => cloneCase(c), save, exportForm }));
+    await store.getState().exportForm(c.id, 'nota_postanestesica');
+    expect(save).not.toHaveBeenCalled();
+    expect(exportForm).toHaveBeenCalledTimes(1);
   });
 
   it('serializes overlapping saves of one case: one follow-up PUT with the latest state', async () => {
@@ -289,7 +387,7 @@ describe('case store', () => {
 
 describe('exportForm — failed pre-export save keeps its cause', () => {
   it.each([
-    ['network', new BackendError('network', 'Failed to fetch'), /could not be reached/],
+    ['network', new BackendError('network', 'Failed to fetch'), /no se pudo conectar con el servidor/],
     ['http 500', BackendError.http(500, '{"detail":"boom"}'), /HTTP 500 — boom/],
   ])('%s', async (_name, err, expected) => {
     const c = newCase('Dr. Demo');

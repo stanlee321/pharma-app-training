@@ -1,3 +1,4 @@
+import { SECTION_TITLES } from '../../lib/wording';
 import type { AnesthesiaCase } from '../../api/types';
 import { ChoiceChips } from '../../components/Choice';
 import { NumberRow, TextRow } from '../../components/FormRows';
@@ -17,7 +18,7 @@ import './monitoring.css';
  * and only summarised read-only here, because they count towards the Hub's completion flag.
  */
 export function MonitoringScreen() {
-  return <CaseScreen title="Monitoring">{(c, update) => <MonitoringForm c={c} update={update} />}</CaseScreen>;
+  return <CaseScreen title={SECTION_TITLES.monitoring}>{(c, update) => <MonitoringForm c={c} update={update} />}</CaseScreen>;
 }
 
 function MonitoringForm({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {

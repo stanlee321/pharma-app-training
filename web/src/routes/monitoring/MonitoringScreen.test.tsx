@@ -12,7 +12,7 @@ describe('MonitoringScreen', () => {
     const h = restHarness([c]);
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/monitoring`, h.backend);
-    expect(await screen.findByRole('heading', { name: 'Monitoring', level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Registro transanestésico', level: 1 })).toBeInTheDocument();
     expect(screen.getByText('Ingrese signos basales y de terminación para ver la tendencia')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'ECG' }));
@@ -47,7 +47,7 @@ describe('MonitoringScreen', () => {
     await user.clear(within(basal).getByLabelText('TA diast.'));
     expect(storeCase(c.id).trans_record.basal.ta_dia).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(h.puts).toHaveLength(1));
     const body = h.puts[0]!.body.trans_record as Record<string, unknown>;
     expect(body).toMatchObject({
@@ -75,7 +75,7 @@ describe('MonitoringScreen', () => {
     expect(screen.getByText('1 (2 puntos)')).toBeInTheDocument();
 
     await user.type(within(group('Signos de terminación')).getByLabelText('SpO₂'), '97');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(h.puts).toHaveLength(1));
     expect(h.puts[0]!.body.trans_record).toMatchObject({
       series: [{ lane: 'fc', points: [{ t: 0, value: 80 }, { t: 15, value: 76 }] }],

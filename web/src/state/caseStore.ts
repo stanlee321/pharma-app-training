@@ -8,7 +8,7 @@
  * - `delete` is optimistic: drop locally, then tell the backend.
  * - `refresh()` pulls the list (summary *shells*).
  * - `save(id)` is a full-aggregate PUT; the index is re-resolved after the await.
- * - `exportForm` = save, then POST export.
+ * - `exportForm` = save (only a dirty / not-yet-created / saving own draft), then POST export.
  *
  * Hardening beyond Swift (the list returns shells only, so a naive save could wipe a case):
  * - `load(id)` fetches the full aggregate; `updateCase`/`save` refuse to act on an unloaded shell.
@@ -34,6 +34,11 @@
  * (no `set`, no `patchMeta`, no follow-up request), so a response that was in flight for the
  * previous account can never land in the next account's store.
  *
+ * Shared cases (patients-historias plan): every anesthesiologist may READ every case, but writes
+ * are the owner's. A case read through `GET /cases/{id}` whose `user_id` is not the signed-in user
+ * (see `setCaseViewer`) is kept `foreign`: `updateCase` and `save` refuse it, so opening a
+ * colleague's case can never send a PUT, whatever its status.
+ *
  * Session drafts: `dirtyDrafts()` / `restoreDrafts()` let the auth store keep unsaved edits across
  * an involuntary sign-out (token expiry, 401) and give them back to the same user. A restored
  * draft is never re-PUT blindly: the server copy is read first, and the draft is saved only if
@@ -42,8 +47,9 @@
  * loaded server copy, for the user to re-apply or discard on the case screen.
  */
 import { createStore, useStore, type StoreApi } from 'zustand';
+import { serverMessage } from '../api/serverMessages';
 import { BackendError, errorMessage, type CaseBackend } from '../api/backend';
-import { caseTitle, cloneCase, newCase } from '../api/factory';
+import { caseTitle, cloneCase, newCase, newCaseForPatient, type PatientIdentity } from '../api/factory';
 import { CaseStoreProvider } from '../api/provider';
 import type { AnesthesiaCase, DocumentDTO, FormId } from '../api/types';
 
@@ -68,6 +74,46 @@ export interface CaseMeta {
    * so `updateCase` and `save` refuse it whatever its status.
    */
   viewOnly: boolean;
+  /**
+   * Another anesthesiologist's case (read as owner access, but `user_id` is not the signed-in
+   * user): read-only whatever its status — `updateCase` and `save` refuse it.
+   */
+  foreign: boolean;
+}
+
+const SEEDED_PROFILE_KEYS = ['weight', 'height', 'age', 'gender', 'dilution'] as const;
+const SEEDED_PATIENT_KEYS = ['nombre', 'registro', 'grupo_sanguineo', 'rh'] as const;
+
+/**
+ * After a create PUT answered while newer local edits exist: take the server's value for each
+ * seeded field (profile biometrics + identity) the user has not touched since the create was sent
+ * (`sent` = the create body). `sent` null → not a create ack, nothing adopted.
+ */
+function adoptCreateSeeds(local: AnesthesiaCase, sent: AnesthesiaCase | null, saved: AnesthesiaCase): AnesthesiaCase {
+  if (!sent) return local;
+  const profile = { ...local.patient.profile };
+  for (const k of SEEDED_PROFILE_KEYS) {
+    if (profile[k] === sent.patient.profile[k]) (profile as Record<string, unknown>)[k] = saved.patient.profile[k];
+  }
+  const patient = { ...local.patient, profile };
+  for (const k of SEEDED_PATIENT_KEYS) {
+    if (patient[k] === sent.patient[k]) patient[k] = saved.patient[k];
+  }
+  return { ...local, patient };
+}
+
+/** Who is signed in (the auth store registers it); decides which loaded cases are `foreign`. */
+let viewerSource: () => string | null = () => null;
+
+/** Called once by the auth store: the signed-in user's id, or null. */
+export function setCaseViewer(source: () => string | null): void {
+  viewerSource = source;
+}
+
+/** A case another user owns (unknown owner or viewer → not foreign). */
+function isForeign(c: Pick<AnesthesiaCase, 'user_id'>): boolean {
+  const viewer = viewerSource();
+  return !!c.user_id && !!viewer && c.user_id !== viewer;
 }
 
 /** How a case is read: as its owner (`GET /cases/{id}`) or as an admin (`GET /admin/cases/{id}`). */
@@ -81,7 +127,7 @@ export interface ActionOpts {
 /** Thrown by an action whose session ended (sign-out / account change) while it was running. */
 export class SessionChangedError extends Error {
   constructor() {
-    super('The session changed while this request was running; its result was dropped.');
+    super('La sesión cambió mientras se procesaba esta solicitud; se descartó su resultado.');
     this.name = 'SessionChangedError';
   }
 }
@@ -143,7 +189,16 @@ export interface CaseStoreState {
   isFinalized(id: string): boolean;
   clearNotice(id: string): void;
 
-  createCase(owner: string): AnesthesiaCase;
+  /**
+   * Optimistic create (PUT in the background). With `patient`, the case belongs to that patient
+   * (`patient_id`, required by the server) and starts with its identity.
+   */
+  createCase(owner: string, patient?: PatientIdentity): AnesthesiaCase;
+  /**
+   * A patient's identity changed (PATCH /patients): the server re-copied it into that patient's
+   * drafts, so clean loaded copies of them are marked unloaded (re-read on next open).
+   */
+  invalidatePatient(patientId: string): void;
   /**
    * Apply a local edit. `recipe` receives a deep copy it may mutate and/or return a replacement.
    * No-op (returns false) for an unknown id or an unloaded list shell.
@@ -209,15 +264,16 @@ const freshMeta = (over: Partial<CaseMeta> = {}): CaseMeta => ({
   loadError: null,
   notice: null,
   viewOnly: false,
+  foreign: false,
   ...over,
 });
 
 /** Readable text for a 409 on a case write. */
 function conflictNotice(detail: string | null): string {
   if (detail === 'case is finalized') {
-    return 'This case has been finalized, so it is now read-only. Unsaved changes could not be saved; the locked version was reloaded.';
+    return 'Este caso se finalizó y ahora es de solo lectura. Los cambios sin guardar no se pudieron guardar; se recargó la versión bloqueada.';
   }
-  return `The server refused the change (${detail ?? 'conflict'}). The case was reloaded.`;
+  return `El servidor rechazó el cambio (${detail ? serverMessage(detail) : 'conflicto'}). Se recargó el caso.`;
 }
 
 const isConflict = (e: unknown): e is BackendError => e instanceof BackendError && e.status === 409;
@@ -252,15 +308,15 @@ export function createCaseStore(initialBackend: CaseBackend): StoreApi<CaseStore
       const m0 = get().meta[id];
       if (!c0 || !m0) return false;
       if (!m0.loaded) {
-        patchMeta(id, { saveError: 'Case not loaded yet — refusing to overwrite it.' });
+        patchMeta(id, { saveError: 'El caso aún no se ha cargado; no se sobrescribe.' });
         return false;
       }
       if (c0.status === 'finalized') {
-        patchMeta(id, { saveError: 'This case is finalized and read-only.' });
+        patchMeta(id, { saveError: 'Este caso está finalizado y es de solo lectura.' });
         return false;
       }
-      if (m0.viewOnly) {
-        patchMeta(id, { saveError: 'This case is open read-only.' });
+      if (m0.viewOnly || m0.foreign) {
+        patchMeta(id, { saveError: 'Este caso está abierto en modo de solo lectura.' });
         return false;
       }
       const rev = m0.rev;
@@ -299,10 +355,17 @@ export function createCaseStore(initialBackend: CaseBackend): StoreApi<CaseStore
       } else {
         // Newer local edits exist: keep them (still dirty), just record the server ack — and the
         // server-owned lifecycle fields, so `updated_at` matches the server's (refresh / drafts).
+        // On the CREATE ack, also adopt what the server seeded (the patient's identity, the age
+        // from fecha_nacimiento, the previous case's biometrics) wherever the local copy still
+        // holds exactly what the create sent — so the next PUT does not overwrite the seeds.
         set((s) => ({
           cases: s.cases.map((c) =>
             c.id === id
-              ? { ...c, status: saved.status, updated_at: saved.updated_at, finalized_at: saved.finalized_at, user_id: saved.user_id }
+              ? adoptCreateSeeds(
+                  { ...c, status: saved.status, updated_at: saved.updated_at, finalized_at: saved.finalized_at, user_id: saved.user_id },
+                  m0.pendingCreate ? c0 : null,
+                  saved,
+                )
               : c,
           ),
         }));
@@ -376,8 +439,8 @@ export function createCaseStore(initialBackend: CaseBackend): StoreApi<CaseStore
         if (get().meta[id]?.notice) patchMeta(id, { notice: null });
       },
 
-      createCase(owner) {
-        const c = newCase(owner);
+      createCase(owner, patient) {
+        const c = patient ? newCaseForPatient(owner, patient) : newCase(owner);
         set((s) => ({
           cases: [...s.cases, c],
           meta: { ...s.meta, [c.id]: freshMeta({ loaded: true, pendingCreate: true, rev: 1 }) },
@@ -392,7 +455,7 @@ export function createCaseStore(initialBackend: CaseBackend): StoreApi<CaseStore
         const m = meta[id];
         if (i < 0 || !m?.loaded) return false;
         if (cases[i]!.status === 'finalized') return false; // locked
-        if (m.viewOnly) return false; // an admin's read-only copy
+        if (m.viewOnly || m.foreign) return false; // an admin's / a colleague's read-only copy
         const draft = cloneCase(cases[i]!);
         const next = recipe(draft) ?? draft;
         next.id = id; // the id is client-owned and immutable
@@ -424,7 +487,7 @@ export function createCaseStore(initialBackend: CaseBackend): StoreApi<CaseStore
           if (ep !== epoch) return;
           // Not deleted (e.g. 409 finalized): let the next refresh show it again.
           tombstones.delete(id);
-          set({ listError: `Delete failed: ${errorMessage(e)}` });
+          set({ listError: `No se pudo eliminar: ${errorMessage(e)}` });
           void get().refresh();
         }
       },
@@ -470,6 +533,21 @@ export function createCaseStore(initialBackend: CaseBackend): StoreApi<CaseStore
             }
           }
           return { cases, meta, listStatus: 'ready', listError: null };
+        });
+      },
+
+      invalidatePatient(patientId) {
+        set((s) => {
+          let changed = false;
+          const meta = { ...s.meta };
+          for (const c of s.cases) {
+            const m = meta[c.id];
+            if (c.patient_id !== patientId || !m?.loaded || m.pendingCreate || m.saving) continue;
+            if (m.rev !== m.savedRev) continue; // unsaved edits: the next save gets the server copy
+            meta[c.id] = { ...m, loaded: false };
+            changed = true;
+          }
+          return changed ? { meta } : {};
         });
       },
 
@@ -527,6 +605,7 @@ export function createCaseStore(initialBackend: CaseBackend): StoreApi<CaseStore
                 pendingCreate: false,
                 savedRev: m.rev,
                 viewOnly,
+                foreign: !viewOnly && isForeign(full),
               },
             },
           };
@@ -560,13 +639,21 @@ export function createCaseStore(initialBackend: CaseBackend): StoreApi<CaseStore
       async exportForm(id, formId, opts = {}) {
         const ep = epoch;
         await ensureLoaded(id, ep, opts.access);
-        // An admin's read-only copy is never saved (and never dirty): export what the server has.
-        if (!get().meta[id]?.viewOnly) {
+        // Save first only when there is something unsaved (the rule generateDocument/finalize
+        // use); an admin's or a colleague's read-only copy, or a finalized case, is never saved:
+        // export what the server has.
+        const m = get().meta[id];
+        if (
+          !m?.viewOnly &&
+          !m?.foreign &&
+          !get().isFinalized(id) &&
+          (get().isDirty(id) || m?.pendingCreate || inflight.has(id))
+        ) {
           const ok = await get().save(id);
           if (ep !== epoch) throw new SessionChangedError();
           if (!ok) {
-            const why = get().meta[id]?.saveError ?? 'unknown error';
-            throw new Error(`Could not save the case before export: ${why}`, { cause: lastSaveError.get(id) });
+            const why = get().meta[id]?.saveError ?? 'error desconocido';
+            throw new Error(`No se pudo guardar el caso antes de exportar: ${why}`, { cause: lastSaveError.get(id) });
           }
         }
         const pdf = await get().backend.exportForm(id, formId);
@@ -578,13 +665,13 @@ export function createCaseStore(initialBackend: CaseBackend): StoreApi<CaseStore
         const ep = epoch;
         await ensureLoaded(id, ep, opts.access);
         const m0 = get().meta[id];
-        if (!m0?.loaded) throw new Error(`Could not load the case: ${m0?.loadError ?? 'unknown error'}`);
+        if (!m0?.loaded) throw new Error(`No se pudo cargar el caso: ${m0?.loadError ?? 'error desconocido'}`);
         if (get().isDirty(id) || m0.pendingCreate || inflight.has(id)) {
           const ok = await get().save(id);
           if (ep !== epoch) throw new SessionChangedError();
           if (!ok) {
-            const why = get().meta[id]?.notice ?? get().meta[id]?.saveError ?? 'unknown error';
-            throw new Error(`Could not save the case before finalizing: ${why}`, { cause: lastSaveError.get(id) });
+            const why = get().meta[id]?.notice ?? get().meta[id]?.saveError ?? 'error desconocido';
+            throw new Error(`No se pudo guardar el caso antes de finalizar: ${why}`, { cause: lastSaveError.get(id) });
           }
         }
         let locked: AnesthesiaCase;
@@ -620,8 +707,8 @@ export function createCaseStore(initialBackend: CaseBackend): StoreApi<CaseStore
           const ok = await get().save(id);
           if (ep !== epoch) throw new SessionChangedError();
           if (!ok) {
-            const why = get().meta[id]?.notice ?? get().meta[id]?.saveError ?? 'unknown error';
-            throw new Error(`Could not save the case before generating the form: ${why}`, {
+            const why = get().meta[id]?.notice ?? get().meta[id]?.saveError ?? 'error desconocido';
+            throw new Error(`No se pudo guardar el caso antes de generar el formulario: ${why}`, {
               cause: lastSaveError.get(id),
             });
           }

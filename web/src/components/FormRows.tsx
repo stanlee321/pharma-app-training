@@ -293,9 +293,28 @@ export function StepperRow({ label, value, onChange, unit, step, min, max, decim
         {unit ?? ''}
       </span>
       <div className="stepper__buttons">
-        <RepeatButton kind="minus" label={`Decrease ${label}`} onStep={() => bump(-step)} disabled={off || value <= min} />
-        <RepeatButton kind="plus" label={`Increase ${label}`} onStep={() => bump(step)} disabled={off || value >= max} />
+        <RepeatButton kind="minus" label={`Disminuir ${label}`} onStep={() => bump(-step)} disabled={off || value <= min} />
+        <RepeatButton kind="plus" label={`Aumentar ${label}`} onStep={() => bump(step)} disabled={off || value >= max} />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Read-only label + value row (e.g. the patient identity on a case). The value is plain text
+ * (never an input), so it reads the same in editable and read-only screens.
+ */
+export function InfoRow({ label, value, placeholder = '—' }: { label: string; value: string | null | undefined; placeholder?: string }) {
+  const id = useId();
+  const text = value?.trim() ? value : null;
+  return (
+    <div className="row info-row">
+      <span className="row__label" id={id}>
+        {label}
+      </span>
+      <span className={`info-row__value${text ? '' : ' info-row__value--empty'}`} aria-labelledby={id}>
+        {text ?? placeholder}
+      </span>
     </div>
   );
 }

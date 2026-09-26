@@ -36,16 +36,29 @@ const adminSections = sectionPaths((id) => `/admin/cases/${id}`);
 export const paths = {
   login: '/login',
   changePassword: '/change-password',
+  /** Legacy list URL: redirects to the patient list. */
   cases: '/cases',
   ...ownerSections,
+  /** Historias clínicas: the patient list (the anesthesiologist's landing). */
+  pacientes: '/pacientes',
+  pacienteNuevo: '/pacientes/nuevo',
+  /** One patient: identity + their cases. */
+  paciente: (id: string) => `/pacientes/${id}`,
+  /** The patient screen with the identity form open. */
+  pacienteEditar: (id: string) => `/pacientes/${id}?editar=1`,
   admin: {
     dashboard: '/admin',
     cases: '/admin/cases',
     /** The case list filtered to one owner (the dashboard's per-anesthesiologist links). */
     casesFor: (userId: string) => `/admin/cases?user_id=${encodeURIComponent(userId)}`,
+    /** The case list filtered to one patient (from the patient page). */
+    casesForPatient: (patientId: string) => `/admin/cases?patient_id=${encodeURIComponent(patientId)}`,
     case: adminSections.hub,
     /** The read-only section screens of one case, for an admin. */
     caseSections: adminSections,
+    /** Historias clínicas (every patient, read-only for the admin; delete when empty). */
+    patients: '/admin/patients',
+    patient: (id: string) => `/admin/patients/${id}`,
     users: '/admin/users',
     newUser: '/admin/users/new',
     user: (id: string) => `/admin/users/${id}`,

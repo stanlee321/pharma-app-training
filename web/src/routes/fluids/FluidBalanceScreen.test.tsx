@@ -10,7 +10,7 @@ describe('FluidBalanceScreen', () => {
     const h = restHarness([c]);
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/fluids`, h.backend);
-    expect(await screen.findByRole('heading', { name: 'Balance hídrico', level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Balance de líquidos', level: 1 })).toBeInTheDocument();
     expect(screen.getByTestId('balance-1hr')).toHaveTextContent('0');
 
     await user.type(screen.getByLabelText('NCL 1hr'), '300');
@@ -44,7 +44,7 @@ describe('FluidBalanceScreen', () => {
       Diuresis: { '1hr': 150.5 },
     });
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(h.puts).toHaveLength(1));
     expect(h.puts[0]!.body.fluid_balance).toMatchObject({
       matrix: { NCL: { '1hr': 300 }, 'Ingreso Critaloide': { '1hr': 500 }, Diuresis: { '1hr': 150.5 } },

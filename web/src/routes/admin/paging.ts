@@ -1,3 +1,5 @@
+import { formatCount } from '../../lib/wording';
+
 /** Paging + URL-filter helpers shared by the admin tables (`/admin/cases`, `/admin/documents`). */
 
 /** Rows per page (the server allows 1–200). */
@@ -13,10 +15,10 @@ export function pageFrom(sp: URLSearchParams): number {
 
 export const offsetOf = (page: number, size = PAGE_SIZE) => (page - 1) * size;
 
-/** "26–50 of 73" (or "0 of 0"). */
+/** "26–50 de 73" (or "0 de 0"), es-MX numbers. */
 export function rangeLabel(offset: number, shown: number, total: number): string {
-  if (shown === 0) return `0 of ${total.toLocaleString('en-US')}`;
-  return `${(offset + 1).toLocaleString('en-US')}–${(offset + shown).toLocaleString('en-US')} of ${total.toLocaleString('en-US')}`;
+  if (shown === 0) return `0 de ${formatCount(total)}`;
+  return `${formatCount(offset + 1)}–${formatCount(offset + shown)} de ${formatCount(total)}`;
 }
 
 export const pageCount = (total: number, size = PAGE_SIZE) => Math.max(1, Math.ceil(total / size));

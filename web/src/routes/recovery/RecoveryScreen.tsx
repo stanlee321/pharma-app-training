@@ -1,3 +1,4 @@
+import { SECTION_TITLES } from '../../lib/wording';
 import type { AnesthesiaCase } from '../../api/types';
 import { SegmentedControl } from '../../components/Choice';
 import { StepperRow, TextRow } from '../../components/FormRows';
@@ -23,7 +24,7 @@ const SCORES = ['0', '1', '2'] as const;
  * (Ramsay / Bromage / ENA steppers into `recovery.otras`) and the discharge fields.
  */
 export function RecoveryScreen() {
-  return <CaseScreen title="Recovery">{(c, update) => <RecoveryForm c={c} update={update} />}</CaseScreen>;
+  return <CaseScreen title={SECTION_TITLES.recovery}>{(c, update) => <RecoveryForm c={c} update={update} />}</CaseScreen>;
 }
 
 function RecoveryForm({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {

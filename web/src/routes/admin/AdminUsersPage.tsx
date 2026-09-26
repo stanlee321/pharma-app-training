@@ -1,3 +1,4 @@
+import { plural, UI } from '../../lib/wording';
 import { useId } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { adminApi, type UserFilters } from '../../api/adminApi';
@@ -58,10 +59,10 @@ export function AdminUsersPage() {
   return (
     <>
       <div className="admin-head">
-        <h1 className="large-title">Users</h1>
+        <h1 className="large-title">Usuarios</h1>
         <Link to={paths.admin.newUser} className="btn-primary btn-primary--compact admin-head__action">
           <Icon name="plus" size={18} />
-          New user
+          Nuevo usuario
         </Link>
       </div>
 
@@ -73,27 +74,27 @@ export function AdminUsersPage() {
             className="btn-plain"
             onClick={() => navigate(location, { replace: true, state: null })}
           >
-            Dismiss
+            {UI.dismiss}
           </button>
         </InlineAlert>
       ) : null}
 
-      <form className="admin-filters" role="search" aria-label="Filter users" onSubmit={(e) => e.preventDefault()}>
+      <form className="admin-filters" role="search" aria-label="Filtrar usuarios" onSubmit={(e) => e.preventDefault()}>
         <div className="admin-filter admin-filter--grow">
-          <label htmlFor={searchId}>Search</label>
+          <label htmlFor={searchId}>{UI.search}</label>
           <input
             id={searchId}
             type="search"
             value={search}
-            placeholder="Username, name or clave"
+            placeholder="Usuario, nombre o clave"
             autoComplete="off"
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <div className="admin-filter">
-          <label htmlFor={roleId}>Role</label>
+          <label htmlFor={roleId}>Rol</label>
           <select id={roleId} value={f.role ?? ''} onChange={(e) => setParam('role', e.target.value)}>
-            <option value="">All roles</option>
+            <option value="">Todos los roles</option>
             {(Object.keys(ROLE_LABELS) as UserRole[]).map((r) => (
               <option key={r} value={r}>
                 {ROLE_LABELS[r]}
@@ -102,11 +103,11 @@ export function AdminUsersPage() {
           </select>
         </div>
         <div className="admin-filter">
-          <label htmlFor={activeId}>Status</label>
+          <label htmlFor={activeId}>Estado</label>
           <select id={activeId} value={String(f.is_active)} onChange={(e) => setParam('active', e.target.value)}>
-            <option value="">Any status</option>
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
+            <option value="">Cualquier estado</option>
+            <option value="true">Activa</option>
+            <option value="false">Inactiva</option>
           </select>
         </div>
       </form>
@@ -114,48 +115,48 @@ export function AdminUsersPage() {
       <Section
         header={
           users
-            ? `${users.length} ${users.length === 1 ? 'account' : 'accounts'}${filtered ? ' (filtered)' : ''}`
-            : 'Accounts'
+            ? `${plural(users.length, 'cuenta', 'cuentas')}${filtered ? UI.filtered : ''}`
+            : 'Cuentas'
         }
       >
         {!users ? (
           q.status === 'error' ? (
-            <LoadError title="Couldn’t load users" error={q.error} onRetry={q.reload} />
+            <LoadError title="No se pudieron cargar los usuarios" error={q.error} onRetry={q.reload} />
           ) : (
-            <LoadingRow label="Loading users…" />
+            <LoadingRow label="Cargando usuarios…" />
           )
         ) : (
           <div className={q.status === 'loading' ? 'admin-refetching' : undefined} aria-busy={q.status === 'loading'}>
             {q.status === 'error' ? (
               <InlineAlert>
-                Couldn’t refresh: {q.error}{' '}
+                {UI.couldNotRefresh} {q.error}{' '}
                 <button type="button" className="btn-plain" onClick={q.reload}>
-                  Retry
+                  {UI.retry}
                 </button>
               </InlineAlert>
             ) : null}
             {users.length === 0 ? (
               <EmptyState
                 icon="person"
-                title={filtered ? 'No matching accounts' : 'No accounts yet'}
+                title={filtered ? 'Ninguna cuenta coincide' : 'Aún no hay cuentas'}
                 description={
-                  filtered ? 'Try another search or clear the filters.' : 'Create the first account with New user.'
+                  filtered ? 'Pruebe otra búsqueda o limpie los filtros.' : 'Cree la primera cuenta con «Nuevo usuario».'
                 }
               />
             ) : (
               <div className="admin-table-scroll">
                 <table className="admin-table">
-                  <caption className="visually-hidden">Accounts</caption>
+                  <caption className="visually-hidden">Cuentas</caption>
                   <thead>
                     <tr>
-                      <th scope="col">Account</th>
+                      <th scope="col">Cuenta</th>
                       <th scope="col" className="hide-narrow">
                         Clave
                       </th>
-                      <th scope="col">Role</th>
-                      <th scope="col">Status</th>
+                      <th scope="col">Rol</th>
+                      <th scope="col">Estado</th>
                       <th scope="col" className="hide-narrow">
-                        Last sign-in
+                        Último acceso
                       </th>
                     </tr>
                   </thead>

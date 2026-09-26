@@ -1,3 +1,4 @@
+import { UI } from '../../lib/wording';
 import { useId, useState, type ReactNode } from 'react';
 import { Icon } from '../../components/Icon';
 
@@ -11,7 +12,7 @@ export function OneTimeSecret({
   username,
   password,
   onDone,
-  doneLabel = 'Done',
+  doneLabel = UI.done,
   children,
 }: {
   title: string;
@@ -41,12 +42,12 @@ export function OneTimeSecret({
         {title}
       </h2>
       <p className="secret-card__text">
-        Temporary password for <strong>{username}</strong>. Give it to them privately; they must change it the first
-        time they sign in.
+        Contraseña temporal de <strong>{username}</strong>. Entréguela en privado; deberá cambiarla la primera vez que
+        inicie sesión.
       </p>
       <div className="secret-card__value-row">
         <label className="visually-hidden" htmlFor={valueId}>
-          Temporary password
+          Contraseña temporal
         </label>
         <input
           id={valueId}
@@ -58,17 +59,17 @@ export function OneTimeSecret({
           onFocus={(e) => e.currentTarget.select()}
         />
         <button type="button" className="btn-plain" onClick={() => void copy()}>
-          {copied === 'ok' ? 'Copied' : 'Copy'}
+          {copied === 'ok' ? 'Copiada' : 'Copiar'}
         </button>
       </div>
       {copied === 'failed' ? (
         <p className="secret-card__warn" role="alert">
-          Couldn’t copy automatically — select the password and copy it by hand.
+          No se pudo copiar automáticamente: seleccione la contraseña y cópiela a mano.
         </p>
       ) : null}
       <p className="secret-card__warn">
-        <Icon name="warning" size={16} /> It is shown only once. After you leave this screen it can’t be displayed again
-        (reset the password to issue a new one).
+        <Icon name="warning" size={16} /> Solo se muestra una vez. Al salir de esta pantalla ya no podrá verse de nuevo
+        (restablezca la contraseña para emitir otra).
       </p>
       <div className="secret-card__actions">
         {children}

@@ -24,7 +24,7 @@ export function SectionLinkRow({
       <span className="link-row__title">{title}</span>
       {filled ? (
         <span className="link-row__check">
-          <Icon name="checkCircle" size={16} title="Completed" />
+          <Icon name="checkCircle" size={16} title="Completado" />
         </span>
       ) : null}
       <span className="link-row__chevron">

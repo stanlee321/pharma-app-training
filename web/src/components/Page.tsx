@@ -11,7 +11,7 @@ export interface BackLinkProps {
 /** iOS-style back button ("‹ Label"). */
 export function BackLink({ to, label }: BackLinkProps) {
   return (
-    <Link className="back-link" to={to} aria-label={`Back to ${label}`}>
+    <Link className="back-link" to={to} aria-label={`Volver a ${label}`}>
       <Icon name="chevronLeft" size={24} />
       <span>{label}</span>
     </Link>

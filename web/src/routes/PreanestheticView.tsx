@@ -1,3 +1,4 @@
+import { SECTION_TITLES } from '../lib/wording';
 import type { PreanestheticAssessment } from '../api/types';
 import { ChoiceChips, ToggleRow } from '../components/Choice';
 import { NumberRow, TextRow } from '../components/FormRows';
@@ -38,7 +39,7 @@ type TextKey = 'alergia' | 'dentadura' | 'estado_psiquico';
 /** N3 — Preanesthetic Assessment (Swift PreanestheticView). */
 export function PreanestheticView() {
   return (
-    <CaseScreen title="Preanesthetic">
+    <CaseScreen title={SECTION_TITLES.preanesthetic}>
       {(c, update) => {
         const a = c.pre_assessment;
         const edit = (fn: (pa: PreanestheticAssessment) => void) =>
@@ -59,7 +60,7 @@ export function PreanestheticView() {
         );
         return (
           <>
-            <Section header="History">
+            <Section header="Antecedentes">
               {text('Alergias', 'alergia', 'Ninguna')}
               {text('Dentadura', 'dentadura')}
               {/* The exported forms read `cuello` (crosswalk ant_cuello); Swift wrote `viaAerea`.
@@ -118,7 +119,7 @@ export function PreanestheticView() {
               />
             </Section>
 
-            <Section header="Labs">
+            <Section header="Laboratorios">
               {LABS.map(([label, key]) => (
                 <NumberRow
                   key={key}
@@ -136,9 +137,9 @@ export function PreanestheticView() {
 
             <Section header="Premedicación">
               <TextRow
-                label="Notes"
+                label="Notas"
                 multiline
-                placeholder="Notes"
+                placeholder="Notas"
                 value={a.premedicacion}
                 onChange={(v) =>
                   edit((pa) => {

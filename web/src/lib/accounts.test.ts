@@ -19,12 +19,12 @@ describe('username rules (mirror AdminUserCreate)', () => {
     ['dra.demo', null],
     ['A1', null],
     ['user_name-01@host', null],
-    ['', 'Enter a username.'],
-    ['   ', 'Enter a username.'],
+    ['', 'Escriba un nombre de usuario.'],
+    ['   ', 'Escriba un nombre de usuario.'],
     ['.lead', USERNAME_RULE],
     ['has space', USERNAME_RULE],
     ['ñandu', USERNAME_RULE],
-    ['a'.repeat(65), 'At most 64 characters.'],
+    ['a'.repeat(65), 'Como máximo 64 caracteres.'],
   ])('%j → %j', (u, expected) => {
     expect(usernameProblem(u)).toBe(expected);
   });
@@ -34,9 +34,9 @@ describe('username rules (mirror AdminUserCreate)', () => {
   });
 
   it('password length 8–128', () => {
-    expect(passwordProblem('1234567')).toBe('At least 8 characters.');
+    expect(passwordProblem('1234567')).toBe('Al menos 8 caracteres.');
     expect(passwordProblem('12345678')).toBeNull();
-    expect(passwordProblem('x'.repeat(129))).toBe('At most 128 characters.');
+    expect(passwordProblem('x'.repeat(129))).toBe('Como máximo 128 caracteres.');
   });
 });
 
@@ -67,7 +67,7 @@ describe('server errors → field / guard messages', () => {
         },
       ],
     });
-    expect(fieldErrors(e)).toEqual({ username: "Usernames starting with 'gw-' are reserved." });
+    expect(fieldErrors(e)).toEqual({ username: 'Los nombres de usuario que empiezan con «gw-» están reservados.' });
   });
 
   it('maps the pattern 422 to the readable rule and a short password to the password field', () => {
@@ -77,18 +77,18 @@ describe('server errors → field / guard messages', () => {
         { type: 'string_too_short', loc: ['body', 'password'], msg: 'String should have at least 8 characters' },
       ],
     });
-    expect(fieldErrors(e)).toEqual({ username: USERNAME_RULE, password: 'String should have at least 8 characters.' });
+    expect(fieldErrors(e)).toEqual({ username: USERNAME_RULE, password: 'Debe tener al menos 8 caracteres.' });
   });
 
   it('a taken username (409) goes to the username field', () => {
     expect(fieldErrors(httpErr(409, { detail: 'username already exists' }))).toEqual({
-      username: 'This username is already taken.',
+      username: 'Ese nombre de usuario ya está en uso.',
     });
   });
 
   it('guards and "owns cases" are recognised', () => {
-    expect(guardMessage(httpErr(409, { detail: SELF_GUARD_DETAIL }))).toMatch(/your own account/);
-    expect(guardMessage(httpErr(409, { detail: LAST_ADMIN_DETAIL }))).toMatch(/last active admin/);
+    expect(guardMessage(httpErr(409, { detail: SELF_GUARD_DETAIL }))).toMatch(/su propia cuenta/);
+    expect(guardMessage(httpErr(409, { detail: LAST_ADMIN_DETAIL }))).toMatch(/último administrador activo/);
     const owns = httpErr(409, { detail: 'user owns 2 case(s); deactivate the account instead' });
     expect(guardMessage(owns)).toBeNull();
     expect(ownsCases(owns)).toBe(true);

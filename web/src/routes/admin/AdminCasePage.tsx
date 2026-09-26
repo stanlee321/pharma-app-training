@@ -1,3 +1,4 @@
+import { STATUS_LABELS, UI } from '../../lib/wording';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { adminApi } from '../../api/adminApi';
@@ -43,7 +44,7 @@ const VIEWER: ReadOnlyState = { readOnly: true, reason: 'viewer' };
  */
 export function AdminCasePage() {
   const { id = '' } = useParams();
-  const scope: CaseScope = { ...ADMIN_SCOPE, list: { to: casesListUrl(paths.admin.cases), label: 'Cases' } };
+  const scope: CaseScope = { ...ADMIN_SCOPE, list: { to: casesListUrl(paths.admin.cases), label: 'Casos' } };
   return (
     <CaseScopeContext.Provider value={scope}>
       <ReadOnlyProvider value={VIEWER}>
@@ -82,16 +83,29 @@ function AdminCaseActions({ c }: { c: AnesthesiaCase }) {
   const [reloadKey, setReloadKey] = useState(0);
   return (
     <ReadOnlyProvider value={{ readOnly: false, reason: null }}>
-      <Section header="Case">
-        <Fact label="Status" value={<StatusBadge status={c.status} />} />
-        <Fact label="Account" value={<OwnerAccount userId={c.user_id} />} />
-        <Fact label="Anesthesiologist (form)" value={c.owner.trim() || '—'} />
-        <Fact label="Created" value={formatDateTime(c.created_at)} />
-        <Fact label="Last change" value={formatDateTime(c.updated_at)} />
-        {c.status === 'finalized' ? <Fact label="Finalized" value={formatDateTime(c.finalized_at)} /> : null}
+      <Section header="Caso">
+        <Fact label="Estado" value={<StatusBadge status={c.status} />} />
+        <Fact
+          label="Paciente"
+          value={
+            c.patient_id ? (
+              <Link className="admin-table__link" to={paths.admin.patient(c.patient_id)}>
+                {c.patient.nombre.trim() || 'Sin nombre'}
+                {c.patient.registro ? ` · Registro ${c.patient.registro}` : ''}
+              </Link>
+            ) : (
+              c.patient.nombre.trim() || '—'
+            )
+          }
+        />
+        <Fact label="Cuenta" value={<OwnerAccount userId={c.user_id} />} />
+        <Fact label="Anestesiólogo (formulario)" value={c.owner.trim() || '—'} />
+        <Fact label="Creado" value={formatDateTime(c.created_at)} />
+        <Fact label="Último cambio" value={formatDateTime(c.updated_at)} />
+        {c.status === 'finalized' ? <Fact label={STATUS_LABELS.finalized} value={formatDateTime(c.finalized_at)} /> : null}
         <div className="row">
           <Link className="btn-plain admin-inline-link" to={paths.admin.documentsFor(c.id)}>
-            This case in the document index ›
+            Este caso en el índice de documentos ›
           </Link>
         </div>
       </Section>
@@ -121,8 +135,8 @@ function OwnerAccount({ userId }: { userId: string | null }) {
     );
   }
   if (!userId) return <>—</>;
-  if (q.status === 'loading') return <>Loading…</>;
-  return <>Account {userId.slice(0, 8)}…</>;
+  if (q.status === 'loading') return <>{UI.loading}</>;
+  return <>Cuenta {userId.slice(0, 8)}…</>;
 }
 
 function Fact({ label, value }: { label: string; value: ReactNode }) {
@@ -152,7 +166,7 @@ function ReopenSection({ c, onReopened }: { c: AnesthesiaCase; onReopened: () =>
       onReopened();
     } catch (e) {
       if (!mounted.current) return;
-      setError(`Reopen failed: ${errorMessage(e)}`);
+      setError(`No se pudo reabrir: ${errorMessage(e)}`);
       // e.g. 409 "case is not finalized" (reopened elsewhere): show the server's current copy.
       void caseStore.getState().load(c.id, { force: true, discard: true, access: 'admin' });
     } finally {
@@ -162,15 +176,15 @@ function ReopenSection({ c, onReopened }: { c: AnesthesiaCase; onReopened: () =>
 
   return (
     <Section
-      header="Reopen"
-      footer="Reopening turns the case back into a draft so its anesthesiologist can edit it again. The stored documents are kept; finalizing again stores a new set."
+      header="Reabrir"
+      footer="Reabrir devuelve el caso a borrador para que su anestesiólogo pueda editarlo de nuevo. Los documentos guardados se conservan; al finalizar de nuevo se guarda un juego nuevo."
     >
       {error ? <InlineAlert>{error}</InlineAlert> : null}
       {confirming ? (
-        <div className="row admin-row-actions" role="group" aria-label="Confirm reopen">
-          <span className="row__label">Reopen “{caseTitle(c)}” as a draft?</span>
+        <div className="row admin-row-actions" role="group" aria-label="Confirmar reapertura">
+          <span className="row__label">¿Reabrir «{caseTitle(c)}» como borrador?</span>
           <button type="button" className="btn-plain" onClick={() => setConfirming(false)} disabled={busy}>
-            Cancel
+            {UI.cancel}
           </button>
           <button
             type="button"
@@ -179,13 +193,13 @@ function ReopenSection({ c, onReopened }: { c: AnesthesiaCase; onReopened: () =>
             disabled={busy}
             aria-busy={busy}
           >
-            {busy ? 'Reopening…' : 'Reopen case'}
+            {busy ? 'Reabriendo…' : 'Reabrir caso'}
           </button>
         </div>
       ) : (
         <div className="row admin-row-actions">
           <span className="row__label">
-            <Icon name="lock" size={14} /> Finalized {formatDateTime(c.finalized_at)}
+            <Icon name="lock" size={14} /> {STATUS_LABELS.finalized} {formatDateTime(c.finalized_at)}
           </span>
           <button
             type="button"
@@ -195,7 +209,7 @@ function ReopenSection({ c, onReopened }: { c: AnesthesiaCase; onReopened: () =>
               setConfirming(true);
             }}
           >
-            Reopen…
+            Reabrir…
           </button>
         </div>
       )}
@@ -219,34 +233,34 @@ function DeleteCaseSection({ c }: { c: AnesthesiaCase }) {
       await adminApi.deleteCase(c.id);
     } catch (e) {
       if (mounted.current) {
-        setError(`Delete failed: ${errorMessage(e)}`);
+        setError(`No se pudo eliminar: ${errorMessage(e)}`);
         setBusy(false);
       }
       return;
     }
     caseStore.getState().forget(c.id);
-    const state: CasesNotice = { notice: `Deleted case “${title}” and its documents.` };
+    const state: CasesNotice = { notice: `Se eliminó el caso «${title}» y sus documentos.` };
     navigate(casesListUrl(paths.admin.cases), { replace: true, state });
   };
 
   return (
-    <Section header="Delete case">
+    <Section header="Eliminar caso">
       {error ? <InlineAlert>{error}</InlineAlert> : null}
       {confirming ? (
-        <div className="row admin-row-actions" role="group" aria-label="Confirm deleting the case">
+        <div className="row admin-row-actions" role="group" aria-label="Confirmar eliminación del caso">
           <span className="row__label">
-            Delete “{caseTitle(c)}” and all its stored documents permanently? This can’t be undone.
+            ¿Eliminar definitivamente «{caseTitle(c)}» y todos sus documentos guardados? No se puede deshacer.
           </span>
           <button type="button" className="btn-plain" onClick={() => setConfirming(false)} disabled={busy}>
-            Cancel
+            {UI.cancel}
           </button>
           <button type="button" className="btn-destructive" onClick={() => void doDelete()} disabled={busy}>
-            {busy ? 'Deleting…' : 'Delete case'}
+            {busy ? UI.deleting : 'Eliminar caso'}
           </button>
         </div>
       ) : (
         <div className="row admin-row-actions">
-          <span className="row__label">Removes the case, finalized or not, with its documents.</span>
+          <span className="row__label">Elimina el caso, finalizado o no, con sus documentos.</span>
           <button
             type="button"
             className="btn-plain btn-plain--destructive"
@@ -255,7 +269,7 @@ function DeleteCaseSection({ c }: { c: AnesthesiaCase }) {
               setConfirming(true);
             }}
           >
-            Delete case…
+            Eliminar caso…
           </button>
         </div>
       )}

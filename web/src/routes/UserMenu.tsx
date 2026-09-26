@@ -1,3 +1,4 @@
+import { UI } from '../lib/wording';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ROLE_LABELS } from '../api/types';
@@ -55,7 +56,7 @@ export function UserMenu() {
         className="toolbar-pill user-menu__button"
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={`Account: ${name}`}
+        aria-label={`Cuenta: ${name}`}
         onClick={() => setOpen((o) => !o)}
       >
         <Icon name="person" size={18} />
@@ -70,10 +71,10 @@ export function UserMenu() {
             </span>
           </div>
           <Link className="user-menu__item" to={paths.changePassword} onClick={() => setOpen(false)}>
-            <Icon name="lock" size={18} /> Change password
+            <Icon name="lock" size={18} /> {UI.changePassword}
           </Link>
           <button type="button" className="user-menu__item user-menu__item--danger" onClick={onSignOut}>
-            Sign Out
+            {UI.signOut}
           </button>
         </div>
       ) : null}

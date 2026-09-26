@@ -125,8 +125,8 @@ describe('session expiry warning', () => {
 
     act(() => vi.advanceTimersByTime(10 * 60_000 - SESSION_WARNING_MS + 1));
     expect(useAuthStore.getState().expiringSoon).toBe(true);
-    expect(screen.getByRole('alert')).toHaveTextContent(/Your session ends at \d\d:\d\d\. Save your work, then sign in again\./);
-    expect(screen.getByRole('button', { name: 'Save now' })).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(/Su sesión termina a las \d\d:\d\d\. Guarde su trabajo y vuelva a iniciar sesión\./);
+    expect(screen.getByRole('button', { name: 'Guardar ahora' })).toBeInTheDocument();
 
     act(() => vi.advanceTimersByTime(SESSION_WARNING_MS));
     expect(useAuthStore.getState().token).toBeNull();
@@ -135,15 +135,15 @@ describe('session expiry warning', () => {
     expect(storedIds(ANES.id)).toEqual([c.id]);
   });
 
-  it('"Save now" saves every dirty case', async () => {
+  it('"Guardar ahora" saves every dirty case', async () => {
     const { h } = await withDirtyCase();
     useAuthStore.setState({ expiringSoon: true });
     render(<SessionExpiryBanner />);
     await act(async () => {
-      screen.getByRole('button', { name: 'Save now' }).click();
+      screen.getByRole('button', { name: 'Guardar ahora' }).click();
     });
     await vi.waitFor(() => expect(h.puts).toHaveLength(1));
-    expect(await screen.findByText(/All changes saved\./)).toBeInTheDocument();
+    expect(await screen.findByText(/Todos los cambios se guardaron\./)).toBeInTheDocument();
   });
 });
 

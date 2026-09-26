@@ -1,3 +1,4 @@
+import { UI } from '../../lib/wording';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { CaseStatus, DocumentDTO, FormId } from '../../api/types';
 import { ConfirmDeleteButton } from '../../components/ConfirmDeleteButton';
@@ -8,7 +9,7 @@ import { Section } from '../../components/Section';
 import { formatDateTime } from '../../lib/datetime';
 import { useAuthStore } from '../../state/authStore';
 import { useCaseScope } from '../../state/caseScope';
-import { caseStore } from '../../state/caseStore';
+import { caseStore, useCaseStore } from '../../state/caseStore';
 import { canDeleteDocuments, formatSize, groupDocuments, type DocumentGroup } from '../../state/documents';
 import { DEFAULT_FORM, exportErrorMessage, FORM_OPTIONS, formTitle } from '../../state/review';
 import '../review/review.css';
@@ -52,7 +53,9 @@ export function DocumentsPanel({ caseId, status, reloadKey = 0 }: DocumentsPanel
     close: closePreview,
   } = usePdfPreview((docId) => caseStore.getState().backend.documentFile(docId));
   const mounted = useRef(true);
-  const canDelete = canDeleteDocuments(user, status);
+  // Another anesthesiologist's case: its documents can be viewed, not generated or deleted.
+  const foreign = useCaseStore((s) => s.meta[caseId]?.foreign ?? false);
+  const canDelete = canDeleteDocuments(user, status) && !foreign;
 
   useEffect(() => {
     mounted.current = true;
@@ -69,7 +72,7 @@ export function DocumentsPanel({ caseId, status, reloadKey = 0 }: DocumentsPanel
       setListError(null);
     } catch (e) {
       if (!mounted.current) return;
-      setListError(exportErrorMessage(e, online(), 'Loading documents'));
+      setListError(exportErrorMessage(e, online(), 'No se pudieron cargar los documentos'));
     }
   }, [caseId]);
 
@@ -86,7 +89,7 @@ export function DocumentsPanel({ caseId, status, reloadKey = 0 }: DocumentsPanel
       await refresh();
       await open(doc); // keep an inline preview of the newest document
     } catch (e) {
-      if (mounted.current) setActionError(exportErrorMessage(e, online(), 'Generating the form'));
+      if (mounted.current) setActionError(exportErrorMessage(e, online(), 'No se pudo generar el formulario'));
     } finally {
       if (mounted.current) setGenerating(false);
     }
@@ -101,7 +104,7 @@ export function DocumentsPanel({ caseId, status, reloadKey = 0 }: DocumentsPanel
       setDocs((list) => (list ? list.filter((x) => x.id !== d.id) : list));
     } catch (e) {
       if (!mounted.current) return;
-      setActionError(exportErrorMessage(e, online(), 'Delete'));
+      setActionError(exportErrorMessage(e, online(), 'No se pudo eliminar el documento'));
       await refresh();
     }
   };
@@ -114,21 +117,21 @@ export function DocumentsPanel({ caseId, status, reloadKey = 0 }: DocumentsPanel
         {label ? <span className="doc-row__title">{label}</span> : null}
         <span className="doc-row__meta">
           {formatDateTime(d.created_at)} · {formatSize(d.size_bytes)}
-          {d.is_fallback ? <span className="doc-row__fallback"> · summary fallback</span> : null}
+          {d.is_fallback ? <span className="doc-row__fallback"> · resumen de respaldo</span> : null}
         </span>
       </span>
       <button
         type="button"
         className="btn-plain"
-        aria-label={`View ${formTitle(d.form_id)} of ${formatDateTime(d.created_at)}`}
+        aria-label={`Ver ${formTitle(d.form_id)} del ${formatDateTime(d.created_at)}`}
         disabled={opening === d.id}
         onClick={() => void open(d)}
       >
-        {opening === d.id ? 'Opening…' : 'View'}
+        {opening === d.id ? 'Abriendo…' : 'Ver'}
       </button>
       {canDelete ? (
         <ConfirmDeleteButton
-          label={`Delete ${formTitle(d.form_id)} of ${formatDateTime(d.created_at)}`}
+          label={`Eliminar ${formTitle(d.form_id)} del ${formatDateTime(d.created_at)}`}
           onDelete={() => void remove(d)}
         />
       ) : null}
@@ -141,7 +144,7 @@ export function DocumentsPanel({ caseId, status, reloadKey = 0 }: DocumentsPanel
       {g.older.length > 0 ? (
         <details className="doc-group__older">
           <summary className="row doc-group__summary">
-            Older versions ({g.older.length})
+            Versiones anteriores ({g.older.length})
           </summary>
           {g.older.map((d) => row(d))}
         </details>
@@ -152,13 +155,15 @@ export function DocumentsPanel({ caseId, status, reloadKey = 0 }: DocumentsPanel
   return (
     <ReadOnlyProvider value={EDITABLE}>
       <Section
-        header="Documents"
+        header="Documentos"
         footer={
           status === 'finalized'
-            ? 'The four forms were stored when the case was finalized. Generating again adds a new version.'
-            : 'Generate & store renders the filled form server-side from the saved case and keeps it with the case.'
+            ? 'Los cuatro formularios se guardaron al finalizar el caso. Si vuelve a generar uno, se agrega una versión nueva.'
+            : '«Generar y guardar» llena el formulario en el servidor a partir del caso guardado y lo conserva con el caso.'
         }
       >
+        {foreign ? null : (
+          <>
         <div className="row">
           <label className="row__label row__label--primary" htmlFor={selectId}>
             Formulario
@@ -185,10 +190,12 @@ export function DocumentsPanel({ caseId, status, reloadKey = 0 }: DocumentsPanel
             aria-busy={generating}
           >
             <Icon name="doc" size={18} />
-            <span>{generating ? 'Generating…' : 'Generate & store'}</span>
+            <span>{generating ? 'Generando…' : 'Generar y guardar'}</span>
             {generating ? <span className="spinner spinner--on-blue" aria-hidden="true" /> : null}
           </button>
         </div>
+          </>
+        )}
 
         {actionError ? (
           <div className="row review-error" role="alert">
@@ -202,16 +209,16 @@ export function DocumentsPanel({ caseId, status, reloadKey = 0 }: DocumentsPanel
             <Icon name="warning" size={16} />
             <span className="review-error__text">{listError}</span>
             <button type="button" className="btn-plain" onClick={() => void refresh()}>
-              Retry
+              {UI.retry}
             </button>
           </div>
         ) : docs === null ? (
           <div className="row" role="status">
             <span className="spinner" aria-hidden="true" />
-            <span className="row__label">Loading documents…</span>
+            <span className="row__label">Cargando documentos…</span>
           </div>
         ) : groups.length === 0 ? (
-          <div className="row review-empty">No stored documents yet</div>
+          <div className="row review-empty">Aún no hay documentos guardados</div>
         ) : (
           <div data-testid="document-groups">{groups.map(group)}</div>
         )}

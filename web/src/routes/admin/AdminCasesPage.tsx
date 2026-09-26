@@ -1,7 +1,8 @@
+import { plural, UI } from '../../lib/wording';
 import { useEffect, useId } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { adminApi, type CaseFilters } from '../../api/adminApi';
-import { STATUS_LABELS, type AdminCasePage, type CaseStatus, type UserDTO } from '../../api/types';
+import { STATUS_LABELS, type AdminCasePage, type CaseStatus, type CaseSummaryDTO, type UserDTO } from '../../api/types';
 import { EmptyState } from '../../components/EmptyState';
 import { Section } from '../../components/Section';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -9,7 +10,7 @@ import { formatDateTime } from '../../lib/datetime';
 import { paths } from '../paths';
 import { InlineAlert, LoadError, LoadingRow } from './adminUi';
 import { Pager } from './Pager';
-import { isoDay, offsetOf, PAGE_SIZE, pageFrom, rememberCasesSearch, withParam } from './paging';
+import { isUuid, isoDay, offsetOf, PAGE_SIZE, pageFrom, rememberCasesSearch, withParam } from './paging';
 import { useQuery } from './useQuery';
 import { useUrlText } from './useUrlText';
 
@@ -21,18 +22,20 @@ export interface CasesNotice {
 interface UrlFilters {
   status: CaseStatus | '';
   user_id: string;
+  patient_id: string;
   q: string;
   date_from: string;
   date_to: string;
   page: number;
 }
 
-/** Filters live in the URL (`?status=&user_id=&q=&date_from=&date_to=&page=`): links, Back and reload keep them. */
+/** Filters live in the URL (`?status=&user_id=&patient_id=&q=&date_from=&date_to=&page=`): links, Back and reload keep them. */
 function filtersFrom(sp: URLSearchParams): UrlFilters {
   const status = sp.get('status');
   return {
     status: status === 'draft' || status === 'finalized' ? status : '',
     user_id: sp.get('user_id') ?? '',
+    patient_id: (sp.get('patient_id') ?? '').trim(),
     q: sp.get('q') ?? '',
     date_from: isoDay(sp.get('date_from')),
     date_to: isoDay(sp.get('date_to')),
@@ -47,8 +50,11 @@ const ownerLabel = (u: Pick<UserDTO, 'full_name' | 'username'>) =>
  * Cases (`GET /admin/cases`): every anesthesiologist's cases, newest first, filterable by status,
  * anesthesiologist, created-date range (inclusive UTC days) and free text, paginated. Each row
  * opens the read-only case view. The dashboard's per-anesthesiologist links land here with
- * `?user_id=`.
+ * `?user_id=`, and a patient's links with `?patient_id=` (shown as a removable "Paciente" chip).
  */
+/** The patient's registro, else the case's own snapshot (legacy patients may have none). */
+const caseRegistro = (c: CaseSummaryDTO): string => c.patient_registro?.trim() || (c.registro ?? '').trim();
+
 export function AdminCasesPage() {
   const [sp, setSp] = useSearchParams();
   const location = useLocation();
@@ -57,6 +63,9 @@ export function AdminCasesPage() {
   const f = filtersFrom(sp);
   const [search, setSearch] = useUrlText(sp, setSp, 'q');
   const badRange = !!(f.date_from && f.date_to && f.date_from > f.date_to);
+  // A malformed ?patient_id= is reported locally (the server would 422) and not requested.
+  const badPatient = !!f.patient_id && !isUuid(f.patient_id);
+  const invalid = badRange || badPatient;
   const ids = { q: useId(), status: useId(), owner: useId(), from: useId(), to: useId() };
 
   useEffect(() => {
@@ -66,21 +75,27 @@ export function AdminCasesPage() {
   const query: CaseFilters = {
     status: f.status,
     user_id: f.user_id,
+    patient_id: f.patient_id,
     q: f.q,
     date_from: f.date_from,
     date_to: f.date_to,
     limit: PAGE_SIZE,
     offset: offsetOf(f.page),
   };
-  const key = JSON.stringify(query) + (badRange ? '!' : '');
+  const key = JSON.stringify(query) + (invalid ? '!' : '');
   // An impossible date range is reported locally (the server would 422) and not requested.
-  const q = useQuery<AdminCasePage | null>(key, () => (badRange ? Promise.resolve(null) : adminApi.listCases(query)));
+  const q = useQuery<AdminCasePage | null>(key, () => (invalid ? Promise.resolve(null) : adminApi.listCases(query)));
+  // The patient of a ?patient_id= filter, for its chip (the filter works even if this fails).
+  const filterPatient = useQuery(`filter-patient:${badPatient ? '' : f.patient_id}`, () =>
+    f.patient_id && !badPatient ? adminApi.getPatient(f.patient_id) : Promise.resolve(null),
+  );
+  const chipPatient = filterPatient.data && filterPatient.data.id === f.patient_id ? filterPatient.data : null;
   // Only anesthesiologists own cases; an unknown ?user_id= still gets its own "Account …" option.
   const owners = useQuery('owners', () => adminApi.listUsers({ role: 'anesthesiologist' }));
 
   const set = (name: string, value: string) => setSp(withParam(sp, name, value), { replace: true });
   const goPage = (page: number) => setSp(withParam(sp, 'page', page > 1 ? String(page) : ''));
-  const filtered = !!(f.status || f.user_id || f.q || f.date_from || f.date_to);
+  const filtered = !!(f.status || f.user_id || f.patient_id || f.q || f.date_from || f.date_to);
 
   const ownerOptions = [...(owners.data ?? [])].sort((a, b) => ownerLabel(a).localeCompare(ownerLabel(b)));
   const knownOwner = !f.user_id || ownerOptions.some((u) => u.id === f.user_id);
@@ -90,34 +105,34 @@ export function AdminCasesPage() {
   return (
     <>
       <div className="admin-head">
-        <h1 className="large-title">Cases</h1>
+        <h1 className="large-title">Casos</h1>
       </div>
 
       {notice ? (
         <InlineAlert tone="success">
           <span>{notice}</span>{' '}
           <button type="button" className="btn-plain" onClick={() => navigate(location, { replace: true, state: null })}>
-            Dismiss
+            {UI.dismiss}
           </button>
         </InlineAlert>
       ) : null}
 
-      <form className="admin-filters" role="search" aria-label="Filter cases" onSubmit={(e) => e.preventDefault()}>
+      <form className="admin-filters" role="search" aria-label="Filtrar casos" onSubmit={(e) => e.preventDefault()}>
         <div className="admin-filter admin-filter--grow">
-          <label htmlFor={ids.q}>Search</label>
+          <label htmlFor={ids.q}>{UI.search}</label>
           <input
             id={ids.q}
             type="search"
             value={search}
-            placeholder="Patient, registro, diagnosis, owner, case id"
+            placeholder="Paciente, registro, diagnóstico, autor, id del caso"
             autoComplete="off"
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <div className="admin-filter">
-          <label htmlFor={ids.status}>Status</label>
+          <label htmlFor={ids.status}>Estado</label>
           <select id={ids.status} value={f.status} onChange={(e) => set('status', e.target.value)}>
-            <option value="">Any status</option>
+            <option value="">Cualquier estado</option>
             {(Object.keys(STATUS_LABELS) as CaseStatus[]).map((s) => (
               <option key={s} value={s}>
                 {STATUS_LABELS[s]}
@@ -126,10 +141,10 @@ export function AdminCasesPage() {
           </select>
         </div>
         <div className="admin-filter">
-          <label htmlFor={ids.owner}>Anesthesiologist</label>
+          <label htmlFor={ids.owner}>Anestesiólogo</label>
           <select id={ids.owner} value={f.user_id} onChange={(e) => set('user_id', e.target.value)}>
-            <option value="">Everyone</option>
-            {knownOwner ? null : <option value={f.user_id}>Account {f.user_id.slice(0, 8)}…</option>}
+            <option value="">Todos</option>
+            {knownOwner ? null : <option value={f.user_id}>Cuenta {f.user_id.slice(0, 8)}…</option>}
             {ownerOptions.map((u) => (
               <option key={u.id} value={u.id}>
                 {ownerLabel(u)}
@@ -138,7 +153,7 @@ export function AdminCasesPage() {
           </select>
         </div>
         <div className="admin-filter">
-          <label htmlFor={ids.from}>Created from</label>
+          <label htmlFor={ids.from}>Creado desde</label>
           <input
             id={ids.from}
             type="date"
@@ -149,7 +164,7 @@ export function AdminCasesPage() {
           />
         </div>
         <div className="admin-filter">
-          <label htmlFor={ids.to}>Created to</label>
+          <label htmlFor={ids.to}>Creado hasta</label>
           <input
             id={ids.to}
             type="date"
@@ -168,38 +183,65 @@ export function AdminCasesPage() {
               setSp(new URLSearchParams(), { replace: true });
             }}
           >
-            Clear filters
+            {UI.clearFilters}
           </button>
         ) : null}
       </form>
 
+      {f.patient_id ? (
+        <p className="admin-filter-chip" data-testid="patient-filter">
+          <span>
+            Paciente:{' '}
+            {badPatient ? (
+              'identificador no válido'
+            ) : chipPatient ? (
+              <Link to={paths.admin.patient(chipPatient.id)}>
+                {chipPatient.nombre.trim() || 'Sin nombre'}
+                {chipPatient.registro ? ` · Registro ${chipPatient.registro}` : ''}
+              </Link>
+            ) : (
+              `${f.patient_id.slice(0, 8)}…`
+            )}
+          </span>
+          <button type="button" className="btn-plain" onClick={() => set('patient_id', '')}>
+            Quitar filtro de paciente
+          </button>
+        </p>
+      ) : null}
+
+      {badPatient ? (
+        <InlineAlert>El filtro de paciente no es un identificador válido. Quítelo para ver los casos.</InlineAlert>
+      ) : null}
+
       {badRange ? (
-        <InlineAlert>“Created from” is after “Created to”. Pick a start day on or before the end day.</InlineAlert>
+        <InlineAlert>«Creado desde» es posterior a «Creado hasta». Elija un día inicial igual o anterior al final.</InlineAlert>
       ) : null}
 
       <Section
         header={
           page
-            ? `${page.total.toLocaleString('en-US')} ${page.total === 1 ? 'case' : 'cases'}${filtered ? ' (filtered)' : ''}`
-            : 'Cases'
+            ? `${plural(page.total, 'caso', 'casos')}${filtered ? UI.filtered : ''}`
+            : 'Casos'
         }
-        footer="Dates are UTC calendar days of creation, inclusive."
+        footer="Las fechas son días de creación en UTC, inclusive."
       >
         {badRange ? (
-          <EmptyState icon="warning" title="Invalid date range" description="No cases were requested." />
+          <EmptyState icon="warning" title="Rango de fechas no válido" description="No se solicitaron casos." />
+        ) : badPatient ? (
+          <EmptyState icon="warning" title="Filtro de paciente no válido" description="No se solicitaron casos." />
         ) : !page ? (
           q.status === 'error' ? (
-            <LoadError title="Couldn’t load cases" error={q.error} onRetry={q.reload} />
+            <LoadError title="No se pudieron cargar los casos" error={q.error} onRetry={q.reload} />
           ) : (
-            <LoadingRow label="Loading cases…" />
+            <LoadingRow label="Cargando casos…" />
           )
         ) : (
           <div className={q.status === 'loading' ? 'admin-refetching' : undefined} aria-busy={q.status === 'loading'}>
             {q.status === 'error' ? (
               <InlineAlert>
-                Couldn’t refresh: {q.error}{' '}
+                {UI.couldNotRefresh} {q.error}{' '}
                 <button type="button" className="btn-plain" onClick={q.reload}>
-                  Retry
+                  {UI.retry}
                 </button>
               </InlineAlert>
             ) : null}
@@ -207,22 +249,22 @@ export function AdminCasesPage() {
               page.total > 0 ? (
                 <EmptyState
                   icon="tray"
-                  title="This page is empty"
-                  description={`There are only ${page.total} matching cases.`}
+                  title={UI.emptyPage}
+                  description={`Solo hay ${plural(page.total, 'caso', 'casos')} que coinciden.`}
                   action={
                     <button type="button" className="btn-plain" onClick={() => goPage(1)}>
-                      Go to the first page
+                      {UI.firstPage}
                     </button>
                   }
                 />
               ) : (
                 <EmptyState
                   icon="tray"
-                  title={filtered ? 'No matching cases' : 'No cases yet'}
+                  title={filtered ? 'Ningún caso coincide' : 'Aún no hay casos'}
                   description={
                     filtered
-                      ? 'Try another search or clear the filters.'
-                      : 'Cases appear here once an anesthesiologist creates one.'
+                      ? 'Pruebe otra búsqueda o limpie los filtros.'
+                      : 'Los casos aparecen aquí cuando un anestesiólogo crea uno.'
                   }
                 />
               )
@@ -230,17 +272,17 @@ export function AdminCasesPage() {
               <>
                 <div className="admin-table-scroll">
                   <table className="admin-table">
-                    <caption className="visually-hidden">Cases</caption>
+                    <caption className="visually-hidden">Casos</caption>
                     <thead>
                       <tr>
-                        <th scope="col">Patient</th>
-                        <th scope="col">Anesthesiologist</th>
-                        <th scope="col">Status</th>
+                        <th scope="col">Paciente</th>
+                        <th scope="col">Anestesiólogo</th>
+                        <th scope="col">Estado</th>
                         <th scope="col" className="hide-narrow">
-                          Created
+                          Creado
                         </th>
                         <th scope="col" className="hide-narrow">
-                          Updated
+                          Actualizado
                         </th>
                       </tr>
                     </thead>
@@ -249,15 +291,23 @@ export function AdminCasesPage() {
                         <tr key={c.id} data-testid="case-row" data-case-id={c.id}>
                           <th scope="row">
                             <Link to={paths.admin.case(c.id)} className="admin-table__link">
-                              {c.nombre.trim() || 'Sin nombre'}
+                              {(c.patient_nombre ?? c.nombre).trim() || 'Sin nombre'}
                             </Link>
+                            <span className="admin-table__sub" data-testid="case-row-registro">
+                              {caseRegistro(c) ? `Registro ${caseRegistro(c)}` : 'Sin registro'}
+                            </span>
                             <span className="admin-table__sub">{c.diagnostico_preop.trim() || '—'}</span>
+                            {c.patient_id && !f.patient_id ? (
+                              <Link to={paths.admin.casesForPatient(c.patient_id)} className="admin-table__sub">
+                                Solo este paciente
+                              </Link>
+                            ) : null}
                           </th>
                           <td>
                             {c.owner_name?.trim() || c.owner || '—'}
                             {c.user_id && !f.user_id ? (
                               <Link to={paths.admin.casesFor(c.user_id)} className="admin-table__sub">
-                                Only this anesthesiologist
+                                Solo este anestesiólogo
                               </Link>
                             ) : null}
                           </td>
@@ -279,7 +329,7 @@ export function AdminCasesPage() {
                 pageSize={PAGE_SIZE}
                 total={page.total}
                 shown={page.items.length}
-                label="Case pages"
+                label="Páginas de casos"
                 onPage={goPage}
               />
             ) : null}

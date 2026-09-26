@@ -11,8 +11,11 @@ import { createContext, useContext } from 'react';
  */
 export interface ReadOnlyState {
   readOnly: boolean;
-  /** Why (shown in the banner): the case is finalized, or the viewer may only read. */
-  reason: 'finalized' | 'viewer' | null;
+  /**
+   * Why (shown in the banner): the case is finalized, the viewer may only read (admin view), or
+   * the case belongs to another anesthesiologist (`foreign`).
+   */
+  reason: 'finalized' | 'viewer' | 'foreign' | null;
 }
 
 export const EDITABLE: ReadOnlyState = { readOnly: false, reason: null };

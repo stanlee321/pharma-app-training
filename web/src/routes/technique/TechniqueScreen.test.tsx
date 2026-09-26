@@ -12,7 +12,7 @@ describe('TechniqueScreen — General', () => {
     const h = restHarness([c]);
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/technique/general`, h.backend);
-    expect(await screen.findByRole('heading', { name: 'Technique · General', level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Técnica anestésica · General', level: 1 })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'AGEV' }));
     expect(storeCase(c.id).technique.modality).toBe('AGEV');
@@ -40,8 +40,8 @@ describe('TechniqueScreen — General', () => {
     // Steppers show the Swift fallback until touched.
     expect(screen.getByLabelText('TET calibre')).toHaveValue('7.0');
     expect(values(c.id)).not.toHaveProperty('va_tet_calibre');
-    fireEvent.click(screen.getByRole('button', { name: 'Increase TET calibre' }), { detail: 0 });
-    fireEvent.click(screen.getByRole('button', { name: 'Decrease Flujo' }), { detail: 0 });
+    fireEvent.click(screen.getByRole('button', { name: 'Aumentar TET calibre' }), { detail: 0 });
+    fireEvent.click(screen.getByRole('button', { name: 'Disminuir Flujo' }), { detail: 0 });
     expect(values(c.id)).toMatchObject({ va_tet_calibre: 7.5, va_flujo: 1.5 });
 
     await user.click(screen.getByRole('switch', { name: 'Intubación endotraqueal' }));
@@ -52,17 +52,17 @@ describe('TechniqueScreen — General', () => {
     const slot = document.querySelector('[data-slot="tci-chip"]');
     expect(slot).not.toBeNull();
     expect(slot).toHaveAttribute('data-model-id', 'marsh');
-    expect(screen.getByLabelText('Target Cp')).toHaveValue('4.0');
+    expect(screen.getByLabelText('Cp objetivo')).toHaveValue('4.0');
     expect(screen.getByTestId('tci-bolus')).toHaveTextContent('Bolo 6.4 ml');
     expect(screen.getByTestId('tci-infusion')).toHaveTextContent('104.6 ml/h');
     expect(values(c.id)).not.toHaveProperty('tci_target_cp');
-    fireEvent.click(screen.getByRole('button', { name: 'Increase Target Cp' }), { detail: 0 });
+    fireEvent.click(screen.getByRole('button', { name: 'Aumentar Cp objetivo' }), { detail: 0 });
     // 4.5 mcg/ml → 71.82 mg = 7.2 ml; 0.273·71.82·6 = 117.6 ml/h; the target is persisted.
     expect(values(c.id)).toMatchObject({ tci_target_cp: 4.5 });
     expect(screen.getByTestId('tci-bolus')).toHaveTextContent('Bolo 7.2 ml');
     expect(screen.getByTestId('tci-infusion')).toHaveTextContent('117.6 ml/h');
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(h.puts).toHaveLength(1));
     expect(h.puts[0]!.body.technique).toEqual({
       modality: 'AGEV',
@@ -89,7 +89,7 @@ describe('TechniqueScreen — Neuraxial', () => {
     const h = restHarness([c]);
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/technique/neuraxial`, h.backend);
-    await screen.findByRole('heading', { name: 'Technique · Regional Neuraxial', level: 1 });
+    await screen.findByRole('heading', { name: 'Técnica anestésica · Regional neuroaxial', level: 1 });
 
     await user.click(screen.getByRole('button', { name: 'Subaracnoidea' }));
     await user.click(screen.getByRole('button', { name: 'Tuohy' }));
@@ -109,7 +109,7 @@ describe('TechniqueScreen — Neuraxial', () => {
       dx_bupivacaina: true,
       dx_bupivacaina_val: 10,
     });
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(h.puts).toHaveLength(1));
     expect(h.puts[0]!.body.technique).toMatchObject({ modality: 'Subaracnoidea', values: { nivel: 'L3–L4' } });
   });
@@ -120,7 +120,7 @@ describe('TechniqueScreen — Peripheral', () => {
     const c = newCase('Dr. Demo');
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/technique/peripheral`, restHarness([c]).backend);
-    await screen.findByRole('heading', { name: 'Technique · Peripheral Block', level: 1 });
+    await screen.findByRole('heading', { name: 'Técnica anestésica · Bloqueo periférico', level: 1 });
 
     await user.type(screen.getByLabelText('Sitio del bloqueo'), 'Interescalénico');
     await user.type(screen.getByLabelText('Volumen'), '20');
@@ -147,6 +147,6 @@ describe('TechniqueScreen — Peripheral', () => {
   it('an unknown zone redirects to General', async () => {
     const c = newCase('Dr. Demo');
     renderApp(`/cases/${c.id}/technique/bogus`, restHarness([c]).backend);
-    expect(await screen.findByRole('heading', { name: 'Technique · General', level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Técnica anestésica · General', level: 1 })).toBeInTheDocument();
   });
 });

@@ -1,3 +1,4 @@
+import { SECTION_TITLES, UI } from '../lib/wording';
 import type { ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import type { AnesthesiaCase } from '../api/types';
@@ -19,8 +20,11 @@ export type CaseUpdate = (recipe: (draft: AnesthesiaCase) => AnesthesiaCase | vo
 export interface CaseScreenProps {
   /** Inline nav-bar title (Swift `.navigationBarTitleDisplayMode(.inline)`); may use the case. */
   title: string | ((c: AnesthesiaCase) => string);
-  /** Defaults to "‹ Encounter" (the Hub of the current case scope). */
-  back?: (id: string) => BackLinkProps;
+  /**
+   * Defaults to "‹ Encounter" (the Hub of the current case scope). `c` is the loaded case
+   * (undefined while loading), e.g. for the Hub's link back to the case's patient.
+   */
+  back?: (id: string, c?: AnesthesiaCase) => BackLinkProps;
   /** The case form. Rendered inside the read-only scope (see `readOnlyContext.ts`). */
   children: (c: AnesthesiaCase, update: CaseUpdate) => ReactNode;
   /**
@@ -38,9 +42,9 @@ export interface CaseScreenProps {
  * unsaved edits when the screen is left (Swift Hub `.onDisappear`).
  *
  * Lifecycle: the nav bar shows the case's status badge. A finalized case (or an outer read-only
- * scope, e.g. an admin's view) makes the whole form read-only through ONE mechanism: the
+ * scope, e.g. an admin's view, or another anesthesiologist's case — `meta.foreign`) makes the whole form read-only through ONE mechanism: the
  * `ReadOnlyProvider` consumed by the shared controls, a disabled <fieldset> around the form for
- * anything else, the "Finalized — read-only" banner, and a disabled Save.
+ * anything else, the "Caso finalizado — solo lectura" banner, and a disabled Save.
  */
 export function CaseScreen({ title, back, children, aside }: CaseScreenProps) {
   const { id = '' } = useParams();
@@ -48,10 +52,10 @@ export function CaseScreen({ title, back, children, aside }: CaseScreenProps) {
   const outer = useReadOnlyState();
   const scope = useCaseScope();
   useSaveOnLeave(id);
-  const backLink = back ? back(id) : { to: scope.paths.hub(id), label: 'Encounter' };
+  const backLink = back ? back(id, status === 'ready' ? data : undefined) : { to: scope.paths.hub(id), label: SECTION_TITLES.hub };
 
   if (status !== 'ready' || !data) {
-    const t = typeof title === 'string' ? title : 'Encounter';
+    const t = typeof title === 'string' ? title : SECTION_TITLES.hub;
     // Same element tree root as the loaded state, so the Page is updated in place, not remounted.
     return (
       <ReadOnlyProvider value={outer}>
@@ -60,18 +64,18 @@ export function CaseScreen({ title, back, children, aside }: CaseScreenProps) {
             {status === 'error' ? (
               <EmptyState
                 icon="warning"
-                title="Case not found"
+                title="Caso no encontrado"
                 description={error ?? undefined}
                 action={
                   <button type="button" className="btn-plain" onClick={reload}>
-                    Retry
+                    {UI.retry}
                   </button>
                 }
               />
             ) : (
               <div className="row state-row" role="status">
                 <span className="spinner" aria-hidden="true" />
-                <span>Loading…</span>
+                <span>{UI.loading}</span>
               </div>
             )}
           </Section>
@@ -87,7 +91,9 @@ export function CaseScreen({ title, back, children, aside }: CaseScreenProps) {
         ? outer
         : meta?.viewOnly
           ? { readOnly: true, reason: 'viewer' }
-          : { readOnly: false, reason: null };
+          : meta?.foreign
+            ? { readOnly: true, reason: 'foreign' }
+            : { readOnly: false, reason: null };
 
   return (
     <ReadOnlyProvider value={readOnly}>
@@ -103,7 +109,7 @@ export function CaseScreen({ title, back, children, aside }: CaseScreenProps) {
             <Icon name="warning" size={18} />
             <span className="banner__text">{meta.notice}</span>
             <button type="button" className="btn-plain" onClick={() => caseStore.getState().clearNotice(id)}>
-              Dismiss
+              {UI.dismiss}
             </button>
           </div>
         ) : null}
@@ -132,17 +138,17 @@ function DraftConflictBanner({ id }: { id: string }) {
       <Icon name="warning" size={18} />
       <span className="banner__text">
         {finalized
-          ? 'You had unsaved changes to this case from your previous session, but it has been finalized since, so they can no longer be applied. The locked version is shown.'
-          : 'You had unsaved changes to this case from your previous session, but it was changed on the server since (another device, tab or an admin). The current server version is shown. Re-applying replaces it with your earlier changes.'}
+          ? 'Tenía cambios sin guardar en este caso de su sesión anterior, pero el caso se finalizó desde entonces y ya no se pueden aplicar. Se muestra la versión bloqueada.'
+          : 'Tenía cambios sin guardar en este caso de su sesión anterior, pero el caso cambió en el servidor desde entonces (otro dispositivo, otra pestaña o un administrador). Se muestra la versión actual del servidor. Si vuelve a aplicar sus cambios, la reemplazarán.'}
       </span>
       <span className="banner__actions">
         {finalized ? null : (
           <button type="button" className="btn-plain" onClick={() => caseStore.getState().reapplyDraft(id)}>
-            Re-apply my changes
+            Volver a aplicar mis cambios
           </button>
         )}
         <button type="button" className="btn-plain" onClick={() => caseStore.getState().discardDraft(id)}>
-          {finalized ? 'Dismiss' : 'Discard them'}
+          {finalized ? UI.dismiss : 'Descartarlos'}
         </button>
       </span>
     </div>

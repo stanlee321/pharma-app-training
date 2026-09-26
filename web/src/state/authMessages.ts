@@ -1,17 +1,18 @@
 import { BackendError } from '../api/backend';
+import { serverMessage } from '../api/serverMessages';
 import type { AuthNotice } from './authStore';
 
 /** Readable message for a failed login (the server's `ErrorDTO.detail` when it sent one). */
 export function loginErrorMessage(e: unknown): string {
   if (e instanceof BackendError) {
     if (e.kind === 'network') {
-      return 'Could not reach the server. Check that the backend is running and the Server setting under Advanced.';
+      return 'No se pudo conectar con el servidor. Verifique que el servidor esté en marcha y el ajuste «Servidor» en Opciones avanzadas.';
     }
-    if (e.status === 401) return e.detail ?? 'Invalid username or password.';
-    if (e.status === 404 && e.detail) return `Sign-in is not available: ${e.detail}.`;
-    if (e.status === 422) return 'Enter your username and password.';
-    if (e.detail) return e.detail;
-    return `Sign-in failed (HTTP ${e.status ?? '?'}).`;
+    if (e.status === 401) return e.detail ? serverMessage(e.detail) : 'Usuario o contraseña incorrectos.';
+    if (e.status === 404 && e.detail) return `El inicio de sesión no está disponible: ${serverMessage(e.detail)}`;
+    if (e.status === 422) return 'Escriba su usuario y contraseña.';
+    if (e.detail) return serverMessage(e.detail);
+    return `No se pudo iniciar sesión (HTTP ${e.status ?? '?'}).`;
   }
   return e instanceof Error ? e.message : String(e);
 }
@@ -19,12 +20,12 @@ export function loginErrorMessage(e: unknown): string {
 /** Readable message for a failed POST /auth/change-password. */
 export function changePasswordErrorMessage(e: unknown): string {
   if (e instanceof BackendError) {
-    if (e.kind === 'network') return 'Could not reach the server. Try again.';
+    if (e.kind === 'network') return 'No se pudo conectar con el servidor. Inténtelo de nuevo.';
     if (e.status === 422) {
-      return e.detail ? `The new password was rejected: ${e.detail}` : 'The new password must be 8–128 characters.';
+      return e.detail ? `La nueva contraseña fue rechazada: ${serverMessage(e.detail)}` : 'La nueva contraseña debe tener de 8 a 128 caracteres.';
     }
-    if (e.detail) return e.detail;
-    return `Password change failed (HTTP ${e.status ?? '?'}).`;
+    if (e.detail) return serverMessage(e.detail);
+    return `No se pudo cambiar la contraseña (HTTP ${e.status ?? '?'}).`;
   }
   return e instanceof Error ? e.message : String(e);
 }
@@ -33,9 +34,9 @@ export function changePasswordErrorMessage(e: unknown): string {
 export function noticeText(n: AuthNotice): string | null {
   switch (n) {
     case 'expired':
-      return 'Your session has expired. Please sign in again.';
+      return 'Su sesión expiró. Inicie sesión de nuevo.';
     case 'passwordChanged':
-      return 'Your password was changed. Sign in with your new password.';
+      return 'Su contraseña se cambió. Inicie sesión con la nueva contraseña.';
     default:
       return null;
   }
@@ -43,9 +44,9 @@ export function noticeText(n: AuthNotice): string | null {
 
 /** Client-side check before POST /auth/change-password (server: 8–128 chars). */
 export function newPasswordProblem(current: string, next: string, confirm: string): string | null {
-  if (next.length < 8) return 'The new password must be at least 8 characters.';
-  if (next.length > 128) return 'The new password must be at most 128 characters.';
-  if (next !== confirm) return 'The new passwords do not match.';
-  if (next === current) return 'The new password must be different from the current one.';
+  if (next.length < 8) return 'La nueva contraseña debe tener al menos 8 caracteres.';
+  if (next.length > 128) return 'La nueva contraseña debe tener como máximo 128 caracteres.';
+  if (next !== confirm) return 'Las contraseñas nuevas no coinciden.';
+  if (next === current) return 'La nueva contraseña debe ser distinta de la actual.';
   return null;
 }

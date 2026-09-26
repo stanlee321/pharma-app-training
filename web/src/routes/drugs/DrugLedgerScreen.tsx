@@ -1,3 +1,4 @@
+import { SECTION_TITLES } from '../../lib/wording';
 import { useId } from 'react';
 import type { AnesthesiaCase, DrugAdministration, PatientProfile } from '../../api/types';
 import { ConfirmDeleteButton } from '../../components/ConfirmDeleteButton';
@@ -20,15 +21,15 @@ import './drugs.css';
  * Modelled rows render the live TCI recommendation chip (DrugTciChipSlot; never persisted, ADR-5).
  */
 export function DrugLedgerScreen() {
-  return <CaseScreen title="Drug Ledger">{(c, update) => <Ledger c={c} update={update} />}</CaseScreen>;
+  return <CaseScreen title={SECTION_TITLES.drugs}>{(c, update) => <Ledger c={c} update={update} />}</CaseScreen>;
 }
 
 function Ledger({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {
   return (
     <>
-      <Section header="Fármacos administrados">
+      <Section header="Registro de fármacos">
         {c.drugs.length === 0 ? (
-          <p className="row drug-empty">No drugs recorded yet.</p>
+          <p className="row drug-empty">Aún no hay fármacos registrados.</p>
         ) : (
           c.drugs.map((d, i) => (
             <DrugRowEditor key={d.id} drug={d} index={i} patient={c.patient.profile} update={update} />
@@ -36,9 +37,9 @@ function Ledger({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {
         )}
       </Section>
 
-      <Section footer="TCI recommendations are a decision aid for modelled agents and are not saved.">
+      <Section footer="Las recomendaciones TCI son una ayuda para la decisión con los agentes modelados y no se guardan.">
         <AddRowButton
-          label="Add drug"
+          label="Agregar fármaco"
           onAdd={() =>
             update((draft) => {
               draft.drugs.push(newDrug());
@@ -146,7 +147,7 @@ function DrugRowEditor({
               });
             }}
           >
-            <option value="">{drug.rust_model_id ? 'Clear model' : 'Modelo…'}</option>
+            <option value="">{drug.rust_model_id ? 'Quitar modelo' : 'Modelo…'}</option>
             {DRUG_MODELS.map((m) => (
               <option key={m.rustModelId} value={m.rustModelId}>
                 {pickerLabel(m)}
@@ -155,7 +156,7 @@ function DrugRowEditor({
             {drug.rust_model_id && !known ? <option value={drug.rust_model_id}>{drug.rust_model_id}</option> : null}
           </select>
           <ConfirmDeleteButton
-            label={`Delete drug ${letter}`}
+            label={`Eliminar fármaco ${letter}`}
             onDelete={() =>
               update((d) => {
                 d.drugs = d.drugs.filter((x) => x.id !== drug.id);
@@ -165,7 +166,7 @@ function DrugRowEditor({
         </div>
 
         <div className={`drug-row__line${dose.problem ? ' row--invalid' : ''}`}>
-          <RepeatButton kind="minus" label={`Decrease dose ${letter}`} onStep={() => bump(-DOSE_STEP)} />
+          <RepeatButton kind="minus" label={`Disminuir dosis ${letter}`} onStep={() => bump(-DOSE_STEP)} />
           <label className="visually-hidden" htmlFor={ids.dose}>
             {`Dosis ${letter}`}
           </label>
@@ -176,7 +177,7 @@ function DrugRowEditor({
             aria-invalid={dose.problem ? true : undefined}
             {...dose.inputProps}
           />
-          <RepeatButton kind="plus" label={`Increase dose ${letter}`} onStep={() => bump(DOSE_STEP)} />
+          <RepeatButton kind="plus" label={`Aumentar dosis ${letter}`} onStep={() => bump(DOSE_STEP)} />
           <label className="visually-hidden" htmlFor={ids.unit}>
             {`Unidad ${letter}`}
           </label>
@@ -191,7 +192,7 @@ function DrugRowEditor({
               });
             }}
           >
-            {drug.dose_unit === '' ? <option value="">unit</option> : null}
+            {drug.dose_unit === '' ? <option value="">Unidad</option> : null}
             {unitOptions.map((u) => (
               <option key={u} value={u}>
                 {u}

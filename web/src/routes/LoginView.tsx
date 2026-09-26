@@ -1,3 +1,4 @@
+import { UI } from '../lib/wording';
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { DEFAULT_BASE_URL } from '../api/http';
@@ -43,7 +44,7 @@ export function LoginView() {
     e.preventDefault();
     if (busy) return;
     if (!username.trim() || !password) {
-      setError('Enter your username and password.');
+      setError('Escriba su usuario y contraseña.');
       return;
     }
     setBusy(true);
@@ -71,7 +72,7 @@ export function LoginView() {
           <h1 className="login__title" id="login-title">
             TivaTrainer
           </h1>
-          <p className="login__subtitle">Sign in to continue</p>
+          <p className="login__subtitle">Inicie sesión para continuar</p>
         </div>
 
         {noticeMsg && !error ? (
@@ -89,28 +90,28 @@ export function LoginView() {
 
         <div className="login__card">
           <TextRow
-            label="Username"
+            label="Usuario"
             value={username}
             onChange={setUsername}
-            placeholder="e.g. dra.perez"
+            placeholder="p. ej. dra.perez"
             autoComplete="username"
             noAutoCorrect
           />
           <TextRow
-            label="Password"
+            label="Contraseña"
             type="password"
             value={password}
             onChange={setPassword}
-            placeholder="Required"
+            placeholder="Obligatoria"
             autoComplete="current-password"
           />
         </div>
 
         <details className="login__advanced">
-          <summary>Advanced</summary>
+          <summary>Opciones avanzadas</summary>
           <div className="login__card">
             <TextRow
-              label="Server"
+              label="Servidor"
               value={server}
               onChange={setServer}
               placeholder={DEFAULT_BASE_URL}
@@ -123,7 +124,7 @@ export function LoginView() {
         </details>
 
         <button type="submit" className="btn-primary" disabled={busy}>
-          {busy ? 'Signing In…' : 'Sign In'}
+          {busy ? UI.signingIn : UI.signIn}
         </button>
       </form>
     </div>

@@ -25,7 +25,7 @@ export function TciChipSlot({ modelId, patient, targetCp, onTargetCpChange }: Tc
   return (
     <div className="tci-chip" data-slot="tci-chip" data-model-id={modelId}>
       <StepperRow
-        label="Target Cp"
+        label="Cp objetivo"
         value={targetCp}
         onChange={onTargetCpChange}
         unit="mcg/ml"

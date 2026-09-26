@@ -1,3 +1,4 @@
+import { UI } from '../../lib/wording';
 import { Icon } from '../../components/Icon';
 import { formatSize } from '../../state/documents';
 import type { PdfPreviewState } from './usePdfPreview';
@@ -13,10 +14,10 @@ export function PdfPreview({ preview, onClose }: { preview: PdfPreviewState; onC
         </span>
         <a className="btn-plain review-download" href={preview.url} download={preview.fileName}>
           <Icon name="download" size={16} />
-          Download PDF
+          Descargar PDF
         </a>
         <button type="button" className="btn-plain" onClick={onClose}>
-          Close
+          {UI.close}
         </button>
       </div>
       <iframe className="review-pdf__frame" src={preview.url} title={`${preview.title} (PDF)`} />

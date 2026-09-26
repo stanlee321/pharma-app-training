@@ -1,3 +1,4 @@
+import { formatCount } from '../../lib/wording';
 import { pageCount, rangeLabel } from './paging';
 
 /**
@@ -26,14 +27,14 @@ export function Pager({
     <nav className="admin-pager" aria-label={label}>
       <span className="admin-pager__range" aria-live="polite">
         {rangeLabel(offset, shown, total)}
-        <span className="admin-pager__page"> · Page {page} of {pages}</span>
+        <span className="admin-pager__page"> · Página {formatCount(page)} de {formatCount(pages)}</span>
       </span>
       <span className="admin-pager__buttons">
         <button type="button" className="btn-plain" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-          ‹ Previous
+          ‹ Anterior
         </button>
         <button type="button" className="btn-plain" disabled={offset + shown >= total} onClick={() => onPage(page + 1)}>
-          Next ›
+          Siguiente ›
         </button>
       </span>
     </nav>

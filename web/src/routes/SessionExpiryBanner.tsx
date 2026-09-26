@@ -1,6 +1,7 @@
+import { UI } from '../lib/wording';
 import { useState } from 'react';
 import { Icon } from '../components/Icon';
-import { formatDateTime } from '../lib/datetime';
+import { formatTime } from '../lib/datetime';
 import { useAuthStore } from '../state/authStore';
 import { caseStore } from '../state/caseStore';
 
@@ -14,7 +15,7 @@ export function SessionExpiryBanner() {
   const expiresAt = useAuthStore((s) => s.expiresAt);
   const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   if (!soon) return null;
-  const at = formatDateTime(expiresAt).slice(-5);
+  const at = formatTime(expiresAt);
   const saveAll = async () => {
     setState('saving');
     setState((await caseStore.getState().saveAllDirty()) ? 'saved' : 'failed');
@@ -23,11 +24,11 @@ export function SessionExpiryBanner() {
     <div className="banner banner--warning session-banner" role="alert">
       <Icon name="warning" size={18} />
       <span className="banner__text">
-        Your session ends at {at}. Save your work, then sign in again.
-        {state === 'saved' ? ' All changes saved.' : state === 'failed' ? ' Some changes could not be saved.' : ''}
+        Su sesión termina a las {at}. Guarde su trabajo y vuelva a iniciar sesión.
+        {state === 'saved' ? ' Todos los cambios se guardaron.' : state === 'failed' ? ' Algunos cambios no se pudieron guardar.' : ''}
       </span>
       <button type="button" className="btn-plain" onClick={() => void saveAll()} disabled={state === 'saving'}>
-        {state === 'saving' ? 'Saving…' : 'Save now'}
+        {state === 'saving' ? UI.saving : 'Guardar ahora'}
       </button>
     </div>
   );

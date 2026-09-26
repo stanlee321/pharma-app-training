@@ -1,3 +1,4 @@
+import { UI } from '../../lib/wording';
 import type { ReactNode } from 'react';
 import type { UserDTO } from '../../api/types';
 import { ROLE_LABELS } from '../../api/types';
@@ -5,7 +6,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { Icon } from '../../components/Icon';
 
 /** A spinner row for a loading card. */
-export function LoadingRow({ label = 'Loading…' }: { label?: string }) {
+export function LoadingRow({ label = UI.loading }: { label?: string }) {
   return (
     <div className="row state-row" role="status">
       <span className="spinner" aria-hidden="true" />
@@ -23,7 +24,7 @@ export function LoadError({ title, error, onRetry }: { title: string; error: str
       description={error ?? undefined}
       action={
         <button type="button" className="btn-plain" onClick={onRetry}>
-          Retry
+          {UI.retry}
         </button>
       }
     />
@@ -56,12 +57,12 @@ export function AccountBadges({ user }: { user: Pick<UserDTO, 'is_active' | 'mus
   return (
     <>
       {user.is_active ? (
-        <span className="status-badge admin-badge--active">Active</span>
+        <span className="status-badge admin-badge--active">Activa</span>
       ) : (
-        <span className="status-badge admin-badge--inactive">Inactive</span>
+        <span className="status-badge admin-badge--inactive">Inactiva</span>
       )}
       {user.must_change_password ? (
-        <span className="status-badge admin-badge--pending">Must change password</span>
+        <span className="status-badge admin-badge--pending">Debe cambiar la contraseña</span>
       ) : null}
     </>
   );

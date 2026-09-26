@@ -1,3 +1,4 @@
+import { plural, UI } from '../../lib/wording';
 import { useId } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { adminApi, type DocumentFilters } from '../../api/adminApi';
@@ -61,18 +62,18 @@ export function AdminDocumentsPage() {
   return (
     <>
       <div className="admin-head">
-        <h1 className="large-title">Documents</h1>
+        <h1 className="large-title">Documentos</h1>
       </div>
 
-      <form className="admin-filters" role="search" aria-label="Filter documents" onSubmit={(e) => e.preventDefault()}>
+      <form className="admin-filters" role="search" aria-label="Filtrar documentos" onSubmit={(e) => e.preventDefault()}>
         <div className="admin-filter">
-          <label htmlFor={ids.form}>Form</label>
+          <label htmlFor={ids.form}>Formulario</label>
           <select
             id={ids.form}
             value={formId}
             onChange={(e) => setSp(withParam(sp, 'form_id', e.target.value), { replace: true })}
           >
-            <option value="">All forms</option>
+            <option value="">Todos los formularios</option>
             {FORM_OPTIONS.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.title}
@@ -81,12 +82,12 @@ export function AdminDocumentsPage() {
           </select>
         </div>
         <div className="admin-filter admin-filter--grow">
-          <label htmlFor={ids.caseId}>Case id</label>
+          <label htmlFor={ids.caseId}>Id del caso</label>
           <input
             id={ids.caseId}
             type="search"
             value={caseText}
-            placeholder="e.g. 6f6e01f7-26e9-4684-…"
+            placeholder="p. ej. 6f6e01f7-26e9-4684-…"
             autoComplete="off"
             spellCheck={false}
             aria-invalid={typedInvalid || undefined}
@@ -95,7 +96,7 @@ export function AdminDocumentsPage() {
           />
           {typedInvalid ? (
             <span id={ids.caseErr} className="admin-filter__error">
-              Paste a full case id (a UUID).
+              Pegue el id completo del caso (un UUID).
             </span>
           ) : null}
         </div>
@@ -108,14 +109,14 @@ export function AdminDocumentsPage() {
               setSp(new URLSearchParams(), { replace: true });
             }}
           >
-            Clear filters
+            {UI.clearFilters}
           </button>
         ) : null}
       </form>
 
       {openError ? <InlineAlert>{openError}</InlineAlert> : null}
       {preview ? (
-        <Section header="Preview">
+        <Section header="Vista previa">
           <PdfPreview preview={preview} onClose={close} />
         </Section>
       ) : null}
@@ -123,25 +124,25 @@ export function AdminDocumentsPage() {
       <Section
         header={
           data
-            ? `${data.total.toLocaleString('en-US')} ${data.total === 1 ? 'document' : 'documents'}${filtered ? ' (filtered)' : ''}`
-            : 'Documents'
+            ? `${plural(data.total, 'documento', 'documentos')}${filtered ? UI.filtered : ''}`
+            : 'Documentos'
         }
       >
         {caseInvalid ? (
-          <EmptyState icon="warning" title="Not a case id" description="Paste a full case id (a UUID) to filter by case." />
+          <EmptyState icon="warning" title="No es un id de caso" description="Pegue el id completo del caso (un UUID) para filtrar por caso." />
         ) : !data ? (
           q.status === 'error' ? (
-            <LoadError title="Couldn’t load documents" error={q.error} onRetry={q.reload} />
+            <LoadError title="No se pudieron cargar los documentos" error={q.error} onRetry={q.reload} />
           ) : (
-            <LoadingRow label="Loading documents…" />
+            <LoadingRow label="Cargando documentos…" />
           )
         ) : (
           <div className={q.status === 'loading' ? 'admin-refetching' : undefined} aria-busy={q.status === 'loading'}>
             {q.status === 'error' ? (
               <InlineAlert>
-                Couldn’t refresh: {q.error}{' '}
+                {UI.couldNotRefresh} {q.error}{' '}
                 <button type="button" className="btn-plain" onClick={q.reload}>
-                  Retry
+                  {UI.retry}
                 </button>
               </InlineAlert>
             ) : null}
@@ -149,42 +150,42 @@ export function AdminDocumentsPage() {
               data.total > 0 ? (
                 <EmptyState
                   icon="tray"
-                  title="This page is empty"
-                  description={`There are only ${data.total} matching documents.`}
+                  title={UI.emptyPage}
+                  description={`Solo hay ${plural(data.total, 'documento', 'documentos')} que coinciden.`}
                   action={
                     <button type="button" className="btn-plain" onClick={() => goPage(1)}>
-                      Go to the first page
+                      {UI.firstPage}
                     </button>
                   }
                 />
               ) : (
                 <EmptyState
                   icon="doc"
-                  title={filtered ? 'No matching documents' : 'No stored documents yet'}
+                  title={filtered ? 'Ningún documento coincide' : 'Aún no hay documentos guardados'}
                   description={
                     filtered
-                      ? 'Try another form or case, or clear the filters.'
-                      : 'Documents appear here when a form is stored or a case is finalized.'
+                      ? 'Pruebe otro formulario o caso, o limpie los filtros.'
+                      : 'Los documentos aparecen aquí cuando se guarda un formulario o se finaliza un caso.'
                   }
                 />
               )
             ) : (
               <div className="admin-table-scroll">
                 <table className="admin-table">
-                  <caption className="visually-hidden">Stored documents</caption>
+                  <caption className="visually-hidden">Documentos guardados</caption>
                   <thead>
                     <tr>
-                      <th scope="col">Form</th>
-                      <th scope="col">Case</th>
-                      <th scope="col">Stored</th>
+                      <th scope="col">Formulario</th>
+                      <th scope="col">Caso</th>
+                      <th scope="col">Guardado</th>
                       <th scope="col" className="hide-narrow">
-                        By
+                        Por
                       </th>
                       <th scope="col" className="num hide-narrow">
-                        Size
+                        Tamaño
                       </th>
                       <th scope="col">
-                        <span className="visually-hidden">Actions</span>
+                        <span className="visually-hidden">Acciones</span>
                       </th>
                     </tr>
                   </thead>
@@ -193,7 +194,7 @@ export function AdminDocumentsPage() {
                       <tr key={d.id} data-testid="document-row" data-doc-id={d.id}>
                         <th scope="row">
                           {formTitle(d.form_id)}
-                          {d.is_fallback ? <span className="admin-table__sub doc-row__fallback">summary fallback</span> : null}
+                          {d.is_fallback ? <span className="admin-table__sub doc-row__fallback">resumen de respaldo</span> : null}
                           <span
                             className="admin-table__sub admin-mono hide-narrow"
                             data-testid="document-storage"
@@ -214,11 +215,11 @@ export function AdminDocumentsPage() {
                           <button
                             type="button"
                             className="btn-plain"
-                            aria-label={`Open ${formTitle(d.form_id)} of ${formatDateTime(d.created_at)}`}
+                            aria-label={`Abrir ${formTitle(d.form_id)} del ${formatDateTime(d.created_at)}`}
                             disabled={opening === d.id}
                             onClick={() => void open(d)}
                           >
-                            {opening === d.id ? 'Opening…' : preview?.docId === d.id ? 'Shown' : 'Open'}
+                            {opening === d.id ? 'Abriendo…' : preview?.docId === d.id ? 'Mostrado' : 'Abrir'}
                           </button>
                         </td>
                       </tr>
@@ -233,7 +234,7 @@ export function AdminDocumentsPage() {
                 pageSize={PAGE_SIZE}
                 total={data.total}
                 shown={data.items.length}
-                label="Document pages"
+                label="Páginas de documentos"
                 onPage={goPage}
               />
             ) : null}

@@ -1,5 +1,6 @@
 import { BackendError, type CaseBackend } from './backend';
 import { cloneCase, newCase } from './factory';
+import { DEMO_PATIENT_ID } from './patientApi';
 import type { AnesthesiaCase, DocumentDTO } from './types';
 
 /** One obviously-synthetic demo case (no real patient data). */
@@ -7,6 +8,7 @@ export function demoCase(): AnesthesiaCase {
   const c = newCase('demo', new Date('2026-01-01T08:00:00Z'));
   c.patient.nombre = 'Paciente Demo (sintético)';
   c.patient.registro = 'DEMO-0001';
+  c.patient_id = DEMO_PATIENT_ID;
   c.patient.profile = { weight: 72, height: 161, age: 54, gender: 'female', dilution: 10 };
   c.diagnostico_preop = 'Diagnóstico de ejemplo';
   c.sala = 'Q-DEMO';
@@ -33,7 +35,7 @@ export class InMemoryBackend implements CaseBackend {
 
   async load(id: string): Promise<AnesthesiaCase> {
     const c = this.cases.get(id);
-    if (!c) throw new BackendError('notFound', `Case ${id} not found.`, 404);
+    if (!c) throw new BackendError('notFound', `Caso ${id} no encontrado.`, 404);
     return cloneCase(c);
   }
 
@@ -71,7 +73,7 @@ export class InMemoryBackend implements CaseBackend {
 
   async finalize(id: string): Promise<AnesthesiaCase> {
     const c = this.cases.get(id);
-    if (!c) throw new BackendError('notFound', `Case ${id} not found.`, 404);
+    if (!c) throw new BackendError('notFound', `Caso ${id} no encontrado.`, 404);
     if (c.status === 'finalized') throw BackendError.http(409, JSON.stringify({ detail: 'case is finalized' }));
     const now = new Date().toISOString();
     const locked: AnesthesiaCase = { ...cloneCase(c), status: 'finalized', finalized_at: now, updated_at: now };
@@ -85,21 +87,21 @@ export class InMemoryBackend implements CaseBackend {
   }
 
   async generateDocument(): Promise<DocumentDTO> {
-    throw new BackendError('unsupported', 'Stored documents need the REST backend (the server renders the forms).');
+    throw new BackendError('unsupported', 'Los documentos guardados necesitan el servidor (el servidor genera los formularios).');
   }
 
   async documentFile(): Promise<Blob> {
-    throw new BackendError('unsupported', 'Stored documents need the REST backend.');
+    throw new BackendError('unsupported', 'Los documentos guardados necesitan el servidor.');
   }
 
   async deleteDocument(): Promise<void> {
-    throw new BackendError('unsupported', 'Stored documents need the REST backend.');
+    throw new BackendError('unsupported', 'Los documentos guardados necesitan el servidor.');
   }
 
   async exportForm(): Promise<Blob> {
     throw new BackendError(
       'unsupported',
-      'Filled-form export needs the REST backend — enable CaseStoreProvider.useREST.',
+      'La exportación de formularios necesita el servidor.',
     );
   }
 }

@@ -24,7 +24,7 @@ export class RestBackend implements CaseBackend {
 
   async list(): Promise<AnesthesiaCase[]> {
     const rows = await this.http.json<CaseSummaryDTO[]>('GET', ['cases']);
-    if (!Array.isArray(rows)) throw new BackendError('invalidResponse', 'Malformed case list.');
+    if (!Array.isArray(rows)) throw new BackendError('invalidResponse', 'Lista de casos mal formada.');
     return rows.map(shellFromSummary);
   }
 
@@ -60,7 +60,7 @@ export class RestBackend implements CaseBackend {
 
   async listDocuments(caseId: string): Promise<DocumentDTO[]> {
     const rows = await this.http.json<DocumentDTO[]>('GET', ['cases', caseId, 'documents']);
-    if (!Array.isArray(rows)) throw new BackendError('invalidResponse', 'Malformed document list.');
+    if (!Array.isArray(rows)) throw new BackendError('invalidResponse', 'Lista de documentos mal formada.');
     return rows;
   }
 

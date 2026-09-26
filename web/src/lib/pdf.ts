@@ -5,7 +5,7 @@ function blobHead(blob: Blob, n: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(r.error ?? new Error('could not read the PDF.'));
+    r.onerror = () => reject(r.error ?? new Error('no se pudo leer el PDF.'));
     r.readAsText(head);
   });
 }
@@ -15,9 +15,9 @@ function blobHead(blob: Blob, n: number): Promise<string> {
  * page can be a 200) and return them typed `application/pdf`, ready for `URL.createObjectURL`.
  */
 export async function asPdfBlob(blob: Blob): Promise<Blob> {
-  if (blob.size === 0) throw new Error('the server returned an empty file.');
+  if (blob.size === 0) throw new Error('el servidor devolvió un archivo vacío.');
   if ((await blobHead(blob, 5)) !== '%PDF-') {
-    throw new Error(`the server returned ${blob.type || 'an unknown type'}, not a PDF.`);
+    throw new Error(`el servidor devolvió ${blob.type || 'un tipo desconocido'}, no un PDF.`);
   }
   return blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
 }

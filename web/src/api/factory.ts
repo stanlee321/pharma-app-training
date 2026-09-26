@@ -4,6 +4,7 @@ import type {
   AnesthesiaCaseDTO,
   AnesthesiaCaseWrite,
   CaseSummaryDTO,
+  PatientDTO,
   PatientProfile,
   VitalSnapshot,
 } from './types';
@@ -43,6 +44,8 @@ export function newCase(owner: string, now: Date = new Date()): AnesthesiaCase {
     updated_at: null,
     finalized_at: null,
     user_id: null,
+    // The patient (historia clínica); required by the backend when the case is created.
+    patient_id: null,
     fecha: iso,
     sala: '',
     servicio: '',
@@ -193,6 +196,7 @@ export function shellFromSummary(s: CaseSummaryDTO): AnesthesiaCase {
   c.updated_at = s.updated_at ?? null;
   c.finalized_at = s.finalized_at ?? null;
   c.user_id = s.user_id ?? null;
+  c.patient_id = s.patient_id ?? null;
   c.patient.nombre = s.nombre ?? '';
   c.diagnostico_preop = s.diagnostico_preop ?? '';
   return c;
@@ -208,14 +212,45 @@ export function toWriteBody(c: AnesthesiaCase): AnesthesiaCaseWrite {
   return body;
 }
 
+/** The patient identity a case snapshot carries (what the server re-copies on every draft write). */
+export type PatientIdentity = Pick<PatientDTO, 'id' | 'nombre' | 'registro' | 'sexo' | 'grupo_sanguineo' | 'rh'> &
+  Partial<Pick<PatientDTO, 'edad'>>;
+
+/**
+ * Copy the patient's identity into a case's snapshot, as the server does: nombre always,
+ * registro when the patient has one, sexo (→ `profile.gender`), grupo and Rh when set.
+ */
+export function applyIdentity(c: AnesthesiaCase, p: PatientIdentity): void {
+  c.patient.nombre = p.nombre;
+  if (p.registro) c.patient.registro = p.registro;
+  if (p.sexo) c.patient.profile.gender = p.sexo;
+  if (p.grupo_sanguineo) c.patient.grupo_sanguineo = p.grupo_sanguineo;
+  if (p.rh) c.patient.rh = p.rh;
+}
+
+/**
+ * A new case for a patient: `patient_id` set (the server requires it on create), the identity and
+ * the patient's age (`edad`, from fecha_nacimiento) pre-filled so the Hub shows the right title before the server's copy (which also carries the
+ * previous case's biometrics as defaults) arrives.
+ */
+export function newCaseForPatient(owner: string, p: PatientIdentity, now: Date = new Date()): AnesthesiaCase {
+  const c = newCase(owner, now);
+  c.patient_id = p.id;
+  applyIdentity(c, p);
+  // The server derives the age from fecha_nacimiento too; seed it locally so an edit made before
+  // the create PUT answers (which keeps the local copy) never persists the default age.
+  if (p.edad != null && p.edad >= 0) c.patient.profile.age = p.edad;
+  return c;
+}
+
 /** Swift `AnesthesiaCase.title`. */
 export function caseTitle(c: Pick<AnesthesiaCase, 'patient'>): string {
-  return c.patient.nombre.trim() === '' ? 'Untitled case' : c.patient.nombre;
+  return c.patient.nombre.trim() === '' ? 'Caso sin nombre' : c.patient.nombre;
 }
 
 /** Swift `AnesthesiaCase.subtitle`. */
 export function caseSubtitle(c: Pick<AnesthesiaCase, 'diagnostico_preop'>): string {
-  return c.diagnostico_preop.trim() === '' ? 'No diagnosis' : c.diagnostico_preop;
+  return c.diagnostico_preop.trim() === '' ? 'Sin diagnóstico' : c.diagnostico_preop;
 }
 
 /** Deep copy via JSON (cases are plain JSON data). */

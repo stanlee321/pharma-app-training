@@ -1,5 +1,4 @@
-import { Outlet, Route, Routes } from 'react-router-dom';
-import { EncounterListView } from './EncounterListView';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { LoginView } from './LoginView';
 import { ChangePasswordView } from './ChangePasswordView';
 import { EncounterHubView } from './EncounterHubView';
@@ -20,13 +19,20 @@ import { AdminCasesPage } from './admin/AdminCasesPage';
 import { AdminDocumentsPage } from './admin/AdminDocumentsPage';
 import { AdminDashboardPage } from './admin/AdminDashboardPage';
 import { AdminNewUserPage } from './admin/AdminNewUserPage';
+import { AdminPatientPage } from './admin/AdminPatientPage';
+import { AdminPatientsPage } from './admin/AdminPatientsPage';
 import { AdminUserPage } from './admin/AdminUserPage';
 import { AdminUsersPage } from './admin/AdminUsersPage';
+import { PatientListView } from './patients/PatientListView';
+import { PatientNewView } from './patients/PatientNewView';
+import { PatientView } from './patients/PatientView';
 
 /**
  * Route table (Swift RootView `destination(for:)`) with auth + role gates:
  * - /login, /change-password (forced while a password change is pending, else voluntary);
- * - /cases/** — anesthesiologists only (an admin is sent to /admin);
+ * - /pacientes (historias clínicas: list, /nuevo, /:id) and /cases/:id/** (a case and its
+ *   sections) — anesthesiologists only (an admin is sent to /admin); /cases itself redirects to
+ *   /pacientes;
  * - /admin/** — admins only (an anesthesiologist is sent to /cases);
  * - anything else → the signed-in role's landing, or /login.
  */
@@ -44,6 +50,19 @@ export function AppRoutes() {
       />
 
       <Route
+        path="/pacientes"
+        element={
+          <RequireAuth role="anesthesiologist">
+            <Outlet />
+          </RequireAuth>
+        }
+      >
+        <Route index element={<PatientListView />} />
+        <Route path="nuevo" element={<PatientNewView />} />
+        <Route path=":id" element={<PatientView />} />
+      </Route>
+
+      <Route
         path="/cases"
         element={
           <RequireAuth role="anesthesiologist">
@@ -51,7 +70,7 @@ export function AppRoutes() {
           </RequireAuth>
         }
       >
-        <Route index element={<EncounterListView />} />
+        <Route index element={<Navigate to={paths.pacientes} replace />} />
         <Route path=":id" element={<EncounterHubView />} />
         <Route path=":id/patient" element={<PatientDataScreen />} />
         <Route path=":id/preanesthetic" element={<PreanestheticView />} />
@@ -74,6 +93,8 @@ export function AppRoutes() {
         }
       >
         <Route index element={<AdminDashboardPage />} />
+        <Route path="patients" element={<AdminPatientsPage />} />
+        <Route path="patients/:id" element={<AdminPatientPage />} />
         <Route path="cases" element={<AdminCasesPage />} />
         <Route path="cases/:id/*" element={<AdminCasePage />} />
         <Route path="users" element={<AdminUsersPage />} />

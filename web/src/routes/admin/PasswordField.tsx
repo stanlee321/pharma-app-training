@@ -47,21 +47,21 @@ export function PasswordField({
           <button
             type="button"
             className="btn-plain"
-            aria-label={shown ? 'Hide password' : 'Show password'}
+            aria-label={shown ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             onClick={() => setShown((s) => !s)}
           >
-            {shown ? 'Hide' : 'Show'}
+            {shown ? 'Ocultar' : 'Mostrar'}
           </button>
           <button
             type="button"
             className="btn-plain"
-            aria-label="Generate a password"
+            aria-label="Generar una contraseña"
             onClick={() => {
               onChange(generateTempPassword());
               setShown(true);
             }}
           >
-            Generate
+            Generar
           </button>
         </span>
       </div>

@@ -46,6 +46,7 @@ const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
 function serverCase(nombre: string, updatedAt: string | null, over: Partial<AnesthesiaCase> = {}): AnesthesiaCase {
   const c = newCase('Dr. Demo');
   c.patient.nombre = nombre;
+  c.patient_id = '11111111-0000-4000-8000-00000000fff1'; // a case always belongs to a patient
   c.updated_at = updatedAt;
   return { ...c, ...over };
 }
@@ -173,11 +174,11 @@ describe('restoring a draft checks the server copy first', () => {
     await act(async () => {
       await caseStore.getState().restoreDrafts([{ case: draftOf(base), savedAt: ago(1000), pendingCreate: false }]);
     });
-    const alert = await screen.findByText(/it was changed on the server since/);
+    const alert = await screen.findByText(/el caso cambió en el servidor desde entonces/);
     expect(alert).toBeInTheDocument();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Discard them' }));
-    expect(screen.queryByText(/it was changed on the server since/)).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Descartarlos' }));
+    expect(screen.queryByText(/el caso cambió en el servidor desde entonces/)).toBeNull();
     expect(h.puts).toHaveLength(0);
   });
 });

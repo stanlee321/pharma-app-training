@@ -1,3 +1,4 @@
+import { SECTION_TITLES } from '../../lib/wording';
 import { useId } from 'react';
 import type { AnesthesiaCase, NewbornRecord } from '../../api/types';
 import { ChoiceChips } from '../../components/Choice';
@@ -25,18 +26,18 @@ const APGAR_VALUES = Array.from({ length: 11 }, (_, i) => i);
  * DTO-only fields the Swift model lacks (Expulsión de placenta, Estado general) are also editable.
  */
 export function NewbornScreen() {
-  return <CaseScreen title="Newborns">{(c, update) => <NewbornList c={c} update={update} />}</CaseScreen>;
+  return <CaseScreen title={SECTION_TITLES.newborn}>{(c, update) => <NewbornList c={c} update={update} />}</CaseScreen>;
 }
 
 function NewbornList({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {
   return (
     <>
-      <Section footer="Add one record per birth — a multiple gestation adds more.">
+      <Section footer="Agregue un registro por nacimiento; una gestación múltiple agrega más.">
         {c.newborns.length === 0 ? (
           <EmptyState
             icon="family"
-            title="No newborn records"
-            description="Obstetric cases only. Add a record per birth to capture sex, weight, height, and Apgar."
+            title="Sin registros de recién nacido"
+            description="Solo casos obstétricos. Agregue un registro por nacimiento para capturar sexo, peso, talla y Apgar."
           />
         ) : (
           c.newborns.map((n, i) => <NewbornEditor key={n.id} newborn={n} number={i + 1} update={update} />)
@@ -44,8 +45,8 @@ function NewbornList({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {
       </Section>
       <Section>
         <AddRowButton
-          label="Add newborn"
-          ariaLabel="Add newborn record"
+          label="Agregar recién nacido"
+          ariaLabel="Agregar registro de recién nacido"
           onAdd={() =>
             update((d) => {
               d.newborns.push(newNewborn());
@@ -59,7 +60,7 @@ function NewbornList({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {
 
 function NewbornEditor({ newborn, number, update }: { newborn: NewbornRecord; number: number; update: CaseUpdate }) {
   const uid = useId();
-  const title = `Newborn ${number}`;
+  const title = `Recién nacido ${number}`;
   const edit = (fn: (n: NewbornRecord) => void) =>
     update((d) => {
       const n = d.newborns.find((x) => x.id === newborn.id);
@@ -71,7 +72,7 @@ function NewbornEditor({ newborn, number, update }: { newborn: NewbornRecord; nu
         <Icon name="family" size={18} />
         <span className="newborn__title">{title}</span>
         <ConfirmDeleteButton
-          label={`Delete ${title}`}
+          label={`Eliminar ${title}`}
           onDelete={() =>
             update((d) => {
               d.newborns = d.newborns.filter((x) => x.id !== newborn.id);

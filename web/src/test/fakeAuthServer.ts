@@ -85,6 +85,7 @@ export function fakeAuthServer(accounts: FakeAccount[], opts: { expiresAt?: stri
     if (acc.user.must_change_password) return detail(403, 'password change required');
     if (path.startsWith('/admin') && acc.user.role !== 'admin') return detail(403, 'admin only');
     if (method === 'GET' && path === '/cases') return json([]);
+    if (method === 'GET' && path === '/patients') return json({ items: [], total: 0, limit: 100, offset: 0 });
     return detail(404, 'Not Found');
   });
 

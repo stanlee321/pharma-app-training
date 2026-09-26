@@ -12,10 +12,10 @@ describe('DrugLedgerScreen', () => {
     const h = restHarness([c]);
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/drugs`, h.backend);
-    expect(await screen.findByRole('heading', { name: 'Drug Ledger', level: 1 })).toBeInTheDocument();
-    expect(screen.getByText('No drugs recorded yet.')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Fármacos administrados', level: 1 })).toBeInTheDocument();
+    expect(screen.getByText('Aún no hay fármacos registrados.')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Add drug' }));
+    await user.click(screen.getByRole('button', { name: 'Agregar fármaco' }));
     expect(storeCase(c.id).drugs).toHaveLength(1);
     expect(storeCase(c.id).drugs[0]).toMatchObject({ farmaco: '', dose_value: null, dose_unit: 'mg', via: 'IV', rust_model_id: null });
     // Incomplete → red bar.
@@ -26,16 +26,16 @@ describe('DrugLedgerScreen', () => {
     expect(storeCase(c.id).drugs[0]!.rust_model_id).toBe('marsh');
     // Live TCI chip (Marsh, default 70 kg / 10 mg/ml, Cp 3.0 from zero): bolus 3/1000·15960 mg =
     // 47.88 mg = 4.8 ml; maintenance (0.119+0.112+0.042)·47.88 mg/min ·60/10 = 78.4 ml/h.
-    const chip = within(row('A')).getByRole('group', { name: 'Recommended TCI dose' });
+    const chip = within(row('A')).getByRole('group', { name: 'Dosis TCI recomendada' });
     expect(chip).toHaveAttribute('data-slot', 'drug-tci-chip');
     expect(chip).toHaveAttribute('data-model-id', 'marsh');
-    expect(chip).toHaveTextContent('TCI: 4.8 ml bolus · 78.4 ml/h');
+    expect(chip).toHaveTextContent('TCI: bolo 4.8 ml · 78.4 ml/h');
     expect(chip).toHaveTextContent('@ 3.0');
     expect(row('A')).toHaveClass('drug-row--incomplete'); // still no dose
 
     await user.type(within(row('A')).getByLabelText('Dosis A'), '120');
     expect(row('A')).not.toHaveClass('drug-row--incomplete');
-    await user.click(within(row('A')).getByRole('button', { name: 'Increase dose A' }));
+    await user.click(within(row('A')).getByRole('button', { name: 'Aumentar dosis A' }));
     expect(storeCase(c.id).drugs[0]!.dose_value).toBe(125);
     await user.selectOptions(within(row('A')).getByLabelText('Unidad A'), 'mcg/kg/min');
     await user.selectOptions(within(row('A')).getByLabelText('Vía'), 'Epidural');
@@ -43,13 +43,13 @@ describe('DrugLedgerScreen', () => {
     expect(storeCase(c.id).drugs[0]!.time).toBe(new Date('2026-01-01T08:30').toISOString());
 
     // Second row: pick a model from the menu → farmaco = picker label + id.
-    await user.click(screen.getByRole('button', { name: 'Add drug' }));
+    await user.click(screen.getByRole('button', { name: 'Agregar fármaco' }));
     await user.selectOptions(within(row('B')).getByLabelText('Modelo PK B'), 'minto');
     expect(storeCase(c.id).drugs[1]).toMatchObject({ farmaco: 'Remifentanil [Minto]', rust_model_id: 'minto' });
     // Clear model keeps the name, drops the id and the chip.
     await user.selectOptions(within(row('B')).getByLabelText('Modelo PK B'), '');
     expect(storeCase(c.id).drugs[1]).toMatchObject({ farmaco: 'Remifentanil [Minto]', rust_model_id: null });
-    expect(within(row('B')).queryByRole('group', { name: 'Recommended TCI dose' })).toBeNull();
+    expect(within(row('B')).queryByRole('group', { name: 'Dosis TCI recomendada' })).toBeNull();
     // A non-modelled name → null.
     await user.clear(within(row('B')).getByLabelText('Fármaco B'));
     await user.type(within(row('B')).getByLabelText('Fármaco B'), 'Ketamina');
@@ -59,10 +59,10 @@ describe('DrugLedgerScreen', () => {
     // Decrease never goes below 0.
     await user.clear(within(row('B')).getByLabelText('Dosis B'));
     await user.type(within(row('B')).getByLabelText('Dosis B'), '3');
-    await user.click(within(row('B')).getByRole('button', { name: 'Decrease dose B' }));
+    await user.click(within(row('B')).getByRole('button', { name: 'Disminuir dosis B' }));
     expect(storeCase(c.id).drugs[1]!.dose_value).toBe(0);
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(h.puts).toHaveLength(1));
     const drugs = h.puts[0]!.body.drugs as Record<string, unknown>[];
     expect(drugs).toHaveLength(2);
@@ -88,15 +88,15 @@ describe('DrugLedgerScreen', () => {
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}/drugs`, h.backend);
     expect(await screen.findByLabelText('Fármaco A')).toHaveValue('Fentanilo');
-    await user.click(screen.getByRole('button', { name: 'Delete drug A' }));
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Eliminar fármaco A' }));
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(storeCase(c.id).drugs).toHaveLength(2);
-    await user.click(screen.getByRole('button', { name: 'Delete drug A' }));
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Eliminar fármaco A' }));
+    await user.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(storeCase(c.id).drugs.map((d) => d.farmaco)).toEqual(['Rocuronio']);
     expect(screen.getByLabelText('Fármaco A')).toHaveValue('Rocuronio');
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(h.puts).toHaveLength(1));
     expect((h.puts[0]!.body.drugs as unknown[]).length).toBe(1);
   });

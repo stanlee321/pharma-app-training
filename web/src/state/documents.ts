@@ -2,6 +2,7 @@
  * Stored documents: grouping for the per-case panel + the delete permission rule
  * (backend-api.md "Documents": admin always; the owner only while the case is a draft).
  */
+import { formatCount } from '../lib/wording';
 import type { AdminDocumentDTO, CaseStatus, DocumentDTO, FormId, UserDTO } from '../api/types';
 import { FORM_OPTIONS, formTitle } from './review';
 
@@ -53,7 +54,7 @@ export function documentFileName(d: Pick<DocumentDTO, 'form_id' | 'case_id' | 'c
 
 /** "201 KB" (at least 1 KB). */
 export function formatSize(bytes: number): string {
-  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${formatCount(Math.max(1, Math.round(bytes / 1024)))} KB`;
 }
 
 type StorageFields = Pick<AdminDocumentDTO, 'storage_path'> & { storage_backend?: string };
@@ -68,14 +69,14 @@ export function storageInfo(d: StorageFields): { label: string; title: string } 
   const path = d.storage_path?.trim();
   if (path && (d.storage_backend === undefined || d.storage_backend === 'local')) {
     const base = path.split(/[\\/]/).filter(Boolean).pop() ?? path;
-    return { label: `Local file · ${base}`, title: path };
+    return { label: `Archivo local · ${base}`, title: path };
   }
-  if (d.storage_backend === 'db') return { label: 'Stored in the database', title: 'Stored in the database' };
+  if (d.storage_backend === 'db') return { label: 'En la base de datos', title: 'Guardado en la base de datos' };
   if (d.storage_backend) {
-    const label = `Storage: ${d.storage_backend}`;
+    const label = `Almacenamiento: ${d.storage_backend}`;
     return { label, title: path ? `${label} (${path})` : label };
   }
-  return { label: '—', title: 'Storage unknown' };
+  return { label: '—', title: 'Almacenamiento desconocido' };
 }
 
 /** The table text of `storageInfo`. */

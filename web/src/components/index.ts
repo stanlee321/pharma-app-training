@@ -2,7 +2,7 @@ export { Icon, type IconName } from './Icon';
 export { Page, BackLink, type PageProps } from './Page';
 export { Section } from './Section';
 export { EmptyState } from './EmptyState';
-export { TextRow, NumberRow, StepperRow, Row } from './FormRows';
+export { TextRow, NumberRow, StepperRow, InfoRow, Row } from './FormRows';
 export { parseNumber } from '../lib/number';
 export { RepeatButton } from './RepeatButton';
 export { useAcceleratingRepeat, REPEAT_SCHEDULE } from './useAcceleratingRepeat';
