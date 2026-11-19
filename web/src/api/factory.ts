@@ -94,6 +94,8 @@ export function newCase(owner: string, now: Date = new Date()): AnesthesiaCase {
       aparato_cardiovascular: '',
       tegumentos: '',
       antecedentes_anestesicos: '',
+      antecedentes_patologicos: '',
+      antecedentes_quirurgicos: '',
       medicamentos_previos: '',
       analgesica_obstetrica: '',
       otros: '',
@@ -103,16 +105,21 @@ export function newCase(owner: string, now: Date = new Date()): AnesthesiaCase {
       asa: null,
       raq: null,
       labs: {},
+      examen_fisico: {},
       notes: '',
     },
     technique: { modality: '', values: {} },
     trans_record: {
+      inicio: null,
+      intervalo_min: 5,
       series: [],
       events: [],
       monitoring: {},
       basal: emptySnapshot(),
       termination: emptySnapshot(),
       complicaciones: '',
+      intercurrencias_tipos: {},
+      intercurrencias: '',
     },
     fluid_balance: {
       matrix: {},
@@ -158,8 +165,16 @@ export function normalizeCase(dto: AnesthesiaCaseDTO): AnesthesiaCase {
     dose_unit: d.dose_unit ?? 'mg',
     via: d.via ?? 'IV',
     time: d.time ?? null,
+    modo: d.modo ?? 'bolo',
+    fin: d.fin ?? null,
     rust_model_id: d.rust_model_id ?? null,
   }));
+  filled.pre_assessment.examen_fisico = Object.fromEntries(
+    Object.entries(dto.pre_assessment?.examen_fisico ?? {}).map(([k, e]) => [
+      k,
+      { estado: e.estado ?? '', hallazgos: e.hallazgos ?? '' },
+    ]),
+  );
   filled.newborns = (dto.newborns ?? []).map((n) => ({
     id: n.id ?? newUUID(),
     sexo: n.sexo ?? '',

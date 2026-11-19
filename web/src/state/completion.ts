@@ -45,6 +45,9 @@ export function preAssessmentHasData(a: PreanestheticAssessment): boolean {
     filled(a.aparato_cardiovascular) ||
     filled(a.tegumentos) ||
     filled(a.antecedentes_anestesicos) ||
+    filled(a.antecedentes_patologicos) ||
+    filled(a.antecedentes_quirurgicos) ||
+    nonEmpty(a.examen_fisico) ||
     filled(a.medicamentos_previos) ||
     filled(a.analgesica_obstetrica) ||
     filled(a.otros) ||
@@ -66,6 +69,9 @@ export function transRecordHasData(r: TransanestheticRecord): boolean {
     r.events.length > 0 ||
     nonEmpty(r.monitoring) ||
     filled(r.complicaciones) ||
+    filled(r.intercurrencias) ||
+    Object.values(r.intercurrencias_tipos).some(Boolean) ||
+    r.inicio != null ||
     r.basal.fc != null ||
     r.basal.spo2 != null ||
     r.basal.ta_sys != null

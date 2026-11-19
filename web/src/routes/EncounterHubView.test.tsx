@@ -117,7 +117,7 @@ describe('EncounterHubView', () => {
   it('greens the new section rows from their data', async () => {
     const x = newCase('Dr. Demo');
     x.trans_record.basal.fc = 80;
-    x.drugs = [{ id: 'a0000000-0000-4000-8000-000000000009', label: '', farmaco: 'X', dose_value: 1, dose_unit: 'mg', via: 'IV', time: null, rust_model_id: null }];
+    x.drugs = [{ id: 'a0000000-0000-4000-8000-000000000009', label: '', farmaco: 'X', dose_value: 1, dose_unit: 'mg', via: 'IV', time: null, modo: 'bolo', fin: null, rust_model_id: null }];
     x.recovery.alta_a_piso = 'URPA';
     renderApp(`/cases/${x.id}`, restHarness([x]).backend);
     expect(await screen.findByRole('link', { name: /^Registro transanestésico/ })).toHaveClass('link-row--filled');

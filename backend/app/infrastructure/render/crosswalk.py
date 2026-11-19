@@ -67,10 +67,85 @@ def _fecha(dt: Any) -> Optional[str]:
         return _s(dt)
 
 
-def _dose(drug: Any) -> Optional[str]:
+def _dose(drug: Any, mark_infusion: bool = True) -> Optional[str]:
+    """``"150 mg IV"``; a continuous infusion reads ``"Infusión continua 0.1 mcg/kg/min IV"``
+    unless ``mark_infusion`` is off (the caller shows it next to the drug name instead)."""
     parts = [_s(drug.dose_value), _s(drug.dose_unit), _s(drug.via)]
     joined = " ".join(p for p in parts if p)
+    if joined and mark_infusion and getattr(drug, "modo", "bolo") == "infusion":
+        return f"Infusión continua {joined}"
     return joined or None
+
+
+def _join(*parts: tuple[str, Any]) -> Optional[str]:
+    """``"Label: text; Label: text"`` from the non-empty parts (label "" = text alone)."""
+    out = []
+    for label, text in parts:
+        txt = (text or "").strip() if isinstance(text, str) else _s(text)
+        if txt:
+            out.append(f"{label}: {txt}" if label else txt)
+    return "; ".join(out) or None
+
+
+# examen_fisico system key -> printed name (web/src/state/physicalExam.ts is the catalogue)
+EXAM_SYSTEMS: dict[str, str] = {
+    "neurologico": "Neurológico",
+    "cardiovascular": "Cardiovascular",
+    "respiratorio": "Respiratorio",
+    "gastrointestinal": "Abdomen / gastrointestinal",
+    "renal": "Renal / genitourinario",
+    "endocrinometabolico": "Endocrinometabólico",
+    "osteomuscular": "Osteomuscular",
+    "hematologico": "Hematológico",
+    "tegumentos": "Piel y tegumentos",
+}
+
+
+def _exam(case: AnesthesiaCaseDTO, key: str) -> Optional[str]:
+    """One system of the physical exam as print text ("Normal" / "Alterado: findings")."""
+    ex = (case.pre_assessment.examen_fisico or {}).get(key)
+    if ex is None:
+        return None
+    estado = {"normal": "Normal", "alterado": "Alterado"}.get(ex.estado, "")
+    return _join((estado, ex.hallazgos)) if estado and ex.hallazgos.strip() else (
+        estado or _s(ex.hallazgos))
+
+
+def _exam_rest(case: AnesthesiaCaseDTO, skip: tuple[str, ...]) -> Optional[str]:
+    """The systems that have no slot of their own on the form."""
+    return _join(*[(EXAM_SYSTEMS[k], _exam(case, k)) for k in EXAM_SYSTEMS if k not in skip])
+
+
+def _observaciones(case: AnesthesiaCaseDTO) -> Optional[str]:
+    """Observaciones plus the intercurrencias (events not caused by the medical act)."""
+    tr = case.trans_record
+    tipos = ", ".join(k for k, v in (tr.intercurrencias_tipos or {}).items() if v)
+    inter = _join(("", tipos), ("", tr.intercurrencias))
+    return _join(("", case.observaciones), ("Intercurrencias", inter))
+
+
+# Fluids IV catalogue category (web/src/state/timeGrid.ts FLUIDS) for the nota21 name fields.
+_FLUID_KIND = {
+    "cristaloides_66": ("ringer", "fisiologica", "glucosada", "mixta", "hartmann", "plasmalyte",
+                        "salina", "bicarbonato", "manitol"),
+    "coloides_67": ("gelatina", "almidon", "albumina", "dextrano", "coloide"),
+    "hemocomponentes_68": ("globular", "plasma fresco", "plaquet", "crioprecip", "sangre"),
+}
+
+
+def _fluid_names(case: AnesthesiaCaseDTO, field_id: str) -> Optional[str]:
+    from .timegrid import FLUID_PREFIX
+    keys = _FLUID_KIND[field_id]
+    names = []
+    for s in case.trans_record.series:
+        if not s.lane.startswith(FLUID_PREFIX) or not s.points:
+            continue
+        name = s.lane[len(FLUID_PREFIX):].strip()
+        low = unicodedata.normalize("NFKD", name.lower())
+        low = "".join(c for c in low if not unicodedata.combining(c)).replace("-", "")
+        if any(k in low for k in keys) and name not in names:
+            names.append(name)
+    return ", ".join(names) or None
 
 
 def _lab(case: AnesthesiaCaseDTO, *names: str) -> Optional[str]:
@@ -94,6 +169,10 @@ def _drug_match(case: AnesthesiaCaseDTO, label: str) -> Any:
     return None
 
 
+# technique.values multi-select key prefixes (web/src/state/techniqueFields.ts)
+_MULTI_PREFIXES = ("volatil_", "aguja_")
+
+
 def _technique_on(case: AnesthesiaCaseDTO, field: dict) -> bool:
     """True if this checkbox field is selected via technique.modality or technique.values."""
     fid = field.get("id", "")
@@ -103,11 +182,18 @@ def _technique_on(case: AnesthesiaCaseDTO, field: dict) -> bool:
     # exact field-id hit in the values blob
     if bool(vals.get(fid)):
         return True
-    # a values key that normalises to this field's label
+    # a values key that normalises to this field's label; multi-select keys carry a prefix
+    # ("volatil_Sevoflurano", "aguja_Tuohy") that is not part of the label
     nlabel = _norm(label)
     if nlabel:
         for k, v in vals.items():
-            if _norm(k) == nlabel and bool(v):
+            if not bool(v):
+                continue
+            nk = _norm(k)
+            for prefix in _MULTI_PREFIXES:
+                if k.startswith(prefix):
+                    nk = _norm(k[len(prefix):])
+            if nk == nlabel or (nk == "n2o" and nlabel.startswith("n2o")):
                 return True
     # the chosen modality
     nmod = _norm(tech.modality)
@@ -224,6 +310,8 @@ def _nota21(case: AnesthesiaCaseDTO, field: dict) -> Any:
     }
     if fid in static:
         return static[fid]
+    if fid in _FLUID_KIND:
+        return _fluid_names(case, fid)
 
     if ftype == "checkbox":
         if fid == "urgencia_8":
@@ -273,7 +361,7 @@ def _nota2(case: AnesthesiaCaseDTO, field: dict) -> Any:
         "ramsay_241": _s((case.recovery.otras or {}).get("Ramsay")),
         "bromage_242": _s((case.recovery.otras or {}).get("Bromage")),
         "ena_243": _s((case.recovery.otras or {}).get("ENA")),
-        "observaciones_incidentes_221": case.observaciones,
+        "observaciones_incidentes_221": _observaciones(case),
         "anestesiologo_253": case.anestesiologo.nombre,
     }
     if fid in static:
@@ -312,7 +400,7 @@ def _imss_p1(case: AnesthesiaCaseDTO, field: dict) -> Any:
                    if basal.ta_sys and basal.ta_dia else _s(basal.ta_sys)),
         "pre_p": _s(basal.fc),
         "pre_r": _s(basal.fr),
-        "pre_tegumentos": pa.tegumentos,
+        "pre_tegumentos": pa.tegumentos or _exam(case, "tegumentos"),
         "pre_hb": _s(p.hb),
         "pre_hto": _s(p.hto),
         "pre_rh": p.rh,
@@ -323,9 +411,15 @@ def _imss_p1(case: AnesthesiaCaseDTO, field: dict) -> Any:
         "ant_dentadura": pa.dentadura,
         "ant_cuello": pa.cuello,
         "ant_estado": pa.estado_psiquico,
-        "ant_otros": pa.otros,
-        "aparato_respiratorio": pa.aparato_respiratorio,
-        "aparato_cardiovascular": pa.aparato_cardiovascular,
+        # the form has no slot for patológicos / quirúrgicos nor for the other exam systems
+        "ant_otros": _join(
+            ("Patológicos", pa.antecedentes_patologicos),
+            ("Quirúrgicos", pa.antecedentes_quirurgicos),
+            ("", pa.otros),
+            ("Examen físico", _exam_rest(case, ("respiratorio", "cardiovascular", "tegumentos"))),
+        ),
+        "aparato_respiratorio": pa.aparato_respiratorio or _exam(case, "respiratorio"),
+        "aparato_cardiovascular": pa.aparato_cardiovascular or _exam(case, "cardiovascular"),
         "medicamentos_previos": pa.medicamentos_previos,
         "analgesica_obstetrica": pa.analgesica_obstetrica,
         "complic_transanestesica": case.trans_record.complicaciones,
@@ -357,7 +451,7 @@ def _imss_p2(case: AnesthesiaCaseDTO, field: dict) -> Any:
         "oper_prop": case.operacion_propuesta,
         "oper_real": case.operacion_realizada,
         "duracion_anestesia": case.duracion_anestesia,
-        "observaciones": case.observaciones,
+        "observaciones": _observaciones(case),
         "anestesiologo": case.anestesiologo.nombre,
         "clave": case.anestesiologo.clave,
         "cirujano": case.cirujano.nombre,

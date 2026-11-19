@@ -1,6 +1,7 @@
 import { SECTION_TITLES } from '../../lib/wording';
 import { useId } from 'react';
 import type { AnesthesiaCase, DrugAdministration, PatientProfile } from '../../api/types';
+import { SegmentedControl } from '../../components/Choice';
 import { ConfirmDeleteButton } from '../../components/ConfirmDeleteButton';
 import { AddRowButton } from '../../components/ReadOnly';
 import { RepeatButton } from '../../components/RepeatButton';
@@ -8,7 +9,18 @@ import { Section } from '../../components/Section';
 import { useNumberText } from '../../components/useNumberText';
 import { isoToLocalInput, localInputToIso } from '../../lib/datetime';
 import { DRUG_MODELS, matchedModel, pickerLabel } from '../../lib/drugModels';
-import { DOSE_STEP, DOSE_UNITS, drugIsIncomplete, newDrug, ROUTES, rowLetter } from '../../state/drugLedger';
+import {
+  DOSE_STEP,
+  DOSE_UNITS,
+  DRUG_MODES,
+  drugIsIncomplete,
+  isInfusion,
+  newDrug,
+  RATE_UNITS,
+  ROUTES,
+  rowLetter,
+  type DrugMode,
+} from '../../state/drugLedger';
 import { CaseScreen, type CaseUpdate } from '../CaseScreen';
 import { DRUG_TCI_DEFAULT_TARGET_CP, DrugTciChipSlot } from './DrugTciChipSlot';
 import './drugs.css';
@@ -90,8 +102,10 @@ function DrugRowEditor({
     unit: `${uid}-unit`,
     via: `${uid}-via`,
     time: `${uid}-time`,
+    fin: `${uid}-fin`,
   };
-  const unitOptions: string[] = [...DOSE_UNITS];
+  const infusion = isInfusion(drug);
+  const unitOptions: string[] = infusion ? [...RATE_UNITS] : [...DOSE_UNITS];
   if (drug.dose_unit !== '' && !unitOptions.includes(drug.dose_unit)) unitOptions.push(drug.dose_unit);
   const routeOptions: string[] = [...ROUTES];
   if (drug.via !== '' && !routeOptions.includes(drug.via)) routeOptions.push(drug.via);
@@ -165,6 +179,25 @@ function DrugRowEditor({
           />
         </div>
 
+        <div className="drug-row__line">
+          <SegmentedControl
+            label={`Tipo de administración ${letter}`}
+            options={DRUG_MODES}
+            value={(drug.modo === 'infusion' ? 'infusion' : 'bolo') as DrugMode}
+            onChange={(v) =>
+              edit((r) => {
+                r.modo = v;
+                if (v === 'infusion') {
+                  if (!(RATE_UNITS as readonly string[]).includes(r.dose_unit)) r.dose_unit = 'mcg/kg/min';
+                } else {
+                  r.fin = null;
+                  if (!(DOSE_UNITS as readonly string[]).includes(r.dose_unit)) r.dose_unit = 'mg';
+                }
+              })
+            }
+          />
+        </div>
+
         <div className={`drug-row__line${dose.problem ? ' row--invalid' : ''}`}>
           <RepeatButton kind="minus" label={`Disminuir dosis ${letter}`} onStep={() => bump(-DOSE_STEP)} />
           <label className="visually-hidden" htmlFor={ids.dose}>
@@ -173,7 +206,7 @@ function DrugRowEditor({
           <input
             id={ids.dose}
             className="drug-row__dose"
-            placeholder="Dosis"
+            placeholder={infusion ? 'Velocidad' : 'Dosis'}
             aria-invalid={dose.problem ? true : undefined}
             {...dose.inputProps}
           />
@@ -232,7 +265,7 @@ function DrugRowEditor({
 
         <div className="drug-row__line">
           <label className="drug-row__caption" htmlFor={ids.time}>
-            Hora
+            {infusion ? 'Inicio' : 'Hora'}
           </label>
           <input
             id={ids.time}
@@ -259,6 +292,38 @@ function DrugRowEditor({
             Ahora
           </button>
         </div>
+
+        {infusion ? (
+          <div className="drug-row__line">
+            <label className="drug-row__caption" htmlFor={ids.fin}>
+              Fin
+            </label>
+            <input
+              id={ids.fin}
+              type="datetime-local"
+              className="drug-row__time"
+              value={isoToLocalInput(drug.fin)}
+              onChange={(e) => {
+                const v = localInputToIso(e.target.value);
+                edit((r) => {
+                  r.fin = v;
+                });
+              }}
+            />
+            <button
+              type="button"
+              className="btn-plain"
+              aria-label={`Fin ahora ${letter}`}
+              onClick={() =>
+                edit((r) => {
+                  r.fin = new Date().toISOString();
+                })
+              }
+            >
+              Ahora
+            </button>
+          </div>
+        ) : null}
 
         {drug.rust_model_id ? (
           <DrugTciChipSlot modelId={drug.rust_model_id} patient={patient} targetCp={DRUG_TCI_DEFAULT_TARGET_CP} />

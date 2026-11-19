@@ -1,10 +1,41 @@
 /** Transanesthetic Monitoring spec — port of PharmaApp/Views/Monitoring/MonitoringScreen.swift. */
 import type { VitalSnapshot } from '../api/types';
 
-/** Swift `MonitoringScreen.monitoringOptions` — keys of `trans_record.monitoring`. */
-export const MONITORING_OPTIONS = ['ECG', 'SpO2', 'EtCO2', 'BIS', 'TNM', 'Temp'] as const;
+/**
+ * Keys of `trans_record.monitoring` (Swift `monitoringOptions` plus the clinician feedback 2026-11
+ * monitors: Entropía, NINDEX, Neuromonitorización, POCUS). Selecting one shows its row in the
+ * intraoperative grid (state/timeGrid.ts).
+ */
+export const MONITORING_OPTIONS = [
+  'ECG',
+  'SpO2',
+  'EtCO2',
+  'BIS',
+  'Entropía',
+  'NINDEX',
+  'TNM',
+  'Neuromonitorización',
+  'POCUS',
+  'Temp',
+] as const;
 
 export type SnapshotKey = 'basal' | 'termination';
+
+/** Snapshot section titles (clinician wording, 2026-11: "signos al finalizar la cirugía"). */
+export const SNAPSHOT_TITLES: Record<SnapshotKey, string> = {
+  basal: 'Signos en reposo (basales)',
+  termination: 'Signos al finalizar la cirugía',
+};
+
+/** Intercurrencias: events not caused by the medical act (e.g. a power outage in the OR). */
+export const INTERCURRENCIAS = [
+  'Corte de energía eléctrica',
+  'Falla de equipo',
+  'Falla en el suministro de gases medicinales',
+  'Falta de insumos o medicamentos',
+  'Falla de comunicación o sistemas',
+  'Otra',
+] as const;
 export type VitalKey = keyof Pick<VitalSnapshot, 'fc' | 'fr' | 'ta_sys' | 'ta_dia' | 'spo2'>;
 
 /** The five snapshot rows, in Swift order (label, unit, key). PVC has no row in Swift. */

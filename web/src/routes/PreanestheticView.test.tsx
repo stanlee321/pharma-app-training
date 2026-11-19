@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { newCase } from '../api/factory';
@@ -64,4 +64,42 @@ describe('PreanestheticView', () => {
     });
     expect(h.puts[0]!.body.pre_assessment).not.toHaveProperty('viaAerea');
   });
+
+  it('records medical / surgical history and the physical exam by system (clinician feedback 2026-11)', async () => {
+    const c = newCase('Dr. Demo');
+    const h = restHarness([c]);
+    const user = userEvent.setup();
+    renderApp(`/cases/${c.id}/preanesthetic`, h.backend);
+    await user.type(await screen.findByLabelText('Antecedentes patológicos'), 'Hipertensión arterial');
+    await user.type(screen.getByLabelText('Antecedentes quirúrgicos'), 'Colecistectomía 2019');
+
+    // A system opens its findings only once it is marked.
+    const osteo = within(screen.getByTestId('exam-osteomuscular'));
+    expect(osteo.queryByLabelText('Hallazgos — Osteomuscular')).toBeNull();
+    await user.click(osteo.getByRole('button', { name: 'Alterado' }));
+    await user.type(osteo.getByLabelText('Hallazgos — Osteomuscular'), 'Escoliosis');
+    await user.click(within(screen.getByTestId('exam-cardiovascular')).getByRole('button', { name: 'Normal' }));
+
+    const pa = storeCase(c.id).pre_assessment;
+    expect(pa).toMatchObject({
+      antecedentes_patologicos: 'Hipertensión arterial',
+      antecedentes_quirurgicos: 'Colecistectomía 2019',
+    });
+    expect(pa.examen_fisico).toEqual({
+      osteomuscular: { estado: 'alterado', hallazgos: 'Escoliosis' },
+      cardiovascular: { estado: 'normal', hallazgos: '' },
+    });
+
+    // Unmarking a system with no findings removes it.
+    await user.click(within(screen.getByTestId('exam-cardiovascular')).getByRole('button', { name: 'Normal' }));
+    expect(storeCase(c.id).pre_assessment.examen_fisico).not.toHaveProperty('cardiovascular');
+
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(h.puts).toHaveLength(1));
+    expect(h.puts[0]!.body.pre_assessment).toMatchObject({
+      antecedentes_quirurgicos: 'Colecistectomía 2019',
+      examen_fisico: { osteomuscular: { estado: 'alterado', hallazgos: 'Escoliosis' } },
+    });
+  });
 });
+

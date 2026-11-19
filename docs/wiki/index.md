@@ -62,6 +62,7 @@ Forward-looking proposals (not code) for the forms → app end-to-end build. Rea
 | [[ux-components]] | The **shared data-entry component library**: interaction specs (states, gestures, bindings, a11y) for the seven widgets, and how each composes from `DesignSystem` tokens. |
 | [[decisions]] | **Build decisions (ADRs)** closing the readiness gaps: native screens (not a dynamic renderer), online-first persistence, auth, sync export, client-side TCI, and the crosswalk mandate. |
 | [[field-crosswalk]] | The **field-id ↔ entity crosswalk** spec — the Rosetta stone binding the ~471 schema ids to entity attributes/bboxes that the export + validation need. Specified, not yet built. |
+| [[clinician-feedback-2026-11]] | **Clinician feedback (2026-11)** tracker: antecedentes, examen físico por sistemas, intercurrencias, the 5-minute intraoperative grid (inhaled %, fluids by name, EKG/POCUS/BIS/Entropía/NINDEX rows), infusions vs bolus, and how each prints. |
 
 ### Screen build specs — `plans/screens/`
 

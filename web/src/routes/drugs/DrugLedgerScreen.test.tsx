@@ -81,8 +81,8 @@ describe('DrugLedgerScreen', () => {
   it('deletes a row after inline confirmation', async () => {
     const c = newCase('Dr. Demo');
     c.drugs = [
-      { id: 'a0000000-0000-4000-8000-000000000001', label: '', farmaco: 'Fentanilo', dose_value: 100, dose_unit: 'mcg', via: 'IV', time: null, rust_model_id: null },
-      { id: 'a0000000-0000-4000-8000-000000000002', label: '', farmaco: 'Rocuronio', dose_value: 40, dose_unit: 'mg', via: 'IV', time: null, rust_model_id: null },
+      { id: 'a0000000-0000-4000-8000-000000000001', label: '', farmaco: 'Fentanilo', dose_value: 100, dose_unit: 'mcg', via: 'IV', time: null, modo: 'bolo', fin: null, rust_model_id: null },
+      { id: 'a0000000-0000-4000-8000-000000000002', label: '', farmaco: 'Rocuronio', dose_value: 40, dose_unit: 'mg', via: 'IV', time: null, modo: 'bolo', fin: null, rust_model_id: null },
     ];
     const h = restHarness([c]);
     const user = userEvent.setup();
@@ -100,4 +100,28 @@ describe('DrugLedgerScreen', () => {
     await waitFor(() => expect(h.puts).toHaveLength(1));
     expect((h.puts[0]!.body.drugs as unknown[]).length).toBe(1);
   });
+
+  it('marks a continuous infusion with its rate unit and end time (clinician feedback item 9)', async () => {
+    const c = newCase('Dr. Demo');
+    const h = restHarness([c]);
+    const user = userEvent.setup();
+    renderApp(`/cases/${c.id}/drugs`, h.backend);
+    await user.click(await screen.findByRole('button', { name: 'Agregar fármaco' }));
+    await user.type(within(row('A')).getByLabelText('Fármaco A'), 'Noradrenalina');
+    expect(within(row('A')).queryByLabelText('Fin')).toBeNull();
+    await user.click(within(row('A')).getByRole('radio', { name: 'Infusión continua' }));
+    expect(storeCase(c.id).drugs[0]).toMatchObject({ modo: 'infusion', dose_unit: 'mcg/kg/min' });
+    await user.type(within(row('A')).getByLabelText('Dosis A'), '0,1');
+    await user.click(within(row('A')).getByRole('button', { name: 'Fin ahora A' }));
+    expect(storeCase(c.id).drugs[0]!.fin).not.toBeNull();
+    // Back to a bolus: the end time is dropped (mcg/kg/min is valid for both, so it stays).
+    await user.click(within(row('A')).getByRole('radio', { name: 'Bolo' }));
+    expect(storeCase(c.id).drugs[0]).toMatchObject({ modo: 'bolo', fin: null, dose_unit: 'mcg/kg/min', dose_value: 0.1 });
+
+    await user.click(within(row('A')).getByRole('radio', { name: 'Infusión continua' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(h.puts).toHaveLength(1));
+    expect((h.puts[0]!.body.drugs as Record<string, unknown>[])[0]).toMatchObject({ farmaco: 'Noradrenalina', modo: 'infusion' });
+  });
 });
+

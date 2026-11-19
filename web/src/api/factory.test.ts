@@ -37,7 +37,7 @@ describe('newCase / normalizeCase', () => {
       observaciones: '',
       complicaciones_post: '',
       patient: { registro: 'R', nombre: 'N', rh: '', grupo_sanguineo: '', cama: '', hab: '' },
-      drugs: [{ label: 'A', farmaco: 'Propofol', dose_unit: 'mg', via: 'IV' }],
+      drugs: [{ label: 'A', farmaco: 'Propofol', dose_unit: 'mg', via: 'IV', modo: 'bolo' }],
     };
     const c = normalizeCase(dto);
     expect(c.sala).toBe('Q1');

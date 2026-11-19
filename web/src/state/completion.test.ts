@@ -67,7 +67,7 @@ describe('hasData helpers (CaseCompletion.swift)', () => {
     expect(fluidBalanceHasData(c.fluid_balance)).toBe(true);
     c.recovery.alta_a_piso = 'sí';
     expect(recoveryHasData(c.recovery)).toBe(true);
-    c.drugs.push({ id: 'd', label: 'A', farmaco: 'x', dose_value: null, dose_unit: 'mg', via: 'IV', time: null, rust_model_id: null });
+    c.drugs.push({ id: 'd', label: 'A', farmaco: 'x', dose_value: null, dose_unit: 'mg', via: 'IV', time: null, modo: 'bolo', fin: null, rust_model_id: null });
     const s = sectionCompletion(c);
     expect(s.drugs).toBe(true);
     expect(s.newborn).toBe(false);

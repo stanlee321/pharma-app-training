@@ -57,7 +57,7 @@ One entry per schema field id, per form. Lives **server-side** (the app never se
 | `values_blob` | the ~185-field technique & other dense checkbox sets | `anesthetic_technique.values["<field_id>"]` — id **is** the key ([[rest-contract]] §3) |
 | `table_cell` | `farmaco` / `control_fluidos` cells | `entity.matrix[row_id][col_id]` |
 | `score_cell` | Aldrete 36 cells | `recovery_score.aldrete[criterion][time_point]` |
-| `series_point` | `vitals_grid` lanes | `transanesthetic_record.series[lane]` |
+| `series_point` | `vitals_grid` lanes | `transanesthetic_record.series[lane]` — implemented 2026-11 in `backend/app/infrastructure/render/timegrid.py` (nota21 only) |
 | `derived` | IMC, VSC, Aldrete totals, fluid balances | computed by `derive_service`; **readonly** |
 
 ## Worked examples

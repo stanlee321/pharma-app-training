@@ -6449,6 +6449,23 @@
       ],
       "title": "Time"
      },
+     "modo": {
+      "type": "string",
+      "title": "Modo",
+      "default": "bolo"
+     },
+     "fin": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fin"
+     },
      "rust_model_id": {
       "anyOf": [
        {
@@ -6533,6 +6550,29 @@
       ],
       "title": "Time"
      },
+     "modo": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Modo"
+     },
+     "fin": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fin"
+     },
      "rust_model_id": {
       "anyOf": [
        {
@@ -6561,6 +6601,23 @@
     ],
     "title": "ErrorDTO",
     "description": "Every non-422 error body (401/403/404/409/400): ``{\"detail\": \"...\"}``."
+   },
+   "ExamSystemDTO": {
+    "properties": {
+     "estado": {
+      "type": "string",
+      "title": "Estado",
+      "default": ""
+     },
+     "hallazgos": {
+      "type": "string",
+      "title": "Hallazgos",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "title": "ExamSystemDTO",
+    "description": "One body system of the physical exam (examen f\u00edsico por sistemas)."
    },
    "FluidBalanceDTO": {
     "properties": {
@@ -7931,6 +7988,16 @@
       "title": "Antecedentes Anestesicos",
       "default": ""
      },
+     "antecedentes_patologicos": {
+      "type": "string",
+      "title": "Antecedentes Patologicos",
+      "default": ""
+     },
+     "antecedentes_quirurgicos": {
+      "type": "string",
+      "title": "Antecedentes Quirurgicos",
+      "default": ""
+     },
      "medicamentos_previos": {
       "type": "string",
       "title": "Medicamentos Previos",
@@ -7996,6 +8063,13 @@
       },
       "type": "object",
       "title": "Labs"
+     },
+     "examen_fisico": {
+      "additionalProperties": {
+       "$ref": "#/components/schemas/ExamSystemDTO"
+      },
+      "type": "object",
+      "title": "Examen Fisico"
      },
      "notes": {
       "type": "string",
@@ -8120,6 +8194,23 @@
    },
    "TransanestheticRecordDTO": {
     "properties": {
+     "inicio": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Inicio"
+     },
+     "intervalo_min": {
+      "type": "integer",
+      "title": "Intervalo Min",
+      "default": 5
+     },
      "series": {
       "items": {
        "$ref": "#/components/schemas/VitalSeriesDTO"
@@ -8150,6 +8241,18 @@
      "complicaciones": {
       "type": "string",
       "title": "Complicaciones",
+      "default": ""
+     },
+     "intercurrencias_tipos": {
+      "additionalProperties": {
+       "type": "boolean"
+      },
+      "type": "object",
+      "title": "Intercurrencias Tipos"
+     },
+     "intercurrencias": {
+      "type": "string",
+      "title": "Intercurrencias",
       "default": ""
      }
     },
@@ -8319,7 +8422,14 @@
       "title": "T"
      },
      "value": {
-      "type": "number",
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
       "title": "Value"
      }
     },

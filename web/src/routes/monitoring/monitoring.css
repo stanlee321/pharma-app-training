@@ -55,3 +55,40 @@
   margin-left: auto;
   font-variant-numeric: tabular-nums;
 }
+
+/* Intraoperative grid every 5 minutes (TimeGridSection). Reuses .grid-scroll / .grid-table. */
+.time-grid thead th {
+  min-width: 56px;
+}
+.time-grid .grid-cell {
+  width: 56px;
+}
+.time-grid .grid-cell--text {
+  width: 112px;
+  text-align: left;
+}
+.time-grid__group th {
+  position: sticky;
+  left: 0;
+  text-align: left;
+  font-size: var(--text-caption2);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--label-secondary);
+  padding-top: var(--space-item);
+}
+.time-grid__named {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-tight);
+}
+.time-grid__name {
+  max-width: 190px;
+}
+.time-grid__remove {
+  min-width: var(--tap-target);
+}
+.time-grid__event {
+  width: 56px;
+}

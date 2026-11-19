@@ -4,6 +4,7 @@ import { ChoiceChips, ToggleRow } from '../components/Choice';
 import { NumberRow, TextRow } from '../components/FormRows';
 import { Section } from '../components/Section';
 import { parseNumber } from '../lib/number';
+import { EXAM_STATES, EXAM_SYSTEMS, setExam, type ExamState } from '../state/physicalExam';
 import { CaseScreen } from './CaseScreen';
 
 const ASA_OPTIONS = ['I', 'II', 'III', 'IV', 'V'] as const;
@@ -35,6 +36,19 @@ function labNumber(v: string | number | undefined): number | null {
 }
 
 type TextKey = 'alergia' | 'dentadura' | 'estado_psiquico';
+type HistoryKey =
+  | 'antecedentes_patologicos'
+  | 'antecedentes_quirurgicos'
+  | 'antecedentes_anestesicos'
+  | 'medicamentos_previos';
+
+/** Medical history notes (clinician feedback 2026-11, item 1). */
+const HISTORY: [label: string, key: HistoryKey, placeholder: string][] = [
+  ['Antecedentes patológicos', 'antecedentes_patologicos', 'Hipertensión, diabetes, asma…'],
+  ['Antecedentes quirúrgicos', 'antecedentes_quirurgicos', 'Cirugías previas y año'],
+  ['Antecedentes anestésicos', 'antecedentes_anestesicos', 'Anestesias previas y complicaciones'],
+  ['Medicamentos previos', 'medicamentos_previos', 'Medicación habitual'],
+];
 
 /** N3 — Preanesthetic Assessment (Swift PreanestheticView). */
 export function PreanestheticView() {
@@ -62,6 +76,20 @@ export function PreanestheticView() {
           <>
             <Section header="Antecedentes">
               {text('Alergias', 'alergia', 'Ninguna')}
+              {HISTORY.map(([label, key, placeholder]) => (
+                <TextRow
+                  key={key}
+                  label={label}
+                  multiline
+                  placeholder={placeholder}
+                  value={a[key]}
+                  onChange={(v) =>
+                    edit((pa) => {
+                      pa[key] = v;
+                    })
+                  }
+                />
+              ))}
               {text('Dentadura', 'dentadura')}
               {/* The exported forms read `cuello` (crosswalk ant_cuello); Swift wrote `viaAerea`.
                   Read either, write both so Swift-written records still display on iOS. */}
@@ -94,6 +122,43 @@ export function PreanestheticView() {
                   })
                 }
               />
+            </Section>
+
+            <Section
+              header="Examen físico por sistemas"
+              footer="Marque Normal o Alterado en cada sistema explorado; el sistema se despliega para anotar los hallazgos."
+            >
+              {EXAM_SYSTEMS.map((s) => {
+                const ex = a.examen_fisico[s.key];
+                const estado = (ex?.estado ?? '') as ExamState | '';
+                return (
+                  <div key={s.key} className="exam-system" data-testid={`exam-${s.key}`}>
+                    <ChoiceChips
+                      title={s.label}
+                      options={EXAM_STATES}
+                      selection={estado ? [estado] : []}
+                      onChange={(sel) =>
+                        edit((pa) => {
+                          setExam(pa, s.key, { estado: sel[0] ?? '' });
+                        })
+                      }
+                    />
+                    {estado || ex?.hallazgos ? (
+                      <TextRow
+                        label={`Hallazgos — ${s.label}`}
+                        multiline
+                        placeholder={estado === 'alterado' ? 'Describa los hallazgos' : 'Sin hallazgos patológicos'}
+                        value={ex?.hallazgos ?? ''}
+                        onChange={(v) =>
+                          edit((pa) => {
+                            setExam(pa, s.key, { hallazgos: v });
+                          })
+                        }
+                      />
+                    ) : null}
+                  </div>
+                );
+              })}
             </Section>
 
             <Section>

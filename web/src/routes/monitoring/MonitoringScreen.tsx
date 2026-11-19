@@ -3,19 +3,17 @@ import type { AnesthesiaCase } from '../../api/types';
 import { ChoiceChips } from '../../components/Choice';
 import { NumberRow, TextRow } from '../../components/FormRows';
 import { Section } from '../../components/Section';
-import { MONITORING_OPTIONS, VITAL_ROWS, type SnapshotKey } from '../../state/monitoring';
+import { INTERCURRENCIAS, MONITORING_OPTIONS, SNAPSHOT_TITLES, VITAL_ROWS, type SnapshotKey } from '../../state/monitoring';
 import { CaseScreen, type CaseUpdate } from '../CaseScreen';
+import { TimeGridSection } from './TimeGridSection';
 import { VitalsMiniChart } from './VitalsMiniChart';
 import './monitoring.css';
 
 /**
- * N5 — Transanesthetic Monitoring (Swift MonitoringScreen): monitoring multi-select, basal and
- * termination vital snapshots, a basal → fin trend chart of the entered vitals, and the
- * complicaciones note — all on `trans_record`.
- *
- * Faithful to Swift: there is NO vital-series / surgical-event entry UI (the Swift screen has
- * none). `series` / `events` written by other clients are preserved untouched in the aggregate
- * and only summarised read-only here, because they count towards the Hub's completion flag.
+ * N5 — Transanesthetic Monitoring: monitoring multi-select, the resting (basal) and end-of-surgery
+ * vital snapshots with their trend, the intraoperative grid every 5 minutes (series + events),
+ * complicaciones and intercurrencias — all on `trans_record`. Wording and the grid follow the
+ * clinician feedback 2026-11 (docs/wiki/plans/clinician-feedback-2026-11.md).
  */
 export function MonitoringScreen() {
   return <CaseScreen title={SECTION_TITLES.monitoring}>{(c, update) => <MonitoringForm c={c} update={update} />}</CaseScreen>;
@@ -24,7 +22,7 @@ export function MonitoringScreen() {
 function MonitoringForm({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {
   const tr = c.trans_record;
   const selection = MONITORING_OPTIONS.filter((o) => tr.monitoring[o] === true);
-  const recorded = tr.series.reduce((n, s) => n + s.points.length, 0);
+  const incidents = INTERCURRENCIAS.filter((o) => tr.intercurrencias_tipos[o] === true);
 
   return (
     <>
@@ -43,30 +41,15 @@ function MonitoringForm({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }
         />
       </Section>
 
-      <SnapshotSection title="Signos basales" which="basal" c={c} update={update} />
-      <SnapshotSection title="Signos de terminación" which="termination" c={c} update={update} />
+      <SnapshotSection title={SNAPSHOT_TITLES.basal} which="basal" c={c} update={update} />
 
-      <Section header="Tendencia basal → fin">
+      <TimeGridSection c={c} update={update} />
+
+      <SnapshotSection title={SNAPSHOT_TITLES.termination} which="termination" c={c} update={update} />
+
+      <Section header="Tendencia de reposo → fin de la cirugía">
         <VitalsMiniChart basal={tr.basal} termination={tr.termination} />
       </Section>
-
-      {tr.series.length > 0 || tr.events.length > 0 ? (
-        <Section
-          header="Registro intraoperatorio"
-          footer="Capturado en otro cliente; se conserva al guardar y no se edita en esta pantalla."
-        >
-          <div className="row">
-            <span className="row__label">Series de signos vitales</span>
-            <span className="row__value-text">
-              {tr.series.length} ({recorded} puntos)
-            </span>
-          </div>
-          <div className="row">
-            <span className="row__label">Eventos quirúrgicos</span>
-            <span className="row__value-text">{tr.events.length}</span>
-          </div>
-        </Section>
-      ) : null}
 
       <Section header="Complicaciones transanestésicas">
         <TextRow
@@ -77,6 +60,34 @@ function MonitoringForm({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }
           onChange={(v) =>
             update((d) => {
               d.trans_record.complicaciones = v;
+            })
+          }
+        />
+      </Section>
+
+      <Section
+        header="Intercurrencias"
+        footer="Eventos ajenos al acto médico durante el periodo perioperatorio. Se imprimen en Observaciones."
+      >
+        <ChoiceChips
+          title="Tipo"
+          options={INTERCURRENCIAS}
+          multiSelect
+          selection={incidents}
+          onChange={(sel) =>
+            update((d) => {
+              d.trans_record.intercurrencias_tipos = Object.fromEntries(sel.map((o) => [o, true]));
+            })
+          }
+        />
+        <TextRow
+          label="Descripción"
+          multiline
+          placeholder="Hora, duración y medidas tomadas"
+          value={tr.intercurrencias}
+          onChange={(v) =>
+            update((d) => {
+              d.trans_record.intercurrencias = v;
             })
           }
         />

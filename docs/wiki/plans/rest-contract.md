@@ -264,6 +264,12 @@ exhaustive per-field source):
   ([../../../notebooks/docs/parsing-wiki/entities/transanesthetic-record.md](../../../notebooks/docs/parsing-wiki/entities/transanesthetic-record.md)).
   `series` maps 1:1 onto the chart `lanes`/`y_axis` — the app's `ChartCanvas`
   ([[simulation-screen]]).
+  **As built (2026-11, [clinician-feedback-2026-11.md](clinician-feedback-2026-11.md)):** `t` is
+  minutes since `inicio` (the grid start); `intervalo_min` (5) spaces the entry columns;
+  `value` is a number or, for text lanes (`ekg`, `pocus`, `neuromonitoreo`), a string. Lane keys:
+  `fc ta_sys ta_dia fr temp ekg spo2 o2 etco2 pocus bis entropia nindex tnm neuromonitoreo`,
+  `inhalado:<agent>` (%) and `fluido:<full name>` (ml). Also `intercurrencias_tipos` /
+  `intercurrencias`; drugs carry `modo` (`bolo`|`infusion`) and `fin`.
 - **DrugAdministration** (collection item) — `id, label(A..O|A..M), farmaco, dosis:
   Quantity, via(IV|IM|inhalación|…), time`; optional **readOnly** `recommended: {bolus,
   infusion}` from the TCI engine

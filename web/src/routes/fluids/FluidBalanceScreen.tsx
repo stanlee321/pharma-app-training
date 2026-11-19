@@ -58,7 +58,7 @@ function FluidForm({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {
       )}
       <Section
         header="Balance hídrico horario"
-        footer="Balance parcial = (Cristaloide + Coloide + Hemocomponente) − (NCL + DCL + 3er espacio + Diuresis + Circuito resp. + Sangrado). Balance total = suma acumulada. Mismo cálculo que el servidor y el PDF."
+        footer="Balance parcial = (Cristaloide + Coloide + Hemocomponente) − (NCL + DCL + 3er espacio + Diuresis + Circuito respiratorio + Sangrado). Balance total = suma acumulada. Mismo cálculo que el servidor y el PDF. Cada solución por su nombre (Ringer lactato, Solución fisiológica…) se registra en Fluidos IV del registro transanestésico."
       >
         <div className="grid-scroll">
           <table className="grid-table">

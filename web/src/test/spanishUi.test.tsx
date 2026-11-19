@@ -174,7 +174,7 @@ describe('Spanish-only UI', () => {
     c.patient_id = p.id;
     c.patient.nombre = p.nombre;
     // a drug row without a unit shows the unit placeholder option
-    c.drugs = [{ id: 'aaaaaaaa-0000-4000-8000-00000000d001', label: 'A', farmaco: 'Propofol', dose_value: null, dose_unit: '', via: 'IV', time: null, rust_model_id: null }];
+    c.drugs = [{ id: 'aaaaaaaa-0000-4000-8000-00000000d001', label: 'A', farmaco: 'Propofol', dose_value: null, dose_unit: '', via: 'IV', time: null, modo: 'bolo', fin: null, rust_model_id: null }];
     const h = restHarness([c], { patients: [p] });
     renderApp(path(c.id, p.id), h.backend);
     await screen.findAllByText(marker);

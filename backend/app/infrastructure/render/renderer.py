@@ -19,7 +19,7 @@ import fitz  # PyMuPDF
 
 from ...application.dto import AnesthesiaCaseDTO
 from ...core.config import NOTEBOOKS_DIR, settings
-from . import crosswalk
+from . import crosswalk, timegrid
 
 _INK = (0.0, 0.0, 0.75)  # blue-ish: distinguishes entered data from the black form
 _FONT = "helv"
@@ -87,6 +87,7 @@ class FormRenderer:
             count += self._draw_field(page, field, value)
         # structured extras
         count += self._draw_tables(page, case, schema)
+        count += self._draw_charts(page, case, schema)
         return count
 
     def _draw_field(self, page: "fitz.Page", field: dict, value: Any) -> int:
@@ -114,6 +115,13 @@ class FormRenderer:
         if width <= 1:
             return False
         fontsize = _clamp((bottom - top) * 0.9, 6.0, 9.0)
+        need = fitz.get_text_length(text, fontname=_FONT, fontsize=fontsize)
+        # long text in a box tall enough for several lines wraps (e.g. imss "OTROS")
+        if need > width - 2.0 and self._draw_wrapped(page, bbox, text):
+            return True
+        # shrink long text (down to 5 pt) before truncating it with an ellipsis
+        if need > width - 2.0:
+            fontsize = max(5.0, fontsize * (width - 2.0) / need * 0.97)
         text = self._truncate(text, width - 2.0, fontsize)
         if not text:
             return False
@@ -122,6 +130,32 @@ class FormRenderer:
             return False
         page.insert_text(point, text, fontsize=fontsize, fontname=_FONT, color=_INK)
         return True
+
+    def _draw_wrapped(self, page: "fitz.Page", bbox: list, text: str) -> bool:
+        """Word-wrap ``text`` into the box at the largest size (7 → 4.5 pt) where it fits whole."""
+        x0, top, x1, bottom = bbox
+        width, height = x1 - x0 - 6.0, bottom - top - 1.0  # keep clear of the right border
+        words = text.split()
+        for fs in (7.0, 6.5, 6.0, 5.5, 5.0, 4.5):
+            lead = fs * 1.15
+            if height < 2 * lead:
+                continue
+            lines: list[str] = []
+            for w in words:
+                trial = f"{lines[-1]} {w}" if lines else w
+                if lines and fitz.get_text_length(trial, fontname=_FONT, fontsize=fs) <= width:
+                    lines[-1] = trial
+                elif fitz.get_text_length(w, fontname=_FONT, fontsize=fs) <= width:
+                    lines.append(w)
+                else:
+                    break  # a single word wider than the box: try a smaller size
+            else:
+                if len(lines) * lead <= height:
+                    for i, line in enumerate(lines):
+                        point = fitz.Point(x0 + 1.0, top + 0.5 + fs + i * lead)
+                        page.insert_text(point, line, fontsize=fs, fontname=_FONT, color=_INK)
+                    return True
+        return False
 
     def _stamp_check(self, page: "fitz.Page", bbox: Optional[list]) -> bool:
         if not bbox:
@@ -149,6 +183,14 @@ class FormRenderer:
                 count += self._draw_fluidos(page, case, table)
         return count
 
+    def _draw_charts(self, page: "fitz.Page", case: AnesthesiaCaseDTO, schema: dict) -> int:
+        count = 0
+        for chart in schema.get("charts", []):
+            # nota21's intraoperative grid; the imss_p2 grid has another layout (not drawn yet)
+            if chart.get("id") == "vitals_grid" and chart.get("x_axis", {}).get("hour_lines"):
+                count += timegrid.draw(page, case, chart)
+        return count
+
     def _draw_farmaco(self, page: "fitz.Page", case: AnesthesiaCaseDTO, table: dict) -> int:
         rows = table.get("rows", [])
         cols = table.get("columns", [])
@@ -158,10 +200,12 @@ class FormRenderer:
         count = 0
         for drug, row in zip(case.drugs, rows):
             name = (drug.farmaco or "").strip()
+            if name and drug.modo == "infusion":
+                name += " (infusión continua)"  # the dose cell is too narrow for it
             if name:
                 cell = [c_name["x0"], row["y0"], c_name["x1"], row["y1"]]
                 count += 1 if self._draw_text(page, cell, name) else 0
-            dose = crosswalk._dose(drug)
+            dose = crosswalk._dose(drug, mark_infusion=False)
             if dose:
                 cell = [c_dose["x0"], row["y0"], c_dose["x1"], row["y1"]]
                 count += 1 if self._draw_text(page, cell, dose) else 0

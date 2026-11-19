@@ -21,7 +21,7 @@ export const FLUID_ROWS = [
   { key: 'DCL', label: 'DCL', kind: 'loss' },
   { key: '3er Espacio', label: '3er espacio', kind: 'loss' },
   { key: 'Diuresis', label: 'Diuresis', kind: 'loss' },
-  { key: 'Circuito respiratorio', label: 'Circuito resp.', kind: 'loss' },
+  { key: 'Circuito respiratorio', label: 'Circuito respiratorio', kind: 'loss' },
   { key: 'Sangrado', label: 'Sangrado', kind: 'loss' },
 ] as const;
 export type FluidRow = (typeof FLUID_ROWS)[number];

@@ -1234,6 +1234,13 @@ export interface components {
             via: string;
             /** Time */
             time?: string | null;
+            /**
+             * Modo
+             * @default bolo
+             */
+            modo: string;
+            /** Fin */
+            fin?: string | null;
             /** Rust Model Id */
             rust_model_id?: string | null;
         };
@@ -1251,6 +1258,10 @@ export interface components {
             via?: string | null;
             /** Time */
             time?: string | null;
+            /** Modo */
+            modo?: string | null;
+            /** Fin */
+            fin?: string | null;
             /** Rust Model Id */
             rust_model_id?: string | null;
         };
@@ -1261,6 +1272,22 @@ export interface components {
         ErrorDTO: {
             /** Detail */
             detail: string;
+        };
+        /**
+         * ExamSystemDTO
+         * @description One body system of the physical exam (examen físico por sistemas).
+         */
+        ExamSystemDTO: {
+            /**
+             * Estado
+             * @default
+             */
+            estado: string;
+            /**
+             * Hallazgos
+             * @default
+             */
+            hallazgos: string;
         };
         /** FluidBalanceDTO */
         FluidBalanceDTO: {
@@ -1821,6 +1848,16 @@ export interface components {
              */
             antecedentes_anestesicos: string;
             /**
+             * Antecedentes Patologicos
+             * @default
+             */
+            antecedentes_patologicos: string;
+            /**
+             * Antecedentes Quirurgicos
+             * @default
+             */
+            antecedentes_quirurgicos: string;
+            /**
              * Medicamentos Previos
              * @default
              */
@@ -1857,6 +1894,10 @@ export interface components {
             /** Labs */
             labs?: {
                 [key: string]: string | number;
+            };
+            /** Examen Fisico */
+            examen_fisico?: {
+                [key: string]: components["schemas"]["ExamSystemDTO"];
             };
             /**
              * Notes
@@ -1933,6 +1974,13 @@ export interface components {
         };
         /** TransanestheticRecordDTO */
         TransanestheticRecordDTO: {
+            /** Inicio */
+            inicio?: string | null;
+            /**
+             * Intervalo Min
+             * @default 5
+             */
+            intervalo_min: number;
             /** Series */
             series?: components["schemas"]["VitalSeriesDTO"][];
             /** Events */
@@ -1948,6 +1996,15 @@ export interface components {
              * @default
              */
             complicaciones: string;
+            /** Intercurrencias Tipos */
+            intercurrencias_tipos?: {
+                [key: string]: boolean;
+            };
+            /**
+             * Intercurrencias
+             * @default
+             */
+            intercurrencias: string;
         };
         /** UserActivityDTO */
         UserActivityDTO: {
@@ -2014,7 +2071,7 @@ export interface components {
             /** T */
             t: number;
             /** Value */
-            value: number;
+            value: number | string;
         };
         /** VitalSeriesDTO */
         VitalSeriesDTO: {

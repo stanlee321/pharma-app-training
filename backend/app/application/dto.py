@@ -49,6 +49,12 @@ class PatientRecordDTO(DTO):
     vsc_15: Optional[float] = None
 
 
+class ExamSystemDTO(DTO):
+    """One body system of the physical exam (examen físico por sistemas)."""
+    estado: str = ""      # "" (not examined) | normal | alterado
+    hallazgos: str = ""   # findings, free text
+
+
 class PreanestheticAssessmentDTO(DTO):
     alergia: str = ""
     dentadura: str = ""
@@ -59,6 +65,8 @@ class PreanestheticAssessmentDTO(DTO):
     aparato_cardiovascular: str = ""
     tegumentos: str = ""
     antecedentes_anestesicos: str = ""
+    antecedentes_patologicos: str = ""
+    antecedentes_quirurgicos: str = ""
     medicamentos_previos: str = ""
     analgesica_obstetrica: str = ""
     otros: str = ""
@@ -68,6 +76,8 @@ class PreanestheticAssessmentDTO(DTO):
     asa: Optional[int] = None
     raq: Optional[int] = None
     labs: dict[str, Union[str, float]] = Field(default_factory=dict)  # quantitative + qualitative (orina)
+    # system key (cardiovascular, respiratorio, osteomuscular, …) -> exam; see web state/physicalExam.ts
+    examen_fisico: dict[str, ExamSystemDTO] = Field(default_factory=dict)
     notes: str = ""
 
 
@@ -80,8 +90,8 @@ class AnestheticTechniqueDTO(DTO):
 
 
 class VitalPointDTO(DTO):
-    t: float
-    value: float
+    t: float                   # minutes since TransanestheticRecordDTO.inicio
+    value: Union[float, str]   # numeric lanes (FC, SpO2, sevoflurano %…) or text lanes (EKG, POCUS)
 
 
 class VitalSeriesDTO(DTO):
@@ -105,12 +115,20 @@ class VitalSnapshotDTO(DTO):
 
 
 class TransanestheticRecordDTO(DTO):
+    # Start of the intraoperative time grid (minute 0); series/event ``t`` are minutes from it.
+    inicio: Optional[datetime] = None
+    intervalo_min: int = 5     # spacing of the entry columns (vitals every 5 minutes)
+    # lane key (fc, ta_sys, spo2, ekg, pocus, bis, "inhalado:Sevoflurano", "fluido:Ringer lactato"…)
+    # -> points; the lane catalogue lives in web state/timeGrid.ts and render/timegrid.py.
     series: list[VitalSeriesDTO] = Field(default_factory=list)
     events: list[SurgicalEventDTO] = Field(default_factory=list)
     monitoring: dict[str, bool] = Field(default_factory=dict)
     basal: VitalSnapshotDTO = Field(default_factory=VitalSnapshotDTO)
     termination: VitalSnapshotDTO = Field(default_factory=VitalSnapshotDTO)
     complicaciones: str = ""
+    # events not caused by the medical act (power outage, equipment failure…)
+    intercurrencias_tipos: dict[str, bool] = Field(default_factory=dict)
+    intercurrencias: str = ""
 
 
 class DrugAdministrationDTO(DTO):
@@ -120,7 +138,9 @@ class DrugAdministrationDTO(DTO):
     dose_value: Optional[float] = None
     dose_unit: str = "mg"
     via: str = "IV"
-    time: Optional[datetime] = None
+    time: Optional[datetime] = None          # given at (bolo) / started at (infusion)
+    modo: str = "bolo"                       # bolo | infusion (continuous infusion)
+    fin: Optional[datetime] = None           # infusion stopped at
     rust_model_id: Optional[str] = None
 
 
