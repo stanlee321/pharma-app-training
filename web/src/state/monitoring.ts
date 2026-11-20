@@ -9,6 +9,8 @@ import type { VitalSnapshot } from '../api/types';
 export const MONITORING_OPTIONS = [
   'ECG',
   'SpO2',
+  'PANI',
+  'PAI',
   'EtCO2',
   'BIS',
   'Entropía',
@@ -18,6 +20,34 @@ export const MONITORING_OPTIONS = [
   'POCUS',
   'Temp',
 ] as const;
+
+/** Temperature site (printed record "Temperatura" boxes), shown once Temp is selected. */
+export const TEMP_SITES = ['Esofágica', 'Rectal', 'Nasofaríngea', 'Cutánea'] as const;
+
+/** Vascular access types and the lines the printed record has for each. */
+export const ACCESS_TYPES = [
+  { value: 'periferica', label: 'Vena periférica', max: 3 },
+  { value: 'arterial', label: 'Línea arterial', max: 1 },
+  { value: 'central', label: 'Catéter venoso central', max: 1 },
+] as const;
+
+/** O₂ suplementario devices (`o2_suplementario.dispositivo`). */
+export const O2_DEVICES = [
+  { value: 'puntas_nasales', label: 'Puntas nasales' },
+  { value: 'mascarilla_facial', label: 'Mascarilla facial' },
+] as const;
+
+/** Hours between two "HH:MM" times (over midnight too), or null. */
+export function hoursBetween(a: string | null, b: string | null): number | null {
+  const m = (s: string | null) => {
+    const x = /^(\d{1,2}):(\d{2})/.exec(s ?? '');
+    return x ? Number(x[1]) * 60 + Number(x[2]) : null;
+  };
+  const [ma, mb] = [m(a), m(b)];
+  if (ma === null || mb === null) return null;
+  const span = mb >= ma ? mb - ma : mb + 1440 - ma;
+  return Math.round((span / 60) * 100) / 100;
+}
 
 export type SnapshotKey = 'basal' | 'termination';
 

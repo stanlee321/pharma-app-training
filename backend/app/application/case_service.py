@@ -125,14 +125,22 @@ def _derive(case: dto.AnesthesiaCaseDTO) -> dto.AnesthesiaCaseDTO:
         for d in case.drugs
         if "fentanil" in d.farmaco.lower() and d.dose_unit.lower() in ("mcg", "µg", "ug")
     )
+    grid_fluids = [
+        (s.lane[len("fluido:"):], pt.t, pt.value)
+        for s in case.trans_record.series if s.lane.startswith("fluido:")
+        for pt in s.points if isinstance(pt.value, (int, float)) and not isinstance(pt.value, bool)
+    ]
     fb = derivations.fluid_balance(
-        case.fluid_balance.matrix, weight_kg=p.profile.weight, fentanyl_mcg_total=fentanyl
+        case.fluid_balance.matrix, weight_kg=p.profile.weight, fentanyl_mcg_total=fentanyl,
+        grid=derivations.grid_intake(grid_fluids),
     )
     case.fluid_balance.balance_parcial = fb["balance_parcial"]
     case.fluid_balance.balance_total = fb["balance_total"]
     case.fluid_balance.total_a_reponer = fb["total_a_reponer"]
     case.fluid_balance.gasto_urinario = fb["gasto_urinario"]
     case.fluid_balance.tasa_fentanilo = fb["tasa_fentanilo"]
+    case.fluid_balance.sangrado = fb["sangrado"]
+    case.fluid_balance.ingresos_grid = fb["ingresos_grid"]
     return case
 
 

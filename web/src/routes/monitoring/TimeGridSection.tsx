@@ -1,15 +1,21 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { AnesthesiaCase, TransanestheticRecord } from '../../api/types';
 import { GridNumberCell } from '../../components/GridNumberCell';
 import { useReadOnly } from '../../components/readOnlyContext';
 import { EditOnly } from '../../components/ReadOnly';
+import { PositionIcon } from '../../components/PositionIcon';
 import { Section } from '../../components/Section';
+import { useCaseScope } from '../../state/caseScope';
+import { rowLetter } from '../../state/drugLedger';
+import { POSITION_LANE, POSITIONS, positionDef } from '../../state/positions';
 import { isoToLocalInput, localInputToIso } from '../../lib/datetime';
 import {
   addNamedLane,
   cell,
   columnCount,
   columnLabel,
+  drugMarks,
   EVENT_MARKERS,
   eventAt,
   FLUID_PREFIX,
@@ -20,10 +26,13 @@ import {
   MAX_FLUIDS,
   MAX_INHALED,
   namedLanes,
+  pendingPressures,
   removeLane,
   renameNamedLane,
   setCell,
   setEvent,
+  VENTILATION_LANE,
+  VENTILATION_MODES,
   visibleMonitorLanes,
   visibleVitalLanes,
   type LaneDef,
@@ -49,6 +58,22 @@ export function TimeGridSection({ c, update }: { c: AnesthesiaCase; update: Case
   const inhaled = namedLanes(tr, INHALED_PREFIX);
   const fluids = namedLanes(tr, FLUID_PREFIX);
   const startId = useId();
+  const { paths } = useCaseScope();
+  const now = useNow(30_000);
+  const readOnly = useReadOnly();
+  const pending = readOnly ? [] : pendingPressures(tr, now);
+  const pendingSet = new Set(pending);
+  const marks = drugMarks(tr, c.drugs, rowLetter);
+  // Open on the latest columns (the current time, or the last value); earlier ones stay a swipe away.
+  const scroller = useRef<HTMLDivElement>(null);
+  const focusT = latestColumn(tr, now, step);
+  useEffect(() => {
+    const el = scroller.current;
+    const th = el?.querySelector<HTMLElement>(`[data-t="${focusT}"]`);
+    if (el && th) el.scrollLeft = Math.max(0, th.offsetLeft - el.clientWidth / 2);
+    // only when the screen opens or the start time changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tr.inicio]);
 
   return (
     <Section
@@ -89,7 +114,15 @@ export function TimeGridSection({ c, update }: { c: AnesthesiaCase; update: Case
         </EditOnly>
       </div>
 
-      <div className="grid-scroll">
+      {pending.length > 0 ? (
+        <div className="banner banner--warning" role="status" data-testid="pending-pressures">
+          <span className="banner__text">
+            Presión arterial pendiente: {pending.slice(-4).map((t) => columnLabel(tr.inicio, t)).join(', ')}
+            {pending.length > 4 ? ` y ${pending.length - 4} más` : ''}
+          </span>
+        </div>
+      ) : null}
+      <div className="grid-scroll" ref={scroller}>
         <table className="grid-table time-grid">
           <caption className="visually-hidden">Registro intraoperatorio cada {step} minutos</caption>
           <thead>
@@ -98,7 +131,7 @@ export function TimeGridSection({ c, update }: { c: AnesthesiaCase; update: Case
                 <span className="visually-hidden">Fila</span>
               </th>
               {times.map((t) => (
-                <th key={t} scope="col">
+                <th key={t} scope="col" data-t={t}>
                   {columnLabel(tr.inicio, t)}
                 </th>
               ))}
@@ -107,7 +140,14 @@ export function TimeGridSection({ c, update }: { c: AnesthesiaCase; update: Case
           <tbody>
             <GroupRow title="Signos vitales" span={cols} />
             {visibleVitalLanes(tr).map((l) => (
-              <LaneRow key={l.key} lane={l} tr={tr} times={times} edit={edit} />
+              <LaneRow
+                key={l.key}
+                lane={l}
+                tr={tr}
+                times={times}
+                edit={edit}
+                pending={l.key === 'ta_sys' || l.key === 'ta_dia' ? pendingSet : undefined}
+              />
             ))}
             <GroupRow title="Monitorización" span={cols} />
             {visibleMonitorLanes(tr).map((l) => (
@@ -157,7 +197,42 @@ export function TimeGridSection({ c, update }: { c: AnesthesiaCase; update: Case
               <AddNamedRow label="Agregar fluido" prefix={FLUID_PREFIX} options={FLUIDS} taken={fluids} edit={edit} />
             ) : null}
 
-            <GroupRow title="Eventos" span={cols} />
+            <GroupRow title="Ventilación" span={cols} />
+            <ChoiceLaneRow
+              label="Ventilación"
+              lane={VENTILATION_LANE}
+              options={VENTILATION_MODES.map((m) => ({ value: m, label: m }))}
+              tr={tr}
+              times={times}
+              edit={edit}
+            />
+
+            <GroupRow title="Posición" span={cols} />
+            <ChoiceLaneRow
+              label="Posición"
+              lane={POSITION_LANE}
+              options={POSITIONS.map((p) => ({ value: p.key, label: p.label }))}
+              tr={tr}
+              times={times}
+              edit={edit}
+              icon
+            />
+
+            <GroupRow title="Fármacos (letra del registro de fármacos)" span={cols} />
+            <tr>
+              <th scope="row">
+                <Link to={paths.drugs(c.id)} className="time-grid__link">
+                  Fármacos
+                </Link>
+              </th>
+              {times.map((t) => (
+                <td key={t} className="time-grid__drugs" data-testid={`drugs-${t}`}>
+                  {(marks.get(t) ?? []).join(' ')}
+                </td>
+              ))}
+            </tr>
+
+            <GroupRow title="Tiempos del 1 al 6" span={cols} />
             <tr>
               <th scope="row">Evento</th>
               {times.map((t) => (
@@ -194,13 +269,25 @@ function GroupRow({ title, span }: { title: string; span: number }) {
 
 type Edit = (fn: (r: TransanestheticRecord) => void) => void;
 
-function LaneRow({ lane, tr, times, edit }: { lane: LaneDef; tr: TransanestheticRecord; times: number[]; edit: Edit }) {
+function LaneRow({
+  lane,
+  tr,
+  times,
+  edit,
+  pending,
+}: {
+  lane: LaneDef;
+  tr: TransanestheticRecord;
+  times: number[];
+  edit: Edit;
+  pending?: Set<number>;
+}) {
   const name = lane.unit ? `${lane.label} (${lane.unit})` : lane.label;
   return (
     <tr>
       <th scope="row">{name}</th>
       {times.map((t) => (
-        <td key={t}>
+        <td key={t} className={pending?.has(t) ? 'time-grid__pending' : undefined}>
           <Cell
             label={`${lane.label} ${columnLabel(tr.inicio, t)}`}
             kind={lane.kind}
@@ -429,5 +516,103 @@ function EventCell({ tr, t, edit }: { tr: TransanestheticRecord; t: number; edit
         ))}
       </select>
     </>
+  );
+}
+
+/** A clock that re-renders every `ms` (for the pending-pressure reminder). */
+function useNow(ms: number): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), ms);
+    return () => clearInterval(id);
+  }, [ms]);
+  return now;
+}
+
+/** Column to bring into view: the current time while the grid runs, else the last value. */
+function latestColumn(tr: TransanestheticRecord, now: number, step: number): number {
+  const last = Math.max(0, ...tr.series.flatMap((s) => s.points.map((p) => p.t)), ...tr.events.map((e) => e.t));
+  if (tr.inicio) {
+    const elapsed = (now - new Date(tr.inicio).getTime()) / 60_000;
+    if (Number.isFinite(elapsed) && elapsed >= 0 && elapsed < 300) return Math.floor(elapsed / step) * step;
+  }
+  return Math.floor(last / step) * step;
+}
+
+/** A row of dropdowns (one per column) for a text lane with a fixed list of values. */
+function ChoiceLaneRow({
+  label,
+  lane,
+  options,
+  tr,
+  times,
+  edit,
+  icon = false,
+}: {
+  label: string;
+  lane: string;
+  options: readonly { value: string; label: string }[];
+  tr: TransanestheticRecord;
+  times: number[];
+  edit: Edit;
+  icon?: boolean;
+}) {
+  return (
+    <tr>
+      <th scope="row">{label}</th>
+      {times.map((t) => (
+        <td key={t}>
+          <ChoiceCell
+            label={`${label} ${columnLabel(tr.inicio, t)}`}
+            value={cell(tr, lane, t)}
+            options={options}
+            icon={icon}
+            onChange={(v) => edit((r) => setCell(r, lane, t, v))}
+          />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+function ChoiceCell({
+  label,
+  value,
+  options,
+  icon,
+  onChange,
+}: {
+  label: string;
+  value: number | string | null;
+  options: readonly { value: string; label: string }[];
+  icon: boolean;
+  onChange: (v: string | null) => void;
+}) {
+  const id = useId();
+  const v = value == null ? '' : String(value);
+  const known = v === '' || options.some((o) => o.value === v);
+  return (
+    <span className="time-grid__choice">
+      <label className="visually-hidden" htmlFor={id}>
+        {label}
+      </label>
+      <select
+        id={id}
+        className="grid-cell time-grid__select"
+        value={v}
+        disabled={useReadOnly()}
+        title={options.find((o) => o.value === v)?.label ?? v}
+        onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
+      >
+        <option value="">—</option>
+        {!known ? <option value={v}>{v}</option> : null}
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {icon && positionDef(v) ? <PositionIcon position={v} width={44} height={16} /> : null}
+    </span>
   );
 }

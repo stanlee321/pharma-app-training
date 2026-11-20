@@ -2,7 +2,8 @@ import { SECTION_TITLES } from '../lib/wording';
 import { caseTitle } from '../api/factory';
 import { TECHNIQUE_ZONES, TECHNIQUE_ZONE_TITLES } from '../api/types';
 import type { IconName } from '../components/Icon';
-import { TextRow } from '../components/FormRows';
+import { InfoRow, SelectRow, TextRow } from '../components/FormRows';
+import { SERVICIOS } from '../state/caseEnvelope';
 import { Section } from '../components/Section';
 import { SectionLinkRow } from '../components/SectionLinkRow';
 import { sectionCompletion } from '../state/completion';
@@ -77,21 +78,24 @@ export function EncounterHubView({ aside }: { aside?: (c: AnesthesiaCase) => Rea
                   })
                 }
               />
-              <TextRow
-                label="Sala"
-                value={c.sala}
+              <InfoRow label="Edad" value={`${Math.round(c.patient.profile.age)} años`} />
+              <SelectRow
+                label="Servicio"
+                value={c.servicio}
+                options={SERVICIOS}
                 onChange={(v) =>
                   update((d) => {
-                    d.sala = v;
+                    d.servicio = v;
                   })
                 }
               />
               <TextRow
-                label="Servicio"
-                value={c.servicio}
+                label="Cama"
+                value={c.patient.cama}
+                placeholder="—"
                 onChange={(v) =>
                   update((d) => {
-                    d.servicio = v;
+                    d.patient.cama = v;
                   })
                 }
               />

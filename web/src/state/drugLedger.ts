@@ -17,8 +17,13 @@ export const isInfusion = (d: Pick<DrugAdministration, 'modo'>) => d.modo === 'i
 export const ROUTES = ['IV', 'IM', 'SC', 'VO', 'Epidural', 'Intratecal', 'Inhalatoria', 'Tópica'] as const;
 export const DOSE_STEP = 5;
 
-/** Swift `DrugAdministration()` defaults. */
-export function newDrug(): DrugAdministration {
+/**
+ * Swift `DrugAdministration()` defaults, except the time: a new row starts at the current minute,
+ * so its letter lands on the transanesthetic grid (clinician feedback 2026-11b, item 9).
+ */
+export function newDrug(now: Date = new Date()): DrugAdministration {
+  const at = new Date(now);
+  at.setSeconds(0, 0);
   return {
     id: newUUID(),
     label: '',
@@ -26,7 +31,7 @@ export function newDrug(): DrugAdministration {
     dose_value: null,
     dose_unit: 'mg',
     via: 'IV',
-    time: null,
+    time: at.toISOString(),
     modo: 'bolo',
     fin: null,
     rust_model_id: null,

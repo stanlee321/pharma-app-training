@@ -29,7 +29,7 @@ function synthCase(n: number, over: { status?: CaseStatus; owner?: string; day?:
   c.patient.nombre = `Paciente Sintetico ${n}`;
   c.patient.registro = `TEST-${n}`;
   c.diagnostico_preop = `Dx sintetico ${n}`;
-  c.sala = 'Sala 1';
+  c.patient.cama = 'Cama 1';
   c.drugs = [{ ...newDrug(), farmaco: 'Propofol', dose_value: 100, rust_model_id: 'marsh' }];
   return c;
 }
@@ -246,7 +246,7 @@ describe('Admin read-only case view', () => {
     const controls = [...form.querySelectorAll<HTMLInputElement>(CONTROLS)];
     expect(controls.length).toBeGreaterThan(0);
     for (const el of controls) expect(el).toBeDisabled();
-    expect(screen.getByLabelText('Sala')).toHaveValue('Sala 1');
+    expect(screen.getByLabelText('Cama')).toHaveValue('Cama 1');
     // Section links stay inside the admin area.
     expect(screen.getByRole('link', { name: /Datos del paciente/ })).toHaveAttribute('href', `/admin/cases/${c.id}/patient`);
     expect(screen.getByRole('link', { name: 'Volver a Casos' })).toHaveAttribute('href', '/admin/cases');
@@ -312,7 +312,7 @@ describe('Admin read-only case view', () => {
     await waitFor(() => expect(screen.getByTestId('readonly-banner')).toHaveTextContent('Vista de solo lectura'));
     expect(screen.queryByRole('button', { name: 'Reabrir…' })).not.toBeInTheDocument();
     expect(document.querySelector('.navbar [data-status]')).toHaveAttribute('data-status', 'draft');
-    expect(screen.getByLabelText('Sala')).toBeDisabled();
+    expect(screen.getByLabelText('Cama')).toBeDisabled();
     expect(caseStore.getState().getCase(c.id)?.status).toBe('draft');
   });
 

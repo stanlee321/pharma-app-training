@@ -15,7 +15,10 @@ describe('FluidBalanceScreen', () => {
 
     await user.type(screen.getByLabelText('NCL 1hr'), '300');
     await user.type(screen.getByLabelText('Cristaloide 1hr'), '500');
-    await user.type(screen.getByLabelText('Sangrado 1hr'), '100');
+    // Sangrado is the sum of its sources (clinician feedback 2026-11b)
+    await user.type(screen.getByLabelText('Sangrado · Textiles 1hr'), '60');
+    await user.type(screen.getByLabelText('Sangrado · Aspirador 1hr'), '40');
+    expect(screen.getByTestId('sangrado-1hr')).toHaveTextContent('100');
     await user.type(screen.getByLabelText('Diuresis 1hr'), '150,5');
     // Backend formula: intake (500) − losses (NCL 300 + Sangrado 100 + Diuresis 150.5) = −50.5.
     expect(screen.getByTestId('balance-1hr')).toHaveTextContent('-50.5');
@@ -40,7 +43,8 @@ describe('FluidBalanceScreen', () => {
     expect(storeCase(c.id).fluid_balance.matrix).toEqual({
       NCL: { '1hr': 300 },
       'Ingreso Critaloide': { '1hr': 500 },
-      Sangrado: { '1hr': 100 },
+      Textiles: { '1hr': 60 },
+      Aspirador: { '1hr': 40 },
       Diuresis: { '1hr': 150.5 },
     });
 

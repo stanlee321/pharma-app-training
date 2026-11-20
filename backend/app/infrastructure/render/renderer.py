@@ -19,7 +19,7 @@ import fitz  # PyMuPDF
 
 from ...application.dto import AnesthesiaCaseDTO
 from ...core.config import NOTEBOOKS_DIR, settings
-from . import crosswalk, timegrid
+from . import crosswalk, extras, timegrid
 
 _INK = (0.0, 0.0, 0.75)  # blue-ish: distinguishes entered data from the black form
 _FONT = "helv"
@@ -31,6 +31,11 @@ FORM_MAP: dict[str, tuple[str, str, int]] = {
     "imss_valoracion_preanestesica": ("imss_recreated.pdf", "imss_p1.schema.json", 0),
     "imss_registro_anestesia": ("imss_recreated.pdf", "imss_p2.schema.json", 1),
 }
+
+
+def _plain_dashes(text: str) -> str:
+    """The base-14 Helvetica has no en/em dash (they print as "·"): use a hyphen."""
+    return text.replace("\u2013", "-").replace("\u2014", "-")
 
 
 def _clamp(v: float, lo: float, hi: float) -> float:
@@ -88,6 +93,8 @@ class FormRenderer:
         # structured extras
         count += self._draw_tables(page, case, schema)
         count += self._draw_charts(page, case, schema)
+        if form_id == "registro_transanestesico":
+            count += extras.draw_nota21(page, case, self._draw_text)
         return count
 
     def _draw_field(self, page: "fitz.Page", field: dict, value: Any) -> int:
@@ -98,7 +105,8 @@ class FormRenderer:
         if ftype == "checkbox_value":
             n = 0
             box = field.get("checkbox_bbox")
-            n += 1 if self._stamp_check(page, box) else 0
+            if not isinstance(value, crosswalk.TextOnly):
+                n += 1 if self._stamp_check(page, box) else 0
             if isinstance(value, str):
                 target = field.get("blank_bbox") or field.get("bbox")
                 n += 1 if self._draw_text(page, target, value) else 0
@@ -110,6 +118,7 @@ class FormRenderer:
     def _draw_text(self, page: "fitz.Page", bbox: Optional[list], text: str) -> bool:
         if not bbox or not text:
             return False
+        text = _plain_dashes(text)
         x0, top, x1, bottom = bbox
         width = x1 - x0
         if width <= 1:
@@ -198,6 +207,12 @@ class FormRenderer:
             return 0
         c_name, c_dose = cols[0], cols[1]
         count = 0
+        # the neuraxial technique doses (lidocaína infiltración, bupivacaína…) follow the ledger
+        tech_rows = rows[len(case.drugs):]
+        for (name, dose), row in zip(crosswalk.tech_drugs(case), tech_rows):
+            count += 1 if self._draw_text(page, [c_name["x0"], row["y0"], c_name["x1"], row["y1"]], name) else 0
+            if dose:
+                count += 1 if self._draw_text(page, [c_dose["x0"], row["y0"], c_dose["x1"], row["y1"]], dose) else 0
         for drug, row in zip(case.drugs, rows):
             name = (drug.farmaco or "").strip()
             if name and drug.modo == "infusion":
@@ -212,27 +227,55 @@ class FormRenderer:
         return count
 
     def _draw_fluidos(self, page: "fitz.Page", case: AnesthesiaCaseDTO, table: dict) -> int:
+        """The typed matrix cells, then the derived rows (intake from the time grid where the
+        matrix is empty, Sangrado = its breakdown, Total a reponer, balances, gasto urinario).
+        The form's "Tasa Fentanilo" row is struck out (clinician feedback 2026-11b)."""
         rows = table.get("rows", [])
         cols = table.get("columns", [])
-        matrix = case.fluid_balance.matrix or {}
-        if not rows or not cols or not matrix:
+        if not rows or not cols:
             return 0
+        fb = case.fluid_balance
+        matrix = fb.matrix or {}
         row_by = {crosswalk._norm(r.get("label")): r for r in rows}
         col_by = {crosswalk._norm(c.get("label")): c for c in cols}
         count = 0
-        for row_label, hours in matrix.items():
+        tasa = row_by.get(crosswalk._norm("Tasa Fentanilo µg/kg"))
+        if tasa is not None:  # white out the row the clinicians asked to remove
+            # the row band is 718.5–728.55 on the clone; the label's descenders reach 728.3
+            label_cell = fitz.Rect(372.0, tasa["y0"] + 0.6, cols[0]["x0"] - 0.4, tasa["y1"] + 0.7)
+            # remove the words themselves (not only hide them); keep the table lines
+            page.add_redact_annot(label_cell, fill=False)
+            page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE,
+                                  graphics=fitz.PDF_REDACT_LINE_ART_NONE)
+            count += 1
+
+        def put(row_label: str, hour: str, val: Any) -> int:
             row = row_by.get(crosswalk._norm(row_label))
-            if row is None or not isinstance(hours, dict):
+            col = col_by.get(crosswalk._norm(hour))
+            text = crosswalk._s(val)
+            if row is None or col is None or text is None:
+                return 0
+            return 1 if self._draw_text(page, [col["x0"], row["y0"], col["x1"], row["y1"]], text) else 0
+
+        typed: set[tuple[str, str]] = set()
+        for row_label, hours in matrix.items():
+            if not isinstance(hours, dict) or row_label == "Sangrado":
                 continue
             for hour_label, val in hours.items():
-                col = col_by.get(crosswalk._norm(hour_label))
-                if col is None:
-                    continue
-                text = crosswalk._s(val)
-                if text is None:
-                    continue
-                cell = [col["x0"], row["y0"], col["x1"], row["y1"]]
-                count += 1 if self._draw_text(page, cell, text) else 0
+                if crosswalk._s(val) is not None:
+                    typed.add((row_label, hour_label))
+                    count += put(row_label, hour_label, val)
+        for row_label, hours in (fb.ingresos_grid or {}).items():
+            for hour_label, val in hours.items():
+                if (row_label, hour_label) not in typed:
+                    count += put(row_label, hour_label, val)
+        active = {h for _r, h in typed} | {h for v in (fb.ingresos_grid or {}).values() for h in v}
+        for hour in sorted(active):
+            count += put("Sangrado", hour, (fb.sangrado or {}).get(hour))
+            count += put("Total a reponer", hour, (fb.total_a_reponer or {}).get(hour))
+            count += put("Balance parcial", hour, (fb.balance_parcial or {}).get(hour))
+            count += put("Balance total", hour, (fb.balance_total or {}).get(hour))
+            count += put("Gasto urinario ml/kg", hour, (fb.gasto_urinario or {}).get(hour))
         return count
 
     # ------------------------------------------------------------- utilities

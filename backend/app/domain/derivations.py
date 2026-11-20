@@ -50,40 +50,97 @@ def aldrete_total(aldrete: dict[str, dict[str, int]]) -> dict[str, int | None]:
 # misspells "Cristaloide" as "Critaloide" — kept verbatim so the row key matches.
 _INTAKE_ROWS = ("Ingreso Critaloide", "Ingreso Coloide", "Ingreso hemocomponente")
 _LOSS_ROWS = ("NCL", "DCL", "3er Espacio", "Diuresis", "Circuito respiratorio", "Sangrado")
+# Bleeding broken down by source (clinician feedback 2026-11b); "Sangrado" is their sum.
+BLEEDING_ROWS = ("Textiles", "Aspirador", "Recuperador")
+FLUID_HOURS = ("1hr", "2hr", "3hr", "4hr", "5hr")
+
+# IV fluid name (time-grid lane ``fluido:<name>``) -> intake row, by accent-free keyword.
+_FLUID_KIND: dict[str, tuple[str, ...]] = {
+    "Ingreso Critaloide": ("ringer", "fisiologica", "glucosada", "mixta", "hartmann", "plasmalyte",
+                           "salina", "bicarbonato", "manitol"),
+    "Ingreso Coloide": ("gelatina", "almidon", "albumina", "dextrano", "coloide"),
+    "Ingreso hemocomponente": ("globular", "plasma fresco", "plaquet", "crioprecip", "sangre"),
+}
+
+
+def _plain(s: str) -> str:
+    import unicodedata
+    t = unicodedata.normalize("NFKD", s.lower())
+    return "".join(c for c in t if not unicodedata.combining(c)).replace("-", "")
+
+
+def fluid_kind(name: str) -> Optional[str]:
+    """The control_fluidos intake row of an IV fluid name, or None when unknown."""
+    low = _plain(name)
+    for row, keys in _FLUID_KIND.items():
+        if any(k in low for k in keys):
+            return row
+    return None
+
+
+def grid_intake(fluids: list[tuple[str, float, float]]) -> dict[str, dict[str, float]]:
+    """Intake rows per hour from the time-grid fluids: ``(name, t_minutes, ml)`` triples.
+
+    Hour ``1hr`` holds minutes 0–59 of the grid, and so on up to ``5hr``.
+    """
+    out: dict[str, dict[str, float]] = {}
+    for name, t, ml in fluids:
+        row = fluid_kind(name)
+        idx = int(t // 60)
+        if row is None or not 0 <= idx < len(FLUID_HOURS) or ml is None:
+            continue
+        h = FLUID_HOURS[idx]
+        out.setdefault(row, {})[h] = round(out.get(row, {}).get(h, 0.0) + ml, 1)
+    return out
 
 
 def fluid_balance(
     matrix: dict[str, dict[str, float]],
     weight_kg: float = 0.0,
     fentanyl_mcg_total: float = 0.0,
-    hours: tuple[str, ...] = ("1hr", "2hr", "3hr", "4hr", "5hr"),
+    hours: tuple[str, ...] = FLUID_HOURS,
+    grid: Optional[dict[str, dict[str, float]]] = None,
 ) -> dict[str, object]:
     """The named derived rows of control_fluidos (Balance parcial/total, Total a reponer,
-    Gasto urinario ml/kg, Tasa Fentanilo µg/kg).
+    Gasto urinario ml/kg, Sangrado, the intake taken from the time grid, Tasa Fentanilo µg/kg).
+
+    An intake cell typed in the matrix wins; an empty one takes the sum of the IV fluids of
+    that hour in the time grid (``grid``, see ``grid_intake``). Sangrado is the sum of
+    Textiles + Aspirador + Recuperador when any is filled, else the Sangrado cell itself.
 
     NOTE: the exact clinical Balance parcial/total formula is unconfirmed — this uses the
-    standard (Σ intake − Σ losses) per hour with a cumulative total. **Confirm with the
-    anesthesiologist.** The load-bearing fix here is the real row names + emitting the named
-    rows (the previous version referenced rows that don't exist in the form).
+    standard (Σ intake − Σ losses) per hour with a cumulative total.
     """
+    grid = grid or {}
 
-    def cell(row: str, h: str) -> float:
-        return matrix.get(row, {}).get(h) or 0
+    def cell(row: str, h: str) -> Optional[float]:
+        v = matrix.get(row, {}).get(h)
+        return v if isinstance(v, (int, float)) else None
+
+    def intake_cell(row: str, h: str) -> float:
+        v = cell(row, h)
+        return v if v is not None else grid.get(row, {}).get(h, 0.0)
 
     balance_parcial: dict[str, float] = {}
     balance_total: dict[str, float] = {}
     total_a_reponer: dict[str, float] = {}
     gasto_urinario: dict[str, Optional[float]] = {}
+    sangrado: dict[str, float] = {}
     running = 0.0
     for h in hours:
-        intake = sum(cell(r, h) for r in _INTAKE_ROWS)
-        losses = sum(cell(r, h) for r in _LOSS_ROWS)
+        parts = [cell(r, h) for r in BLEEDING_ROWS]
+        if any(p is not None for p in parts):
+            sangrado[h] = round(sum(p or 0 for p in parts), 1)
+        elif cell("Sangrado", h) is not None:
+            sangrado[h] = round(cell("Sangrado", h) or 0, 1)
+        intake = sum(intake_cell(r, h) for r in _INTAKE_ROWS)
+        losses = sum(cell(r, h) or 0 for r in _LOSS_ROWS if r != "Sangrado") + sangrado.get(h, 0)
         parcial = round(intake - losses, 1)
         balance_parcial[h] = parcial
         running += parcial
         balance_total[h] = round(running, 1)
         total_a_reponer[h] = round(losses, 1)
-        diuresis = cell("Diuresis", h)
+        diuresis = cell("Diuresis", h) or 0
         gasto_urinario[h] = round(diuresis / weight_kg, 2) if weight_kg else None
 
     tasa_fentanilo = round(fentanyl_mcg_total / weight_kg, 2) if weight_kg else None
@@ -92,6 +149,8 @@ def fluid_balance(
         "balance_total": balance_total,
         "total_a_reponer": total_a_reponer,
         "gasto_urinario": gasto_urinario,
+        "sangrado": sangrado,
+        "ingresos_grid": {r: dict(v) for r, v in grid.items()},
         "tasa_fentanilo": tasa_fentanilo,
     }
 

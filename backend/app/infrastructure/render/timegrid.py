@@ -8,7 +8,10 @@ Draws ``trans_record.series`` / ``events`` and the drug ledger onto the printed 
   POCUS finding) and BIS (or Entropía / NINDEX when BIS is empty — the form has one
   depth-of-anaesthesia row).
 * **Vitals plot** on the 20–240 axis with the form's legend glyphs: • FC, X TA (sys/dia joined),
-  O FR, ∆ temperature; surgical events 1–6 as numbers along the top.
+  O FR, ∆ temperature.
+* **Ventilación** (Controlada / Asistida / Espontánea): a stepped line at the level of the mode,
+  with a vertical step at each change (clinician feedback 2026-11b).
+* **Tiempos del 1 al 6**: the surgical events, numbered on the form's own row.
 * **Drugs** A–O: the row letter at the time given; a continuous infusion is a line from its
   start to its end (or to the end of the grid while it is still running).
 
@@ -47,8 +50,11 @@ _MONITOR_ROWS: list[tuple[tuple[float, float], tuple[tuple[str, str], ...]]] = [
     ((212.9, 221.4), (("pocus", ""),)),          # printed label: PVC
     ((221.4, 230.1), (("bis", ""), ("entropia", "E "), ("nindex", "N "))),
 ]
-_PLOT_Y = (232.0, 421.0)  # vitals plot, above the event-number row
-_EVENT_Y = 424.0  # bottom of the plot (the top rows hold the drug letters)
+_PLOT_Y = (232.0, 424.0)  # vitals plot (the top rows hold the drug letters)
+_EVENT_Y = 464.9  # baseline in the "Tiempos del 1 al 6" row
+# "Ventilación" rows: y of the line drawn for each mode
+VENTILATION_LANE = "ventilacion"
+_VENT_Y = {"controlada": 430.8, "asistida": 438.2, "espontanea": 445.6}
 _GRID_END_MIN = 300.0  # five one-hour blocks
 
 
@@ -107,6 +113,7 @@ def _fit(text: str, width: float, fs: float) -> str:
 def _put(page: "fitz.Page", x: float, y_bottom: float, text: str, fs: float = _FS) -> int:
     if not text:
         return 0
+    text = text.replace("\u2013", "-").replace("\u2014", "-")
     page.insert_text(fitz.Point(x, y_bottom), text, fontsize=fs, fontname=_FONT, color=_INK)
     return 1
 
@@ -222,6 +229,33 @@ def _drugs(page, ax: _Axis, case: AnesthesiaCaseDTO, lane_y: dict[str, float]) -
     return n
 
 
+def _ventilation(page, ax: _Axis, tr, step: float) -> int:
+    """Stepped line: the mode's level from each change to the next; the last mode runs to the
+    end of anesthesia (event 5) or one column past its last entry."""
+    s = next((x for x in tr.series if x.lane == VENTILATION_LANE and x.points), None)
+    if s is None:
+        return 0
+    pts: list[tuple[float, float]] = []
+    for t, v in _points(s):
+        y = _VENT_Y.get(crosswalk._norm(v)) if isinstance(v, str) else None
+        if y is not None and (not pts or pts[-1][1] != y):
+            pts.append((t, y))
+    if not pts:
+        return 0
+    ends = [e.t for e in tr.events if e.marker in (5, 6) and e.t > pts[-1][0]]
+    last_t = max((p.t for p in s.points), default=pts[-1][0])
+    end = min(min(ends) if ends else last_t + step, _GRID_END_MIN)
+    path = []
+    for i, (t, y) in enumerate(pts):
+        nxt = pts[i + 1][0] if i + 1 < len(pts) else end
+        path += [fitz.Point(ax.x(t), y), fitz.Point(ax.x(nxt), y)]
+    shape = page.new_shape()
+    shape.draw_polyline(path)
+    shape.finish(color=_INK, width=0.8, closePath=False)
+    shape.commit()
+    return len(pts)
+
+
 def _named(lanes: Iterable[VitalSeriesDTO], prefix: str) -> list[tuple[str, VitalSeriesDTO]]:
     out = []
     for s in lanes:
@@ -263,8 +297,9 @@ def draw(page: "fitz.Page", case: AnesthesiaCaseDTO, chart: dict) -> int:
 
     for ev in tr.events:
         if _in_grid(ev.t) and 1 <= ev.marker <= 6:
-            n += _put(page, max(ax.x(ev.t) - 1.2, ax.x0 + 1.0), _EVENT_Y, str(ev.marker), 5.0)
+            n += _put(page, max(ax.x(ev.t) - 1.4, ax.x0 + 1.0), _EVENT_Y, str(ev.marker), 6.0)
+    n += _ventilation(page, ax, tr, step)
 
-    lane_y = {l["label"]: l["y"] for l in chart.get("lanes", []) if len(l["label"]) == 1}
+    lane_y = {ln["label"]: ln["y"] for ln in chart.get("lanes", []) if len(ln["label"]) == 1}
     n += _drugs(page, ax, case, lane_y)
     return n

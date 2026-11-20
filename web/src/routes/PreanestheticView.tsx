@@ -16,6 +16,11 @@ const LABS: [label: string, key: string][] = [
   ['Glucosa', 'glucosa'],
   ['Hb', 'hb'],
   ['Hto', 'hto'],
+  // coagulation + platelets (clinician feedback 2026-11b): print on the transanesthetic record
+  ['Plaquetas (PTL)', 'ptl'],
+  ['TP', 'tp'],
+  ['TPT', 'tpt'],
+  ['INR', 'inr'],
 ];
 
 /** Swift `roman(_:)` — clamps to I…V. */

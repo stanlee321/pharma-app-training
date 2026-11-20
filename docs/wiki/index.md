@@ -63,6 +63,7 @@ Forward-looking proposals (not code) for the forms → app end-to-end build. Rea
 | [[decisions]] | **Build decisions (ADRs)** closing the readiness gaps: native screens (not a dynamic renderer), online-first persistence, auth, sync export, client-side TCI, and the crosswalk mandate. |
 | [[field-crosswalk]] | The **field-id ↔ entity crosswalk** spec — the Rosetta stone binding the ~471 schema ids to entity attributes/bboxes that the export + validation need. Specified, not yet built. |
 | [[clinician-feedback-2026-11]] | **Clinician feedback (2026-11)** tracker: antecedentes, examen físico por sistemas, intercurrencias, the 5-minute intraoperative grid (inhaled %, fluids by name, EKG/POCUS/BIS/Entropía/NINDEX rows), infusions vs bolus, and how each prints. |
+| [[clinician-feedback-2026-11b]] | **Clinician feedback (2026-11b)** tracker: registro de anestesia — Servicio list / Cama / Edad, neuraxial detail (asepsia, intentos, guiador, catéter, nivel, vía per drug), PANI/PAI/Otro, vascular access, O₂, isquemia / neumoperitoneo, ventilation and position over time, events on "Tiempos 1–6", fluids from the grid, bleeding breakdown, Sevoflurano only. |
 
 ### Screen build specs — `plans/screens/`
 

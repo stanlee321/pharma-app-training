@@ -9,7 +9,7 @@
  *
  * The printed transanesthetic record (backend render/timegrid.py) reads the same keys.
  */
-import type { SurgicalEvent, TransanestheticRecord } from '../api/types';
+import type { DrugAdministration, SurgicalEvent, TransanestheticRecord } from '../api/types';
 
 export type LaneKind = 'number' | 'text';
 
@@ -22,6 +22,8 @@ export interface LaneDef {
   max?: number;
   /** Monitoring option (trans_record.monitoring) that shows this row; absent = always shown. */
   requires?: string;
+  /** Retired row: shown only while a case still holds values in it. */
+  legacyOnly?: boolean;
 }
 
 /** Plotted vitals (the 20–240 axis of the printed record). */
@@ -38,7 +40,8 @@ export const VITAL_LANES: readonly LaneDef[] = [
  * appear when their monitor is selected (or already hold data). POCUS replaces PVC (item 10).
  */
 export const MONITOR_LANES: readonly LaneDef[] = [
-  { key: 'ekg', label: 'EKG', kind: 'text' },
+  // EKG text row retired (clinician feedback 2026-11b, item 5): kept for cases that hold values
+  { key: 'ekg', label: 'EKG', kind: 'text', legacyOnly: true },
   { key: 'spo2', label: 'SpO₂', unit: '%', kind: 'number', min: 0, max: 100 },
   { key: 'o2', label: 'O₂', unit: '%', kind: 'number', min: 0, max: 100 },
   { key: 'etco2', label: 'EtCO₂', unit: 'mmHg', kind: 'number', min: 0, max: 150, requires: 'EtCO2' },
@@ -53,9 +56,12 @@ export const MONITOR_LANES: readonly LaneDef[] = [
 export const INHALED_PREFIX = 'inhalado:';
 export const FLUID_PREFIX = 'fluido:';
 
-/** Inhaled anesthetics, concentration in % (item 7). The printed record has 3 rows. */
-export const INHALED_AGENTS = ['Sevoflurano', 'Desflurano', 'Isoflurano', 'Óxido nitroso'] as const;
-export const MAX_INHALED = 3;
+/**
+ * Inhaled anesthetics, concentration in % (item 7). Only sevoflurane is on the market
+ * (clinician feedback 2026-11b, item 12); a case holding another agent keeps and prints it.
+ */
+export const INHALED_AGENTS = ['Sevoflurano'] as const;
+export const MAX_INHALED = 1;
 
 /** IV fluids by full name, never abbreviated (item 8). The printed record has 5 rows. */
 export const FLUIDS: readonly { group: string; names: readonly string[] }[] = [
@@ -94,6 +100,10 @@ export const EVENT_MARKERS = [
   { marker: 6, label: 'Sale de quirófano' },
 ] as const;
 
+/** Ventilation mode over time (item 7 of 2026-11b): printed as a stepped line. */
+export const VENTILATION_LANE = 'ventilacion';
+export const VENTILATION_MODES = ['Controlada', 'Asistida', 'Espontánea'] as const;
+
 /** Five one-hour blocks on the printed record. */
 export const GRID_MAX_MIN = 300;
 export const DEFAULT_COLUMNS = 12; // one hour
@@ -114,7 +124,9 @@ export function namedLanes(tr: TransanestheticRecord, prefix: string): string[] 
 /** Monitor rows on screen: always-on rows, selected monitors, and any row that holds data. */
 export function visibleMonitorLanes(tr: TransanestheticRecord): LaneDef[] {
   const has = new Set(tr.series.filter((s) => s.points.length > 0).map((s) => s.lane));
-  return MONITOR_LANES.filter((l) => !l.requires || tr.monitoring[l.requires] === true || has.has(l.key));
+  return MONITOR_LANES.filter((l) =>
+    l.legacyOnly ? has.has(l.key) : !l.requires || tr.monitoring[l.requires] === true || has.has(l.key),
+  );
 }
 
 export function visibleVitalLanes(tr: TransanestheticRecord): LaneDef[] {
@@ -199,4 +211,57 @@ export function columnLabel(inicio: string | null, t: number): string {
     }
   }
   return `+${t} min`;
+}
+
+/** Minutes from the grid start to an ISO time, or null. */
+export function minutesFrom(inicio: string | null, at: string | null): number | null {
+  if (!inicio || !at) return null;
+  const m = (new Date(at).getTime() - new Date(inicio).getTime()) / 60_000;
+  return Number.isFinite(m) ? m : null;
+}
+
+/** Drug-ledger row letters per grid column: the column of each start; an infusion fills to its end. */
+export function drugMarks(
+  tr: TransanestheticRecord,
+  drugs: readonly DrugAdministration[],
+  letter: (i: number) => string,
+): Map<number, string[]> {
+  const step = intervalOf(tr);
+  const marks = new Map<number, string[]>();
+  const add = (t: number, s: string) => marks.set(t, [...(marks.get(t) ?? []), s]);
+  drugs.forEach((d, i) => {
+    const start = minutesFrom(tr.inicio, d.time);
+    if (start === null || start < 0 || start >= GRID_MAX_MIN || d.farmaco.trim() === '') return;
+    const col = Math.floor(start / step) * step;
+    add(col, letter(i));
+    if (d.modo === 'infusion') {
+      const end = minutesFrom(tr.inicio, d.fin);
+      const last = Math.min(end ?? col + step, GRID_MAX_MIN - step);
+      for (let t = col + step; t <= last; t += step) add(t, '—');
+    }
+  });
+  return marks;
+}
+
+/**
+ * Columns whose blood pressure is still missing (the "presiones pendientes" reminder): from the
+ * first column with a vital sign or event up to the column of `now`, stopping at the end of
+ * anesthesia (event 5). Needs the grid start time.
+ */
+export function pendingPressures(tr: TransanestheticRecord, now: number): number[] {
+  if (!tr.inicio) return [];
+  const step = intervalOf(tr);
+  const elapsed = (now - new Date(tr.inicio).getTime()) / 60_000;
+  if (!Number.isFinite(elapsed) || elapsed < 0) return [];
+  const vitals = tr.series.filter((s) => ['fc', 'ta_sys', 'ta_dia', 'spo2', 'fr'].includes(s.lane));
+  const firsts = [...vitals.flatMap((s) => s.points.map((p) => p.t)), ...tr.events.map((e) => e.t)];
+  if (firsts.length === 0) return [];
+  const from = Math.min(...firsts);
+  const endEv = tr.events.find((e) => e.marker === 5)?.t;
+  const to = Math.min(Math.floor(elapsed / step) * step, endEv ?? Infinity, GRID_MAX_MIN - step);
+  const out: number[] = [];
+  for (let t = Math.floor(from / step) * step; t <= to; t += step) {
+    if (cell(tr, 'ta_sys', t) === null) out.push(t);
+  }
+  return out;
 }

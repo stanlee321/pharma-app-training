@@ -40,7 +40,7 @@ function shuffledCase(): AnesthesiaCase {
   // Aldrete minutes always enumerate first, ascending, in JS — so "Al salir" comes last.)
   expect(Object.keys(shuffled.recovery.aldrete)[0]).toBe('Coloración');
   expect(Object.keys(shuffled.recovery.aldrete['Actividad']!)).toEqual(['0', '20', '60', '90', '120', 'Al salir']);
-  expect(Object.keys(shuffled.fluid_balance.matrix)[0]).toBe('Sangrado');
+  expect(Object.keys(shuffled.fluid_balance.matrix)[0]).toBe('Recuperador');
   expect(Object.keys(shuffled.fluid_balance.matrix['NCL']!)[0]).toBe('5hr');
   expect(Object.keys(shuffled.pre_assessment.labs)[0]).toBe('hto');
   return shuffled;
@@ -82,15 +82,15 @@ describe('JSONB key order never drives what is rendered', () => {
     );
     expect(screen.getByLabelText('Cristaloide 1hr')).toHaveValue('100');
     expect(screen.getByLabelText('NCL 3hr')).toHaveValue('402');
-    expect(screen.getByLabelText('Sangrado 5hr')).toHaveValue('904');
+    expect(screen.getByLabelText('Sangrado · Recuperador 5hr')).toHaveValue('1104');
   });
 
   it('Preanesthetic: labs in the form order with their own values', async () => {
     const c = shuffledCase();
     renderApp(paths.preanesthetic(c.id), restHarness([c]).backend);
     const section = (await screen.findByRole('heading', { name: 'Laboratorios', level: 2 })).closest('section')!;
-    expect(texts(section.querySelectorAll('label'))).toEqual(['Urea', 'Creatinina', 'Glucosa', 'Hb', 'Hto']);
-    expect([...section.querySelectorAll('input')].map((i) => i.value)).toEqual(['30', '0.9', '95', '13', '40']);
+    expect(texts(section.querySelectorAll('label'))).toEqual(['Urea', 'Creatinina', 'Glucosa', 'Hb', 'Hto', 'Plaquetas (PTL)', 'TP', 'TPT', 'INR']);
+    expect([...section.querySelectorAll('input')].map((i) => i.value)).toEqual(['30', '0.9', '95', '13', '40', '', '', '', '']);
   });
 
   it('Monitoring: chips in the form order', async () => {

@@ -17,14 +17,10 @@ describe('TechniqueScreen — General', () => {
     await user.click(screen.getByRole('button', { name: 'AGEV' }));
     expect(storeCase(c.id).technique.modality).toBe('AGEV');
 
+    // Only sevoflurane is offered (clinician feedback 2026-11b).
+    expect(screen.queryByRole('button', { name: 'N2O' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Sevoflurano' }));
-    await user.click(screen.getByRole('button', { name: 'N2O' }));
-    expect(values(c.id)).toMatchObject({
-      volatil_Sevoflurano: true,
-      volatil_Desflurano: false,
-      volatil_Isoflurano: false,
-      volatil_N2O: true,
-    });
+    expect(values(c.id)).toMatchObject({ volatil_Sevoflurano: true });
 
     // checkbox_value: value disabled until ticked.
     const dose = screen.getByLabelText('Propofol (mg)');
@@ -68,9 +64,6 @@ describe('TechniqueScreen — General', () => {
       modality: 'AGEV',
       values: {
         volatil_Sevoflurano: true,
-        volatil_Desflurano: false,
-        volatil_Isoflurano: false,
-        volatil_N2O: true,
         ind_propofol: true,
         ind_propofol_val: 150,
         va_tet_calibre: 7.5,
@@ -94,10 +87,21 @@ describe('TechniqueScreen — Neuraxial', () => {
     await user.click(screen.getByRole('button', { name: 'Subaracnoidea' }));
     await user.click(screen.getByRole('button', { name: 'Tuohy' }));
     await user.click(screen.getByRole('button', { name: 'Whitacre' })); // single-select replaces
-    await user.type(screen.getByLabelText('Nivel'), 'L3–L4');
+    await user.type(screen.getByLabelText('Nivel de punción'), 'L3–L4');
     await user.type(screen.getByLabelText('Nº aguja'), '27');
     await user.click(screen.getByLabelText('Bupivacaína'));
     await user.type(screen.getByLabelText('Bupivacaína (mg)'), '10');
+    // clinician feedback 2026-11b: asepsia, campos, intentos, guiador, catéter, nivel alcanzado, vía
+    await user.click(screen.getByRole('button', { name: 'Lumbar' }));
+    await user.click(screen.getByRole('button', { name: 'Campo hendido' }));
+    await user.type(screen.getByLabelText('Intentos'), '2');
+    await user.click(screen.getByRole('switch', { name: 'Uso de guiador' }));
+    await user.type(screen.getByLabelText('Catéter a'), '10');
+    await user.type(screen.getByLabelText('Nivel alcanzado'), 'T10');
+    await user.click(screen.getByRole('switch', { name: 'Resultado satisfactorio' }));
+    await user.click(screen.getByRole('button', { name: 'Subaracnoideo' }));
+    await user.click(screen.getByLabelText('Lidocaína'));
+    await user.type(screen.getByLabelText('Lidocaína (mg)'), '40');
 
     expect(storeCase(c.id).technique.modality).toBe('Subaracnoidea');
     expect(values(c.id)).toEqual({
@@ -108,7 +112,23 @@ describe('TechniqueScreen — Neuraxial', () => {
       aguja_calibre: '27',
       dx_bupivacaina: true,
       dx_bupivacaina_val: 10,
+      dx_bupivacaina_via: 'Subaracnoideo',
+      'asepsia_Cervical': false,
+      'asepsia_Dorsal': false,
+      'asepsia_Lumbar': true,
+      'asepsia_Sacro/Coxígea': false,
+      'campo_Campo hendido': true,
+      'campo_Campo textil': false,
+      intentos: 2,
+      guiador: true,
+      cateter_cm: 10,
+      nivel_bloqueo: 'T10',
+      resultado_satisfactorio: true,
+      dx_lidocaina: true,
+      dx_lidocaina_val: 40,
     });
+    // Lidocaína defaults to infiltration by planes until another route is picked.
+    expect(screen.getByRole('group', { name: 'Vía · Lidocaína' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(h.puts).toHaveLength(1));
     expect(h.puts[0]!.body.technique).toMatchObject({ modality: 'Subaracnoidea', values: { nivel: 'L3–L4' } });

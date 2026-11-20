@@ -238,6 +238,11 @@ a {
   padding: 8px 0;
   outline: none;
 }
+.row__select {
+  text-align-last: right;
+  cursor: pointer;
+  color: var(--label);
+}
 .row__input::placeholder,
 .row__textarea::placeholder {
   color: var(--label-tertiary);
@@ -921,4 +926,14 @@ a {
 }
 .row__hint--info {
   color: var(--label-secondary);
+}
+
+/* Caption row inside a grid (e.g. "Sangrado por origen" on Balance hídrico). */
+.grid-table .time-grid__group th {
+  text-align: left;
+  font-size: var(--text-caption2);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--label-secondary);
+  padding-top: var(--space-item);
 }

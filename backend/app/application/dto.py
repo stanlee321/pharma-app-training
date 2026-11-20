@@ -114,6 +114,19 @@ class VitalSnapshotDTO(DTO):
     pvc: Optional[float] = None
 
 
+class VascularAccessDTO(DTO):
+    """One vascular access line (acceso endovascular)."""
+    tipo: str = "periferica"   # periferica | arterial | central
+    calibre: str = ""          # e.g. "18G", "7 Fr"
+    ubicacion: str = ""        # e.g. "Dorso mano izquierda"
+
+
+class SupplementalO2DTO(DTO):
+    """O₂ suplementario: device + flow."""
+    dispositivo: str = ""      # "" | puntas_nasales | mascarilla_facial
+    flujo: Optional[float] = None   # L/min
+
+
 class TransanestheticRecordDTO(DTO):
     # Start of the intraoperative time grid (minute 0); series/event ``t`` are minutes from it.
     inicio: Optional[datetime] = None
@@ -129,6 +142,12 @@ class TransanestheticRecordDTO(DTO):
     # events not caused by the medical act (power outage, equipment failure…)
     intercurrencias_tipos: dict[str, bool] = Field(default_factory=dict)
     intercurrencias: str = ""
+    # free-text notes: extra medication given ("Dexametasona 4 mg IV"), remarks
+    notas: str = ""
+    # other monitoring the option list does not cover (free text, e.g. "Doppler transcraneal")
+    monitoring_otro: str = ""
+    accesos: list[VascularAccessDTO] = Field(default_factory=list)
+    o2_suplementario: SupplementalO2DTO = Field(default_factory=SupplementalO2DTO)
 
 
 class DrugAdministrationDTO(DTO):
@@ -152,6 +171,9 @@ class FluidBalanceDTO(DTO):
     balance_total: dict[str, float] = Field(default_factory=dict)
     total_a_reponer: dict[str, float] = Field(default_factory=dict)
     gasto_urinario: dict[str, Optional[float]] = Field(default_factory=dict)
+    sangrado: dict[str, float] = Field(default_factory=dict)  # Textiles + Aspirador + Recuperador
+    # intake rows per hour summed from the time-grid IV fluids (used where the matrix is empty)
+    ingresos_grid: dict[str, dict[str, float]] = Field(default_factory=dict)
     tasa_fentanilo: Optional[float] = None
 
 
@@ -186,10 +208,12 @@ class IsquemiaDTO(DTO):
     hr_inicio: Optional[str] = None
     hr_termino: Optional[str] = None
     sitio: str = ""
+    presion: Optional[float] = None    # mmHg (tourniquet)
 
 
 class NeumoperitoneoDTO(DTO):
     hr_inicio: Optional[str] = None
+    presion: Optional[float] = None    # mmHg
 
 
 CaseStatus = Literal["draft", "finalized"]

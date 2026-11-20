@@ -1,16 +1,21 @@
 import { SECTION_TITLES } from '../../lib/wording';
 import type { AnesthesiaCase } from '../../api/types';
 import { ChoiceChips } from '../../components/Choice';
+import { InfoRow } from '../../components/FormRows';
 import { GridNumberCell } from '../../components/GridNumberCell';
+import type { ReactNode } from 'react';
 import { EditOnly } from '../../components/ReadOnly';
 import { Section } from '../../components/Section';
 import {
+  bleeding,
   BLOOD_OPTIONS,
   cellValue,
   cumulativeBalance,
   FLUID_HOURS,
   FLUID_ROWS,
   formatMl,
+  gridFluidTotal,
+  gridIntake,
   hourBalance,
   LEGACY_ROWS,
   legacyRowsPresent,
@@ -31,6 +36,9 @@ export function FluidBalanceScreen() {
 
 function FluidForm({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {
   const fb = c.fluid_balance;
+  const grid = gridIntake(c.trans_record);
+  const total = gridFluidTotal(c.trans_record);
+  const bleedAt = FLUID_ROWS.findIndex((r) => r.kind === 'bleed');
   const blood = BLOOD_OPTIONS.filter((o) => fb.blood_components[o] === true);
   const legacy = legacyRowsPresent(fb);
   return (
@@ -58,7 +66,7 @@ function FluidForm({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {
       )}
       <Section
         header="Balance hídrico horario"
-        footer="Balance parcial = (Cristaloide + Coloide + Hemocomponente) − (NCL + DCL + 3er espacio + Diuresis + Circuito respiratorio + Sangrado). Balance total = suma acumulada. Mismo cálculo que el servidor y el PDF. Cada solución por su nombre (Ringer lactato, Solución fisiológica…) se registra en Fluidos IV del registro transanestésico."
+        footer="Los ingresos vacíos toman la suma de Fluidos IV del registro transanestésico de esa hora (en gris); escriba un valor para reemplazarla. Sangrado = Textiles + Aspirador + Recuperador. Balance parcial = ingresos − (NCL + DCL + 3er espacio + Diuresis + Circuito respiratorio + Sangrado). Balance total = suma acumulada. Mismo cálculo que el servidor y el PDF."
       >
         <div className="grid-scroll">
           <table className="grid-table">
@@ -76,32 +84,51 @@ function FluidForm({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {
               </tr>
             </thead>
             <tbody>
-              {FLUID_ROWS.map((row) => (
-                <tr key={row.key} data-kind={row.kind}>
-                  <th scope="row" title={row.key}>
-                    {row.label}
-                  </th>
-                  {FLUID_HOURS.map((h) => (
-                    <td key={h}>
-                      <GridNumberCell
-                        label={`${row.label} ${h}`}
-                        value={cellValue(fb, row.key, h)}
-                        onChange={(v) =>
-                          update((d) => {
-                            setCell(d.fluid_balance, row.key, h, v);
-                          })
-                        }
-                      />
-                    </td>
-                  ))}
-                </tr>
+              {FLUID_ROWS.map((row, i) => (
+                <FluidRowView key={row.key} first={i === bleedAt}>
+                  <tr data-kind={row.kind}>
+                    <th scope="row" title={row.key}>
+                      {row.label}
+                    </th>
+                    {FLUID_HOURS.map((h) => {
+                      const fromGrid = row.kind === 'intake' ? grid[row.key]?.[h] : undefined;
+                      return (
+                        <td key={h}>
+                          <GridNumberCell
+                            label={`${row.label} ${h}`}
+                            value={cellValue(fb, row.key, h)}
+                            placeholder={fromGrid !== undefined ? formatMl(fromGrid) : '—'}
+                            onChange={(v) =>
+                              update((d) => {
+                                setCell(d.fluid_balance, row.key, h, v);
+                              })
+                            }
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </FluidRowView>
               ))}
+              <tr>
+                <th scope="row" className="grid-derived">
+                  Sangrado
+                </th>
+                {FLUID_HOURS.map((h) => {
+                  const b = bleeding(fb, h);
+                  return (
+                    <td key={h} className="grid-derived" data-testid={`sangrado-${h}`}>
+                      {b === null ? '—' : formatMl(b)}
+                    </td>
+                  );
+                })}
+              </tr>
               <tr>
                 <th scope="row" className="grid-derived">
                   Balance parcial
                 </th>
                 {FLUID_HOURS.map((h) => {
-                  const b = hourBalance(fb, h);
+                  const b = hourBalance(fb, h, grid);
                   return (
                     <td
                       key={h}
@@ -118,7 +145,7 @@ function FluidForm({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {
                   Balance total
                 </th>
                 {FLUID_HOURS.map((h) => {
-                  const b = cumulativeBalance(fb, h);
+                  const b = cumulativeBalance(fb, h, grid);
                   return (
                     <td
                       key={h}
@@ -135,6 +162,10 @@ function FluidForm({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {
         </div>
       </Section>
 
+      <Section header="Fluidos IV del registro transanestésico">
+        <InfoRow label="Total fluidos infundidos" value={total > 0 ? `${formatMl(total)} ml` : null} />
+      </Section>
+
       <Section>
         <ChoiceChips
           title="Hemocomponentes"
@@ -149,6 +180,22 @@ function FluidForm({ c, update }: { c: AnesthesiaCase; update: CaseUpdate }) {
           }
         />
       </Section>
+    </>
+  );
+}
+
+/** Puts the bleeding breakdown under a small "Sangrado" caption row. */
+function FluidRowView({ first, children }: { first: boolean; children: ReactNode }) {
+  return (
+    <>
+      {first ? (
+        <tr className="time-grid__group">
+          <th scope="rowgroup" colSpan={FLUID_HOURS.length + 1}>
+            Sangrado por origen
+          </th>
+        </tr>
+      ) : null}
+      {children}
     </>
   );
 }

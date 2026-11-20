@@ -64,8 +64,8 @@ export function newCase(owner: string, now: Date = new Date()): AnesthesiaCase {
     complicaciones_post: '',
     asa: null,
     raq: null,
-    isquemia: { hr_inicio: null, hr_termino: null, sitio: '' },
-    neumoperitoneo: { hr_inicio: null },
+    isquemia: { hr_inicio: null, hr_termino: null, sitio: '', presion: null },
+    neumoperitoneo: { hr_inicio: null, presion: null },
     anestesiologo: { nombre: '', clave: '', cedula: '', universidad: '' },
     cirujano: { nombre: '', clave: '', cedula: '', universidad: '' },
     patient: {
@@ -120,6 +120,10 @@ export function newCase(owner: string, now: Date = new Date()): AnesthesiaCase {
       complicaciones: '',
       intercurrencias_tipos: {},
       intercurrencias: '',
+      notas: '',
+      monitoring_otro: '',
+      accesos: [],
+      o2_suplementario: { dispositivo: '', flujo: null },
     },
     fluid_balance: {
       matrix: {},
@@ -129,6 +133,8 @@ export function newCase(owner: string, now: Date = new Date()): AnesthesiaCase {
       total_a_reponer: {},
       gasto_urinario: {},
       tasa_fentanilo: null,
+      sangrado: {},
+      ingresos_grid: {},
     },
     recovery: { aldrete: {}, otras: {}, alta_a_piso: '', medico_responsable: '', totals: {} },
     drugs: [],
@@ -189,6 +195,11 @@ export function normalizeCase(dto: AnesthesiaCaseDTO): AnesthesiaCase {
   filled.trans_record.series = (dto.trans_record?.series ?? []).map((s) => ({
     lane: s.lane,
     points: s.points ?? [],
+  }));
+  filled.trans_record.accesos = (dto.trans_record?.accesos ?? []).map((a) => ({
+    tipo: a.tipo ?? 'periferica',
+    calibre: a.calibre ?? '',
+    ubicacion: a.ubicacion ?? '',
   }));
   filled.trans_record.events = (dto.trans_record?.events ?? []).map((e) => ({
     marker: e.marker,

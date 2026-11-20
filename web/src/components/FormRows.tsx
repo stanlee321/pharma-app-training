@@ -323,3 +323,38 @@ export function InfoRow({ label, value, placeholder = '—' }: { label: string; 
 export function Row({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={`row${className ? ` ${className}` : ''}`}>{children}</div>;
 }
+
+export interface SelectRowProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: readonly string[];
+  /** Text of the empty choice (value ""). */
+  placeholder?: string;
+}
+
+/**
+ * Label · dropdown. A stored value outside `options` (older free text) is kept as its own choice,
+ * so opening a case never changes what it holds.
+ */
+export function SelectRow({ label, value, onChange, options, placeholder = 'Seleccionar…' }: SelectRowProps) {
+  const id = useId();
+  const off = useReadOnly();
+  const known = value === '' || options.includes(value);
+  return (
+    <div className="row">
+      <label className="row__label" htmlFor={id}>
+        {label}
+      </label>
+      <select id={id} className="row__input row__select" value={value} disabled={off} onChange={(e) => onChange(e.target.value)}>
+        <option value="">{placeholder}</option>
+        {!known ? <option value={value}>{value}</option> : null}
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}

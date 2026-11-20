@@ -6673,6 +6673,23 @@
       "type": "object",
       "title": "Gasto Urinario"
      },
+     "sangrado": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "type": "object",
+      "title": "Sangrado"
+     },
+     "ingresos_grid": {
+      "additionalProperties": {
+       "additionalProperties": {
+        "type": "number"
+       },
+       "type": "object"
+      },
+      "type": "object",
+      "title": "Ingresos Grid"
+     },
      "tasa_fentanilo": {
       "anyOf": [
        {
@@ -7043,6 +7060,17 @@
       "type": "string",
       "title": "Sitio",
       "default": ""
+     },
+     "presion": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Presion"
      }
     },
     "type": "object",
@@ -7111,6 +7139,17 @@
        }
       ],
       "title": "Hr Inicio"
+     },
+     "presion": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Presion"
      }
     },
     "type": "object",
@@ -8169,6 +8208,29 @@
     ],
     "title": "ResetPasswordRequest"
    },
+   "SupplementalO2DTO": {
+    "properties": {
+     "dispositivo": {
+      "type": "string",
+      "title": "Dispositivo",
+      "default": ""
+     },
+     "flujo": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Flujo"
+     }
+    },
+    "type": "object",
+    "title": "SupplementalO2DTO",
+    "description": "O\u2082 suplementario: device + flow."
+   },
    "SurgicalEventDTO": {
     "properties": {
      "marker": {
@@ -8254,6 +8316,26 @@
       "type": "string",
       "title": "Intercurrencias",
       "default": ""
+     },
+     "notas": {
+      "type": "string",
+      "title": "Notas",
+      "default": ""
+     },
+     "monitoring_otro": {
+      "type": "string",
+      "title": "Monitoring Otro",
+      "default": ""
+     },
+     "accesos": {
+      "items": {
+       "$ref": "#/components/schemas/VascularAccessDTO"
+      },
+      "type": "array",
+      "title": "Accesos"
+     },
+     "o2_suplementario": {
+      "$ref": "#/components/schemas/SupplementalO2DTO"
      }
     },
     "type": "object",
@@ -8414,6 +8496,28 @@
      "type"
     ],
     "title": "ValidationError"
+   },
+   "VascularAccessDTO": {
+    "properties": {
+     "tipo": {
+      "type": "string",
+      "title": "Tipo",
+      "default": "periferica"
+     },
+     "calibre": {
+      "type": "string",
+      "title": "Calibre",
+      "default": ""
+     },
+     "ubicacion": {
+      "type": "string",
+      "title": "Ubicacion",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "title": "VascularAccessDTO",
+    "description": "One vascular access line (acceso endovascular)."
    },
    "VitalPointDTO": {
     "properties": {

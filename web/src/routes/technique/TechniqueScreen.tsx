@@ -23,6 +23,7 @@ import {
   setNum,
   setText,
   valKey,
+  viaKey,
   type CheckboxValueField,
   type TechniqueValues,
 } from '../../state/techniqueFields';
@@ -209,20 +210,71 @@ function GeneralZone(p: ZoneProps) {
 // ---- NEURAXIAL ----------------------------------------------------------------------------
 
 function NeuraxialZone(p: ZoneProps) {
+  const v = p.c.technique.values;
+  const num = (label: string, k: string, unit?: string) => (
+    <NumberRow
+      label={label}
+      unit={unit}
+      value={getNum(v, k)}
+      min={0}
+      onChange={(n) => p.edit((x) => setNum(x, k, n))}
+    />
+  );
   return (
     <>
       <Section>
         <ModalityChips {...p} title="Abordaje" options={NEURAXIAL.approach} />
       </Section>
-      <Section>
+      <Section header="Asepsia y campos">
+        <FlagChips
+          {...p}
+          title="Asepsia / antisepsia · región"
+          options={NEURAXIAL.asepsiaRegions}
+          prefix={NEURAXIAL.asepsiaPrefix}
+          multiSelect
+        />
+        <FlagChips {...p} title="Solución" options={NEURAXIAL.soluciones} prefix={NEURAXIAL.solucionPrefix} multiSelect />
+        <FlagChips {...p} title="Colocación de campos" options={NEURAXIAL.campos} prefix={NEURAXIAL.campoPrefix} multiSelect />
+      </Section>
+      <Section header="Punción">
         {/* Single-select in Swift (no multiSelect), but stored as per-needle flags. */}
         <FlagChips {...p} title="Aguja" options={NEURAXIAL.needles} prefix={NEURAXIAL.agujaPrefix} />
-        <TextField {...p} label="Nivel" k={NEURAXIAL.nivel} placeholder="L3–L4" />
         <TextField {...p} label="Nº aguja" k={NEURAXIAL.agujaCalibre} placeholder="27G" unit="G" />
+        <TextField {...p} label="Nivel de punción" k={NEURAXIAL.nivel} placeholder="L3–L4" />
+        {num('Intentos', NEURAXIAL.intentos)}
+        <BoolToggle {...p} label="Uso de guiador" k={NEURAXIAL.guiador} />
+        {num('Catéter a', NEURAXIAL.cateterCm, 'cm')}
       </Section>
-      <Section header="Dosis">
-        <DoseRows {...p} rows={NEURAXIAL.dosis} />
+      <Section header="Resultado">
+        <TextField {...p} label="Nivel alcanzado" k={NEURAXIAL.nivelBloqueo} placeholder="T10" />
+        <BoolToggle {...p} label="Resultado satisfactorio" k={NEURAXIAL.resultado} />
       </Section>
+      <Section header="Dosis y vía" footer="La lidocaína de la infiltración por planos también se registra aquí.">
+        {NEURAXIAL.dosis.map((r) => (
+          <DoseWithRoute key={r.key} row={r} {...p} />
+        ))}
+      </Section>
+    </>
+  );
+}
+
+/** A neuraxial dose row plus its route (shown once the drug is ticked). */
+function DoseWithRoute({ row, c, edit }: ZoneProps & { row: CheckboxValueField }) {
+  const v = c.technique.values;
+  const k = viaKey(row.key);
+  const fallback = NEURAXIAL.defaultVia[row.key] ?? '';
+  const via = getText(v, k) || fallback;
+  return (
+    <>
+      <DoseRows rows={[row]} c={c} edit={edit} />
+      {getBool(v, row.key) ? (
+        <ChoiceChips
+          title={`Vía · ${row.label}`}
+          options={NEURAXIAL.vias}
+          selection={via ? [via] : []}
+          onChange={(sel) => edit((x) => setText(x, k, sel[0] ?? ''))}
+        />
+      ) : null}
     </>
   );
 }

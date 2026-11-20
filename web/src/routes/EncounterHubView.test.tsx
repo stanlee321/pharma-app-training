@@ -29,8 +29,10 @@ describe('EncounterHubView', () => {
     expect(h.fetch.mock.calls.some(([u, i]) => String(u) === `/api/v1/cases/${c.id}` && (i?.method ?? 'GET') === 'GET')).toBe(true);
 
     expect(screen.getByLabelText('Diagnóstico preop')).toHaveValue('Dx de ejemplo');
-    expect(screen.getByLabelText('Sala')).toHaveValue('');
+    // Sala → Cama (clinician feedback 2026-11b); Servicio is a list of specialties
+    expect(screen.getByLabelText('Cama')).toHaveValue('');
     expect(screen.getByLabelText('Servicio')).toHaveValue('');
+    expect(screen.getByText('Edad')).toBeInTheDocument();
 
     const expected: [RegExp, string][] = [
       [/^Datos del paciente/, `/cases/${c.id}/patient`],
@@ -60,10 +62,10 @@ describe('EncounterHubView', () => {
     const h = restHarness([c]);
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}`, h.backend);
-    await user.type(await screen.findByLabelText('Sala'), 'Q-7');
+    await user.type(await screen.findByLabelText('Cama'), 'Q-7');
     await user.clear(screen.getByLabelText('Diagnóstico preop'));
     await user.type(screen.getByLabelText('Diagnóstico preop'), 'Dx editado');
-    expect(storeCase(c.id).sala).toBe('Q-7');
+    expect(storeCase(c.id).patient.cama).toBe('Q-7');
     expect(screen.getByText('Cambios sin guardar')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
@@ -71,7 +73,7 @@ describe('EncounterHubView', () => {
     const put = h.puts[0]!;
     expect(put.url).toBe(`/api/v1/cases/${c.id}`);
     expect(put.authorization).toBe(`Bearer ${TEST_TOKEN}`);
-    expect(put.body).toMatchObject({ id: c.id, sala: 'Q-7', diagnostico_preop: 'Dx editado' });
+    expect(put.body).toMatchObject({ id: c.id, patient: { cama: 'Q-7' }, diagnostico_preop: 'Dx editado' });
     expect(put.body).toHaveProperty('pre_assessment');
     expect(put.body).not.toHaveProperty('diagnosticoPreop');
     expect(await screen.findByText('Guardado')).toBeInTheDocument();
@@ -83,10 +85,10 @@ describe('EncounterHubView', () => {
     const h = restHarness([c], { patients: [p] });
     const user = userEvent.setup();
     renderApp(`/cases/${c.id}`, h.backend);
-    await user.type(await screen.findByLabelText('Servicio'), 'Anestesia');
+    await user.selectOptions(await screen.findByLabelText('Servicio'), 'Urología');
     await user.click(screen.getByRole('link', { name: 'Volver a Paciente' }));
     await waitFor(() => expect(h.puts).toHaveLength(1));
-    expect(h.puts[0]!.body).toMatchObject({ servicio: 'Anestesia', patient_id: p.id });
+    expect(h.puts[0]!.body).toMatchObject({ servicio: 'Urología', patient_id: p.id });
     // The patient screen (between the list and the case).
     expect(await screen.findByRole('heading', { name: 'Paciente Sintético Hub', level: 1 })).toBeInTheDocument();
     expect(screen.getByTestId('patient-header')).toHaveTextContent('Registro SYN-HUB-1');

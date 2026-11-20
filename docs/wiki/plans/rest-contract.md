@@ -270,6 +270,13 @@ exhaustive per-field source):
   `fc ta_sys ta_dia fr temp ekg spo2 o2 etco2 pocus bis entropia nindex tnm neuromonitoreo`,
   `inhalado:<agent>` (%) and `fluido:<full name>` (ml). Also `intercurrencias_tipos` /
   `intercurrencias`; drugs carry `modo` (`bolo`|`infusion`) and `fin`.
+  **2026-11b ([clinician-feedback-2026-11b.md](clinician-feedback-2026-11b.md)):** text lanes
+  `ventilacion` (Controlada|Asistida|Espontánea) and `posicion` (position key, e.g. `litotomia`);
+  `trans_record` gains `notas`, `monitoring_otro`, `accesos[] {tipo periferica|arterial|central,
+  calibre, ubicacion}`, `o2_suplementario {dispositivo, flujo}`; `isquemia.presion`,
+  `neumoperitoneo.presion`; `fluid_balance` derives `sangrado` and `ingresos_grid` (intake per
+  hour summed from the `fluido:*` lanes; a typed matrix cell wins). Matrix rows `Textiles`,
+  `Aspirador`, `Recuperador` are the bleeding breakdown.
 - **DrugAdministration** (collection item) — `id, label(A..O|A..M), farmaco, dosis:
   Quantity, via(IV|IM|inhalación|…), time`; optional **readOnly** `recommended: {bolus,
   infusion}` from the TCI engine

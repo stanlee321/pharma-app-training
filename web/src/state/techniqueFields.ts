@@ -23,7 +23,8 @@ export const valKey = (key: string) => `${key}_val`;
 
 export const GENERAL = {
   modalities: ['AGIB', 'AGEV', 'BEPD', 'Bloqueo de Plexo'],
-  volatiles: ['Sevoflurano', 'Desflurano', 'Isoflurano', 'N2O'],
+  /** Only sevoflurane is on the market (clinician feedback 2026-11b); older flags still print. */
+  volatiles: ['Sevoflurano'],
   volatilPrefix: 'volatil_',
   induccion: [
     cbv('Propofol', 'mg', 'ind_propofol'),
@@ -44,14 +45,34 @@ export const NEURAXIAL = {
   approach: ['Epidural', 'Subaracnoidea', 'Mixta'],
   needles: ['Tuohy', 'Quincke', 'Whitacre'],
   agujaPrefix: 'aguja_',
+  /** Puncture level (L3–L4). */
   nivel: 'nivel',
   agujaCalibre: 'aguja_calibre',
+  // clinician feedback 2026-11b, item 3 — print on the postanesthetic note (nota2)
+  asepsiaPrefix: 'asepsia_',
+  asepsiaRegions: ['Cervical', 'Dorsal', 'Lumbar', 'Sacro/Coxígea'],
+  solucionPrefix: 'solucion_',
+  soluciones: ['Jabón', 'Isodine', 'Alcohol', 'Merthiolate'],
+  campoPrefix: 'campo_',
+  campos: ['Campo hendido', 'Campo textil'],
+  intentos: 'intentos',
+  guiador: 'guiador',
+  /** Catheter left at … cm (to the skin). */
+  cateterCm: 'cateter_cm',
+  /** Block (sensory) level reached, e.g. T10. */
+  nivelBloqueo: 'nivel_bloqueo',
+  resultado: 'resultado_satisfactorio',
   dosis: [
+    cbv('Lidocaína', 'mg', 'dx_lidocaina'),
     cbv('Bupivacaína', 'mg', 'dx_bupivacaina'),
     cbv('Fentanilo', 'mcg', 'dx_fentanilo'),
     cbv('Morfina', 'mcg', 'dx_morfina'),
   ],
+  /** Route of each dose: `<key>_via`. Lidocaína defaults to infiltration by planes. */
+  vias: ['Infiltración por planos', 'Subaracnoideo', 'Peridural'],
+  defaultVia: { dx_lidocaina: 'Infiltración por planos' } as Record<string, string>,
 } as const;
+export const viaKey = (key: string) => `${key}_via`;
 
 export const PERIPHERAL = {
   sitio: 'sitio_bloqueo',
@@ -117,6 +138,8 @@ const flagKeys = (options: readonly string[], prefix: string) => options.map((o)
 export const ZONE_KEYS: Record<TechniqueZone, readonly string[]> = {
   general: [
     ...flagKeys(GENERAL.volatiles, GENERAL.volatilPrefix),
+    // retired agents (2026-11b): a case may still hold them
+    ...flagKeys(['Desflurano', 'Isoflurano', 'N2O'], GENERAL.volatilPrefix),
     ...cbvKeys(GENERAL.induccion),
     GENERAL.tetCalibre.key,
     GENERAL.flujo.key,
@@ -129,6 +152,15 @@ export const ZONE_KEYS: Record<TechniqueZone, readonly string[]> = {
     NEURAXIAL.nivel,
     NEURAXIAL.agujaCalibre,
     ...cbvKeys(NEURAXIAL.dosis),
+    ...NEURAXIAL.dosis.map((r) => viaKey(r.key)),
+    ...flagKeys(NEURAXIAL.asepsiaRegions, NEURAXIAL.asepsiaPrefix),
+    ...flagKeys(NEURAXIAL.soluciones, NEURAXIAL.solucionPrefix),
+    ...flagKeys(NEURAXIAL.campos, NEURAXIAL.campoPrefix),
+    NEURAXIAL.intentos,
+    NEURAXIAL.guiador,
+    NEURAXIAL.cateterCm,
+    NEURAXIAL.nivelBloqueo,
+    NEURAXIAL.resultado,
   ],
   peripheral: [
     PERIPHERAL.sitio,

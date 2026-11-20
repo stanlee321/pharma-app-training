@@ -21,6 +21,8 @@ describe('MonitoringScreen', () => {
     expect(storeCase(c.id).trans_record.monitoring).toEqual({
       ECG: true,
       SpO2: true,
+      PANI: false,
+      PAI: false,
       EtCO2: false,
       BIS: false,
       Entropía: false,
@@ -112,7 +114,8 @@ describe('MonitoringScreen', () => {
     await user.type(screen.getByLabelText('FC 08:00'), '80');
     await user.type(screen.getByLabelText('FC 08:05'), '82');
     await user.type(screen.getByLabelText('SpO₂ 08:05'), '95');
-    await user.type(screen.getByLabelText('EKG 08:00'), 'Ritmo sinusal');
+    // EKG text row retired (2026-11b)
+    expect(screen.queryByLabelText('EKG 08:00')).toBeNull();
     // Selecting a monitor shows its own row.
     expect(screen.queryByLabelText('NINDEX 08:00')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'NINDEX' }));
@@ -120,7 +123,15 @@ describe('MonitoringScreen', () => {
     await user.click(screen.getByRole('button', { name: 'POCUS' }));
     await user.type(screen.getByLabelText('POCUS 08:10'), 'Deslizamiento pleural');
 
+    // Ventilation mode and position over time (2026-11b)
+    await user.selectOptions(screen.getByLabelText('Ventilación 08:00'), 'Espontánea');
+    await user.selectOptions(screen.getByLabelText('Ventilación 08:10'), 'Controlada');
+    await user.selectOptions(screen.getByLabelText('Posición 08:00'), 'litotomia');
+    expect(screen.getByRole('img', { name: 'Litotomía' })).toBeInTheDocument();
+
     await user.selectOptions(screen.getByLabelText('Agregar anestésico inhalado'), 'Sevoflurano');
+    // only sevoflurane is offered, so the add row is gone once it is in
+    expect(screen.queryByLabelText('Agregar anestésico inhalado')).toBeNull();
     await user.type(screen.getByLabelText('Sevoflurano 08:00 (%)'), '2');
     await user.type(screen.getByLabelText('Sevoflurano 08:20 (%)'), '2,5');
     await user.selectOptions(screen.getByLabelText('Agregar fluido'), 'Ringer lactato');
@@ -134,11 +145,12 @@ describe('MonitoringScreen', () => {
     const lane = (k: string) => tr.series.find((s) => s.lane === k)?.points;
     expect(lane('fc')).toEqual([{ t: 0, value: 80 }, { t: 5, value: 82 }]);
     expect(lane('spo2')).toEqual([{ t: 5, value: 95 }]);
-    expect(lane('ekg')).toEqual([{ t: 0, value: 'Ritmo sinusal' }]);
     expect(lane('nindex')).toEqual([{ t: 0, value: 42 }]);
     expect(lane('pocus')).toEqual([{ t: 10, value: 'Deslizamiento pleural' }]);
     expect(lane('inhalado:Sevoflurano')).toEqual([{ t: 0, value: 2 }, { t: 20, value: 2.5 }]);
     expect(lane('fluido:Ringer lactato')).toEqual([{ t: 0, value: 500 }]);
+    expect(lane('ventilacion')).toEqual([{ t: 0, value: 'Espontánea' }, { t: 10, value: 'Controlada' }]);
+    expect(lane('posicion')).toEqual([{ t: 0, value: 'litotomia' }]);
     expect(tr.events).toEqual([{ marker: 2, t: 0, label: 'Inicia anestesia' }]);
     expect(tr.intercurrencias_tipos).toEqual({ 'Corte de energía eléctrica': true });
     expect(tr.intercurrencias).toBe('10 minutos');
@@ -150,5 +162,5 @@ describe('MonitoringScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(h.puts).toHaveLength(1));
     expect(h.puts[0]!.body.trans_record).toMatchObject({ intervalo_min: 5, intercurrencias: '10 minutos' });
-  });
+  }, 60_000); // a long user-event script over a large grid
 });

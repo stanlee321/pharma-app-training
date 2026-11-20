@@ -11,8 +11,15 @@ export function GridNumberCell({
   label,
   value,
   onChange,
+  placeholder = '—',
   ...limits
-}: { label: string; value: number | null; onChange: (v: number | null) => void } & NumberLimits) {
+}: {
+  label: string;
+  value: number | null;
+  onChange: (v: number | null) => void;
+  /** Shown while empty (e.g. the value the time grid supplies for this cell). */
+  placeholder?: string;
+} & NumberLimits) {
   const id = useId();
   const off = useReadOnly();
   const { problem, inputProps } = useNumberText({ value, onChange, ...limits });
@@ -24,7 +31,7 @@ export function GridNumberCell({
       <input
         id={id}
         className="grid-cell"
-        placeholder="—"
+        placeholder={placeholder}
         disabled={off}
         aria-invalid={problem ? true : undefined}
         title={problem ?? undefined}

@@ -1317,6 +1317,16 @@ export interface components {
             gasto_urinario?: {
                 [key: string]: number | null;
             };
+            /** Sangrado */
+            sangrado?: {
+                [key: string]: number;
+            };
+            /** Ingresos Grid */
+            ingresos_grid?: {
+                [key: string]: {
+                    [key: string]: number;
+                };
+            };
             /** Tasa Fentanilo */
             tasa_fentanilo?: number | null;
         };
@@ -1426,6 +1436,8 @@ export interface components {
              * @default
              */
             sitio: string;
+            /** Presion */
+            presion?: number | null;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -1455,6 +1467,8 @@ export interface components {
         NeumoperitoneoDTO: {
             /** Hr Inicio */
             hr_inicio?: string | null;
+            /** Presion */
+            presion?: number | null;
         };
         /** NewbornRecordDTO */
         NewbornRecordDTO: {
@@ -1960,6 +1974,19 @@ export interface components {
             /** Password */
             password: string;
         };
+        /**
+         * SupplementalO2DTO
+         * @description O₂ suplementario: device + flow.
+         */
+        SupplementalO2DTO: {
+            /**
+             * Dispositivo
+             * @default
+             */
+            dispositivo: string;
+            /** Flujo */
+            flujo?: number | null;
+        };
         /** SurgicalEventDTO */
         SurgicalEventDTO: {
             /** Marker */
@@ -2005,6 +2032,19 @@ export interface components {
              * @default
              */
             intercurrencias: string;
+            /**
+             * Notas
+             * @default
+             */
+            notas: string;
+            /**
+             * Monitoring Otro
+             * @default
+             */
+            monitoring_otro: string;
+            /** Accesos */
+            accesos?: components["schemas"]["VascularAccessDTO"][];
+            o2_suplementario?: components["schemas"]["SupplementalO2DTO"];
         };
         /** UserActivityDTO */
         UserActivityDTO: {
@@ -2065,6 +2105,27 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /**
+         * VascularAccessDTO
+         * @description One vascular access line (acceso endovascular).
+         */
+        VascularAccessDTO: {
+            /**
+             * Tipo
+             * @default periferica
+             */
+            tipo: string;
+            /**
+             * Calibre
+             * @default
+             */
+            calibre: string;
+            /**
+             * Ubicacion
+             * @default
+             */
+            ubicacion: string;
         };
         /** VitalPointDTO */
         VitalPointDTO: {

@@ -24,6 +24,8 @@ export type TransanestheticRecordDTO = S['TransanestheticRecordDTO'];
 export type VitalSeriesDTO = S['VitalSeriesDTO'];
 export type VitalPointDTO = S['VitalPointDTO'];
 export type VitalSnapshotDTO = S['VitalSnapshotDTO'];
+export type VascularAccessDTO = S['VascularAccessDTO'];
+export type SupplementalO2DTO = S['SupplementalO2DTO'];
 export type SurgicalEventDTO = S['SurgicalEventDTO'];
 export type DrugAdministrationDTO = S['DrugAdministrationDTO'];
 export type FluidBalanceDTO = S['FluidBalanceDTO'];
@@ -76,14 +78,18 @@ export type VitalPoint = VitalPointDTO;
 export type VitalSeries = Req<VitalSeriesDTO>;
 export type SurgicalEvent = Req<SurgicalEventDTO>;
 export type VitalSnapshot = Req<VitalSnapshotDTO>;
+export type VascularAccess = Req<VascularAccessDTO>;
+export type SupplementalO2 = Req<SupplementalO2DTO>;
 export type TransanestheticRecord = Omit<
   Req<TransanestheticRecordDTO>,
-  'series' | 'events' | 'basal' | 'termination'
+  'series' | 'events' | 'basal' | 'termination' | 'accesos' | 'o2_suplementario'
 > & {
   series: VitalSeries[];
   events: SurgicalEvent[];
   basal: VitalSnapshot;
   termination: VitalSnapshot;
+  accesos: VascularAccess[];
+  o2_suplementario: SupplementalO2;
 };
 export type DrugAdministration = Req<DrugAdministrationDTO>;
 export type FluidBalance = Req<FluidBalanceDTO>;
