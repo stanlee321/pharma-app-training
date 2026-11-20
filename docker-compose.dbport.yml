@@ -1,0 +1,7 @@
+# Opt-in: publish Postgres on host port 5433 (native backend development, psql / GUI access).
+#   docker compose -f docker-compose.yml -f docker-compose.dbport.yml up -d db
+# Not used by the shared stack: the backend reaches the database on the Docker network.
+services:
+  db:
+    ports:
+      - "5433:5432"

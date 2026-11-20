@@ -38,7 +38,7 @@ The iOS app has **no test target and no lint config**. The "Validation Reference
 
 ```bash
 conda activate tiva_backend                 # Python 3.11; pip install -r requirements.txt
-docker compose up -d                        # optional local Postgres on host port 5433
+docker compose -f ../docker-compose.yml -f ../docker-compose.dbport.yml up -d db  # optional local Postgres on host port 5433 (the shared stack keeps it internal)
 export TIVA_DATABASE_URL=postgresql+psycopg://tiva:tiva@localhost:5433/tiva   # omit → SQLite ./tiva.db
 alembic upgrade head
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload   # 0.0.0.0 so a physical device can reach it; docs at /docs
